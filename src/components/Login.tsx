@@ -9,7 +9,7 @@ function cn(...inputs: ClassValue[]) {
 }
 
 export default function Login() {
-  const { login, allowedStores, addAccessLog } = useStore();
+  const { login, allowedStores, addAccessLog, flags } = useStore();
   const [formData, setFormData] = useState({
     cnpj: '',
     bandeira: '',
@@ -107,11 +107,9 @@ export default function Login() {
                       onChange={(e) => setFormData({ ...formData, bandeira: e.target.value })}
                     >
                       <option value="">Selecione a Bandeira</option>
-                      <option value="Ultra Popular">Ultra Popular</option>
-                      <option value="Maxi Popular">Maxi Popular</option>
-                      <option value="Entrefarma">Entrefarma</option>
-                      <option value="Farmanorte">Farmanorte</option>
-                      <option value="Outra">Outra</option>
+                      {flags.map(flag => (
+                        <option key={flag} value={flag}>{flag}</option>
+                      ))}
                     </select>
                   </div>
                 </div>

@@ -125,6 +125,10 @@ interface AppState {
   realtimeInitialized: boolean;
   
   // Auth
+  flags: string[];
+  addFlag: (flag: string) => void;
+  removeFlag: (flag: string) => void;
+  updateFlag: (oldFlag: string, newFlag: string) => void;
   allowedStores: { cnpj: string; bandeira: string }[];
   addAllowedStore: (store: { cnpj: string; bandeira: string }) => void;
   removeAllowedStore: (cnpj: string) => void;
@@ -498,6 +502,17 @@ export const useStore = create<AppState>()(
       setView: (view) => set({ currentView: view }),
       realtimeInitialized: false,
       
+      flags: ['Ultra Popular', 'Maxi Popular', 'Entrefarma', 'Farmanorte', 'Outra'],
+      addFlag: (flag) => set((state) => ({ 
+        flags: state.flags.includes(flag) ? state.flags : [...state.flags, flag] 
+      })),
+      removeFlag: (flag) => set((state) => ({ 
+        flags: state.flags.filter(f => f !== flag) 
+      })),
+      updateFlag: (oldFlag, newFlag) => set((state) => ({
+        flags: state.flags.map(f => f === oldFlag ? newFlag : f)
+      })),
+
       allowedStores: [],
       addAllowedStore: (store) => set((state) => ({ 
         allowedStores: [...state.allowedStores.filter(s => s.cnpj !== store.cnpj), store] 
@@ -551,6 +566,7 @@ export const useStore = create<AppState>()(
         zoom: state.zoom,
         allowedStores: state.allowedStores,
         accessLogs: state.accessLogs,
+        flags: state.flags,
       }),
     }
   )
