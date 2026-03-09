@@ -637,6 +637,10 @@ export const useStore = create<AppState>()(
         allowedStores: state.allowedStores,
         accessLogs: state.accessLogs,
         flags: state.flags,
+        isAuthenticated: state.isAuthenticated,
+        userRole: state.userRole,
+        currentUser: state.currentUser,
+        currentView: state.currentView,
       }),
     }
   )

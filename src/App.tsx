@@ -295,6 +295,14 @@ export default function App() {
             </button>
 
             <button 
+              onClick={() => window.location.reload()}
+              className="p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-full transition-colors text-zinc-600 dark:text-zinc-400"
+              title="Atualizar Página (F5)"
+            >
+              <RefreshCw className="w-5 h-5" />
+            </button>
+
+            <button 
               onClick={toggleTheme}
               className="p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-full transition-colors"
             >
