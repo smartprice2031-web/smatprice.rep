@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useStore } from '../store';
-import { Plus, Trash2, Shield, Store, Search, X, History, User, Calendar, Clock, Flag, Pencil } from 'lucide-react';
+import { Plus, Trash2, Shield, Store, Search, X, History, User, Calendar, Clock, Flag, Pencil, Save, Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
@@ -9,12 +10,13 @@ function cn(...inputs: ClassValue[]) {
 }
 
 export default function UserManagement() {
-  const { allowedStores, addAllowedStore, removeAllowedStore, accessLogs, flags, addFlag, removeFlag, updateFlag } = useStore();
+  const { allowedStores, addAllowedStore, removeAllowedStore, accessLogs, flags, addFlag, removeFlag, updateFlag, saveUsersAndFlags } = useStore();
   const [activeTab, setActiveTab] = useState<'stores' | 'history' | 'flags'>('stores');
   const [newCnpj, setNewCnpj] = useState('');
   const [newBandeira, setNewBandeira] = useState('');
   const [newFlagName, setNewFlagName] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
 
   // Fix: Ensure newBandeira is set when flags are loaded
   React.useEffect(() => {
@@ -53,6 +55,18 @@ export default function UserManagement() {
     setEditFlagName('');
   };
 
+  const handleSaveAll = async () => {
+    setIsSaving(true);
+    try {
+      await saveUsersAndFlags();
+      toast.success('Configurações de usuários e bandeiras salvas com sucesso no Supabase!');
+    } catch (error) {
+      toast.error('Erro ao salvar no Supabase. Verifique sua conexão.');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   const startEditing = (flag: string) => {
     setEditingFlag(flag);
     setEditFlagName(flag);
@@ -76,42 +90,57 @@ export default function UserManagement() {
   return (
     <div className="flex flex-col h-full">
       {/* Tabs */}
-      <div className="flex border-b border-zinc-200 dark:border-zinc-800 px-6 overflow-x-auto">
-        <button 
-          onClick={() => setActiveTab('stores')}
-          className={cn(
-            "py-4 px-6 text-xs font-black uppercase tracking-widest flex items-center gap-2 border-b-2 transition-all whitespace-nowrap",
-            activeTab === 'stores' 
-              ? "border-blue-600 text-blue-600" 
-              : "border-transparent text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300"
-          )}
+      <div className="flex items-center justify-between border-b border-zinc-200 dark:border-zinc-800 px-6">
+        <div className="flex overflow-x-auto no-scrollbar">
+          <button 
+            onClick={() => setActiveTab('stores')}
+            className={cn(
+              "py-4 px-6 text-xs font-black uppercase tracking-widest flex items-center gap-2 border-b-2 transition-all whitespace-nowrap",
+              activeTab === 'stores' 
+                ? "border-blue-600 text-blue-600" 
+                : "border-transparent text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300"
+            )}
+          >
+            <Store className="w-4 h-4" />
+            Lojas Autorizadas
+          </button>
+          <button 
+            onClick={() => setActiveTab('flags')}
+            className={cn(
+              "py-4 px-6 text-xs font-black uppercase tracking-widest flex items-center gap-2 border-b-2 transition-all whitespace-nowrap",
+              activeTab === 'flags' 
+                ? "border-blue-600 text-blue-600" 
+                : "border-transparent text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300"
+            )}
+          >
+            <Flag className="w-4 h-4" />
+            Bandeiras
+          </button>
+          <button 
+            onClick={() => setActiveTab('history')}
+            className={cn(
+              "py-4 px-6 text-xs font-black uppercase tracking-widest flex items-center gap-2 border-b-2 transition-all whitespace-nowrap",
+              activeTab === 'history' 
+                ? "border-blue-600 text-blue-600" 
+                : "border-transparent text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300"
+            )}
+          >
+            <History className="w-4 h-4" />
+            Histórico de Acesso
+          </button>
+        </div>
+
+        <button
+          onClick={handleSaveAll}
+          disabled={isSaving}
+          className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-green-500/20 hover:bg-green-700 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          <Store className="w-4 h-4" />
-          Lojas Autorizadas
-        </button>
-        <button 
-          onClick={() => setActiveTab('flags')}
-          className={cn(
-            "py-4 px-6 text-xs font-black uppercase tracking-widest flex items-center gap-2 border-b-2 transition-all whitespace-nowrap",
-            activeTab === 'flags' 
-              ? "border-blue-600 text-blue-600" 
-              : "border-transparent text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300"
+          {isSaving ? (
+            <Loader2 className="w-4 h-4 animate-spin" />
+          ) : (
+            <Save className="w-4 h-4" />
           )}
-        >
-          <Flag className="w-4 h-4" />
-          Bandeiras
-        </button>
-        <button 
-          onClick={() => setActiveTab('history')}
-          className={cn(
-            "py-4 px-6 text-xs font-black uppercase tracking-widest flex items-center gap-2 border-b-2 transition-all whitespace-nowrap",
-            activeTab === 'history' 
-              ? "border-blue-600 text-blue-600" 
-              : "border-transparent text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300"
-          )}
-        >
-          <History className="w-4 h-4" />
-          Histórico de Acesso
+          Salvar Alterações
         </button>
       </div>
 

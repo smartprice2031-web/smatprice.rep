@@ -132,6 +132,8 @@ interface AppState {
   allowedStores: { cnpj: string; bandeira: string }[];
   addAllowedStore: (store: { cnpj: string; bandeira: string }) => void;
   removeAllowedStore: (cnpj: string) => void;
+  saveUsersAndFlags: () => Promise<void>;
+  loadUsersAndFlags: () => Promise<void>;
   accessLogs: { cnpj: string; username: string; bandeira: string; timestamp: string }[];
   addAccessLog: (log: { cnpj: string; username: string; bandeira: string }) => void;
   isAuthenticated: boolean;
@@ -437,6 +439,9 @@ export const useStore = create<AppState>()(
       loadLayout: async () => {
         if (!isSupabaseConfigured) return;
         try {
+          // Load users and flags first
+          await get().loadUsersAndFlags();
+
           const { data, error } = await supabase
             .from('settings')
             .select('value')
@@ -526,6 +531,48 @@ export const useStore = create<AppState>()(
       removeAllowedStore: (cnpj) => set((state) => ({ 
         allowedStores: state.allowedStores.filter(s => s.cnpj !== cnpj) 
       })),
+
+      saveUsersAndFlags: async () => {
+        if (!isSupabaseConfigured) return;
+        const state = get();
+        try {
+          const { error } = await supabase
+            .from('settings')
+            .upsert({ 
+              id: 'users_and_flags', 
+              value: { 
+                allowedStores: state.allowedStores, 
+                flags: state.flags 
+              } 
+            });
+          if (error) throw error;
+        } catch (error) {
+          console.error("Error saving users and flags to Supabase:", error);
+          throw error;
+        }
+      },
+
+      loadUsersAndFlags: async () => {
+        if (!isSupabaseConfigured) return;
+        try {
+          const { data, error } = await supabase
+            .from('settings')
+            .select('value')
+            .eq('id', 'users_and_flags')
+            .single();
+          
+          if (error && error.code !== 'PGRST116') throw error;
+          
+          if (data?.value) {
+            set({
+              allowedStores: data.value.allowedStores || [],
+              flags: data.value.flags || get().flags
+            });
+          }
+        } catch (error) {
+          console.error("Error loading users and flags from Supabase:", error);
+        }
+      },
 
       accessLogs: [],
       addAccessLog: (log) => set((state) => ({
