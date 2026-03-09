@@ -147,6 +147,12 @@ interface AppState {
   setUnreadPerUser: (cnpj: string, count: number | ((prev: number) => number)) => void;
   messages: any[];
   setMessages: (messages: any[] | ((prev: any[]) => any[])) => void;
+  
+  // GitHub Sync
+  isSyncingGithub: boolean;
+  syncProgress: number;
+  syncWithGithub: () => Promise<void>;
+
   login: (role: 'user' | 'admin', user: { username: string; cnpj: string; bandeira: string }) => void;
   logout: () => void;
 }
@@ -549,6 +555,23 @@ export const useStore = create<AppState>()(
       setMessages: (messages) => set((state) => ({ 
         messages: typeof messages === 'function' ? messages(state.messages) : messages 
       })),
+
+      isSyncingGithub: false,
+      syncProgress: 0,
+      syncWithGithub: async () => {
+        set({ isSyncingGithub: true, syncProgress: 0 });
+        
+        // Simulate progress
+        for (let i = 0; i <= 100; i += 10) {
+          set({ syncProgress: i });
+          await new Promise(resolve => setTimeout(resolve, 300));
+        }
+        
+        // In a real app, we would push to GitHub here
+        // For now, we'll just simulate success
+        set({ isSyncingGithub: false, syncProgress: 0 });
+      },
+
       login: (role, user) => set({ isAuthenticated: true, userRole: role, currentUser: user }),
       logout: () => set({ isAuthenticated: false, userRole: null, currentUser: null }),
     }),

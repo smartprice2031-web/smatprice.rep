@@ -79,18 +79,18 @@ export default function Login() {
         </div>
 
         {/* Card */}
-        <div className="bg-white dark:bg-zinc-900 rounded-[2.5rem] shadow-2xl shadow-black/5 border border-zinc-200 dark:border-zinc-800 p-8 md:p-10">
+        <div className="bg-zinc-900 dark:bg-zinc-900 rounded-[2.5rem] shadow-2xl shadow-black/20 border border-zinc-800 p-8 md:p-10">
           <form onSubmit={handleSubmit} className="space-y-6">
             {!isAdmin && (
               <>
                 <div className="space-y-2">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 dark:text-white ml-1">CNPJ da Loja</label>
+                  <label className="text-[10px] font-black uppercase tracking-widest text-white ml-1">CNPJ da Loja</label>
                   <div className="relative">
-                    <Building2 className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-400 dark:text-zinc-300" />
+                    <Building2 className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-400" />
                     <input
                       type="text"
                       placeholder="00.000.000/0000-00"
-                      className="w-full bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700 rounded-2xl py-4 pl-12 pr-4 text-sm text-zinc-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+                      className="w-full bg-zinc-800/50 border border-zinc-700 rounded-2xl py-4 pl-12 pr-4 text-sm text-white placeholder:text-zinc-500 focus:ring-2 focus:ring-blue-500 outline-none transition-all"
                       value={formData.cnpj}
                       onChange={(e) => setFormData({ ...formData, cnpj: e.target.value })}
                     />
@@ -98,17 +98,17 @@ export default function Login() {
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 dark:text-white ml-1">Bandeira</label>
+                  <label className="text-[10px] font-black uppercase tracking-widest text-white ml-1">Bandeira</label>
                   <div className="relative">
-                    <Flag className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-400 dark:text-zinc-300" />
+                    <Flag className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-400" />
                     <select
-                      className="w-full bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700 rounded-2xl py-4 pl-12 pr-4 text-sm text-zinc-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none transition-all appearance-none"
+                      className="w-full bg-zinc-800/50 border border-zinc-700 rounded-2xl py-4 pl-12 pr-4 text-sm text-white focus:ring-2 focus:ring-blue-500 outline-none transition-all appearance-none"
                       value={formData.bandeira}
                       onChange={(e) => setFormData({ ...formData, bandeira: e.target.value })}
                     >
-                      <option value="">Selecione a Bandeira</option>
+                      <option value="" className="bg-zinc-900">Selecione a Bandeira</option>
                       {flags.map(flag => (
-                        <option key={flag} value={flag}>{flag}</option>
+                        <option key={flag} value={flag} className="bg-zinc-900">{flag}</option>
                       ))}
                     </select>
                   </div>
@@ -117,13 +117,13 @@ export default function Login() {
             )}
 
             <div className="space-y-2">
-              <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 dark:text-white ml-1">Usuário</label>
+              <label className="text-[10px] font-black uppercase tracking-widest text-white ml-1">Usuário</label>
               <div className="relative">
-                <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-400 dark:text-zinc-300" />
+                <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-400" />
                 <input
                   type="text"
                   placeholder="Seu usuário"
-                  className="w-full bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700 rounded-2xl py-4 pl-12 pr-4 text-sm text-zinc-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+                  className="w-full bg-zinc-800/50 border border-zinc-700 rounded-2xl py-4 pl-12 pr-4 text-sm text-white placeholder:text-zinc-500 focus:ring-2 focus:ring-blue-500 outline-none transition-all"
                   value={formData.username}
                   onChange={(e) => setFormData({ ...formData, username: e.target.value })}
                 />
@@ -132,13 +132,13 @@ export default function Login() {
 
             {isAdmin && (
               <div className="space-y-2 animate-in fade-in slide-in-from-top-2 duration-300">
-                <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 dark:text-white ml-1">Senha de Administrador</label>
+                <label className="text-[10px] font-black uppercase tracking-widest text-white ml-1">Senha de Administrador</label>
                 <div className="relative">
-                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-400 dark:text-zinc-300" />
+                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-400" />
                   <input
                     type="password"
                     placeholder="••••"
-                    className="w-full bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700 rounded-2xl py-4 pl-12 pr-4 text-sm text-zinc-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+                    className="w-full bg-zinc-800/50 border border-zinc-700 rounded-2xl py-4 pl-12 pr-4 text-sm text-white placeholder:text-zinc-500 focus:ring-2 focus:ring-blue-500 outline-none transition-all"
                     value={formData.password}
                     onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                     autoFocus

@@ -12,9 +12,16 @@ export default function UserManagement() {
   const { allowedStores, addAllowedStore, removeAllowedStore, accessLogs, flags, addFlag, removeFlag, updateFlag } = useStore();
   const [activeTab, setActiveTab] = useState<'stores' | 'history' | 'flags'>('stores');
   const [newCnpj, setNewCnpj] = useState('');
-  const [newBandeira, setNewBandeira] = useState(flags[0] || '');
+  const [newBandeira, setNewBandeira] = useState('');
   const [newFlagName, setNewFlagName] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
+
+  // Fix: Ensure newBandeira is set when flags are loaded
+  React.useEffect(() => {
+    if (!newBandeira && flags.length > 0) {
+      setNewBandeira(flags[0]);
+    }
+  }, [flags, newBandeira]);
 
   const handleAdd = (e: React.FormEvent) => {
     e.preventDefault();

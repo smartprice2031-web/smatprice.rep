@@ -257,7 +257,7 @@ const ProductManager = () => {
                   <Edit2 className="w-4 h-4" />
                 </button>
                 <button 
-                  onClick={() => product.id && handleDelete(product.id)}
+                  onClick={() => product.id !== undefined && handleDelete(product.id)}
                   className="p-2 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-lg text-red-600"
                 >
                   <Trash2 className="w-4 h-4" />

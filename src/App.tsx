@@ -12,7 +12,8 @@ import {
   Sun, Moon, Printer, FileDown, 
   LayoutDashboard, Package, Settings as SettingsIcon,
   ShoppingBag, Search, Database, X, ListPlus, LayoutGrid,
-  ArrowLeft, LogOut, Users, MessageCircle, AlertTriangle
+  ArrowLeft, LogOut, Users, MessageCircle, AlertTriangle,
+  Github, RefreshCw
 } from 'lucide-react';
 import { jsPDF } from 'jspdf';
 import { clsx, type ClassValue } from 'clsx';
@@ -33,7 +34,8 @@ export default function App() {
     currentView, setView, addToQueue, printQueue, isPrinting,
     isAuthenticated, logout, userRole, isUserModalOpen, setUserModalOpen,
     isSupportChatOpen, setSupportChatOpen, unreadSupportCount,
-    activeLayoutIndex, layouts, setActiveLayout
+    activeLayoutIndex, layouts, setActiveLayout,
+    isSyncingGithub, syncProgress, syncWithGithub
   } = useStore();
   const [activeTab, setActiveTab] = useState<'select' | 'adjustments'>('select');
 
@@ -229,6 +231,21 @@ export default function App() {
 
             {userRole === 'admin' && (
               <button 
+                onClick={syncWithGithub}
+                disabled={isSyncingGithub}
+                className={cn(
+                  "flex items-center gap-2 px-4 py-2 rounded-xl transition-all text-xs font-black uppercase tracking-tighter shadow-lg hover:scale-105 active:scale-95",
+                  isSyncingGithub ? "bg-zinc-200 text-zinc-500" : "bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900"
+                )}
+                title="Sincronizar com GitHub (Subir modificações para todos)"
+              >
+                <Github className={cn("w-4 h-4", isSyncingGithub && "animate-spin")} />
+                {isSyncingGithub ? `Sincronizando ${syncProgress}%` : "Sincronizar GitHub"}
+              </button>
+            )}
+
+            {userRole === 'admin' && (
+              <button 
                 onClick={() => setProductModalOpen(true)}
                 className="flex items-center gap-2 px-4 py-2 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 rounded-xl transition-all text-xs font-black uppercase tracking-tighter shadow-lg hover:scale-105 active:scale-95"
               >
@@ -258,7 +275,7 @@ export default function App() {
               title={userRole === 'admin' ? "Central de Suporte" : "Enviar mensagem para o suporte (adicionar produto que está faltando)"}
             >
               <MessageCircle className="w-4 h-4" />
-              {userRole === 'admin' ? "Suporte" : "Suporte"}
+              {userRole === 'admin' ? "Central de Suporte" : "Suporte"}
               {unreadSupportCount > 0 && (
                 <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center animate-bounce border-2 border-white dark:border-zinc-900">
                   {unreadSupportCount}
@@ -429,6 +446,31 @@ export default function App() {
         </div>
       )}
       <SupportChat />
+      
+      {/* GitHub Sync Progress Bar (Floating) */}
+      {isSyncingGithub && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[9999] w-full max-w-md px-4 animate-in fade-in slide-in-from-bottom-4 duration-300">
+          <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-4 shadow-2xl">
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-2">
+                <Github className="w-4 h-4 animate-spin" />
+                <span className="text-xs font-black uppercase tracking-widest">Sincronizando com GitHub...</span>
+              </div>
+              <span className="text-xs font-bold text-blue-600">{syncProgress}%</span>
+            </div>
+            <div className="h-2 bg-zinc-100 dark:bg-zinc-800 rounded-full overflow-hidden">
+              <div 
+                className="h-full bg-blue-600 transition-all duration-300 ease-out"
+                style={{ width: `${syncProgress}%` }}
+              />
+            </div>
+            <p className="text-[10px] text-zinc-500 mt-2 text-center font-medium">
+              Subindo modificações e atualizando para todos os usuários.
+            </p>
+          </div>
+        </div>
+      )}
+
       <Toaster position="top-right" richColors closeButton />
     </div>
   );
