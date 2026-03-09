@@ -1,0 +1,107 @@
+import { useEffect, useRef, useState } from 'react';
+import { io, Socket } from 'socket.io-client';
+import { useStore } from '../store';
+import { toast } from 'sonner';
+
+export interface Message {
+  id: string;
+  from: {
+    username: string;
+    cnpj: string;
+    role: 'user' | 'admin';
+  };
+  to?: {
+    cnpj: string;
+  };
+  text: string;
+  timestamp: string;
+}
+
+export function useSupportSocket() {
+  const { 
+    currentUser, userRole, 
+    setUnreadSupportCount, setUnreadPerUser,
+    messages, setMessages 
+  } = useStore();
+  const socketRef = useRef<Socket | null>(null);
+
+  useEffect(() => {
+    if (!currentUser) return;
+
+    const socket = io(window.location.origin);
+    socketRef.current = socket;
+
+    socket.on('connect', () => {
+      socket.emit('user:join', { ...currentUser, role: userRole });
+    });
+
+    socket.on('message:history', (history: Message[]) => {
+      setMessages(history);
+    });
+
+    socket.on('message:receive', (message: Message) => {
+      setMessages(prev => [...prev, message]);
+      
+      // Access latest state without re-running the effect
+      const state = useStore.getState();
+      const isFromMe = message.from.cnpj === currentUser.cnpj && message.from.username === currentUser.username;
+      
+      if (!isFromMe) {
+        // Notification logic
+        let shouldNotify = false;
+        
+        if (!state.isSupportChatOpen) {
+          shouldNotify = true;
+        } else if (userRole === 'admin') {
+          // If admin has chat open, but the message is from a user NOT currently selected
+          if (message.from.cnpj !== state.selectedUserCnpj) {
+            shouldNotify = true;
+            // Update per-user unread count for admin
+            if (message.from.cnpj) {
+              setUnreadPerUser(message.from.cnpj, prev => prev + 1);
+            }
+          }
+        }
+
+        if (shouldNotify) {
+          // Play notification sound
+          const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3');
+          audio.play().catch(e => console.log('Audio play blocked'));
+
+          setUnreadSupportCount(prev => prev + 1);
+          toast.info(`Nova mensagem de ${message.from.role === 'admin' ? 'Suporte' : message.from.username}`, {
+            description: message.text.length > 50 ? message.text.substring(0, 50) + '...' : message.text,
+            action: {
+              label: 'Ver',
+              onClick: () => {
+                useStore.getState().setSupportChatOpen(true);
+                if (userRole === 'admin' && message.from.cnpj) {
+                  useStore.getState().setSelectedUserCnpj(message.from.cnpj);
+                  useStore.getState().setUnreadPerUser(message.from.cnpj, 0);
+                }
+              }
+            }
+          });
+        }
+      }
+    });
+
+    return () => {
+      socket.disconnect();
+    };
+  }, [currentUser, userRole, setMessages, setUnreadPerUser, setUnreadSupportCount]); 
+
+  const sendMessage = (text: string, toCnpj?: string) => {
+    if (!socketRef.current || !currentUser) return;
+
+    const messageData = {
+      from: { ...currentUser, role: userRole },
+      text,
+      to: userRole === 'admin' ? (toCnpj ? { cnpj: toCnpj } : undefined) : undefined
+    };
+
+    socketRef.current.emit('message:send', messageData);
+  };
+
+  return { messages, setMessages, sendMessage };
+}

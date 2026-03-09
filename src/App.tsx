@@ -1,0 +1,435 @@
+import React, { useState, useEffect } from 'react';
+import { useStore } from './store';
+import CanvasPreview from './components/CanvasPreview';
+import ProductManager from './components/ProductManager';
+import ProductSelector from './components/ProductSelector';
+import Adjustments from './components/Adjustments';
+import PrintQueue from './components/PrintQueue';
+import UserManagement from './components/UserManagement';
+import SupportChat from './components/SupportChat';
+import Login from './components/Login';
+import { 
+  Sun, Moon, Printer, FileDown, 
+  LayoutDashboard, Package, Settings as SettingsIcon,
+  ShoppingBag, Search, Database, X, ListPlus, LayoutGrid,
+  ArrowLeft, LogOut, Users, MessageCircle, AlertTriangle
+} from 'lucide-react';
+import { jsPDF } from 'jspdf';
+import { clsx, type ClassValue } from 'clsx';
+import { twMerge } from 'tailwind-merge';
+import { Toaster } from 'sonner';
+import { useSupportSocket } from './hooks/useSupportSocket';
+import { isSupabaseConfigured } from './lib/supabase';
+
+function cn(...inputs: ClassValue[]) {
+  return twMerge(clsx(inputs));
+}
+
+export default function App() {
+  const { 
+    theme, toggleTheme, textElements1, 
+    isProductModalOpen, setProductModalOpen, 
+    loadLayout, setPrinting, setSelectedId,
+    currentView, setView, addToQueue, printQueue, isPrinting,
+    isAuthenticated, logout, userRole, isUserModalOpen, setUserModalOpen,
+    isSupportChatOpen, setSupportChatOpen, unreadSupportCount,
+    activeLayoutIndex, layouts, setActiveLayout
+  } = useStore();
+  const [activeTab, setActiveTab] = useState<'select' | 'adjustments'>('select');
+
+  // Initialize support socket globally for background notifications
+  useSupportSocket();
+
+  useEffect(() => {
+    if (userRole !== 'admin' && activeTab === 'adjustments') {
+      setActiveTab('select');
+    }
+  }, [userRole, activeTab]);
+
+  useEffect(() => {
+    loadLayout();
+
+    const handleBeforePrint = () => setPrinting(true);
+    const handleAfterPrint = () => setPrinting(false);
+
+    window.addEventListener('beforeprint', handleBeforePrint);
+    window.addEventListener('afterprint', handleAfterPrint);
+
+    return () => {
+      window.removeEventListener('beforeprint', handleBeforePrint);
+      window.removeEventListener('afterprint', handleAfterPrint);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (theme === 'dark') {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }, [theme]);
+
+  useEffect(() => {
+    if (isPrinting) {
+      document.body.classList.add('is-printing');
+    } else {
+      document.body.classList.remove('is-printing');
+    }
+  }, [isPrinting]);
+
+  const handlePrint = () => {
+    setSelectedId(null);
+    setPrinting(true);
+  };
+
+  const confirmPrint = () => {
+    window.print();
+    setTimeout(() => setPrinting(false), 500);
+  };
+
+  const handleDownloadPDF = async () => {
+    const canvasData = (window as any).getCanvasData?.();
+    if (!canvasData) return;
+
+    const pdf = new jsPDF({
+      orientation: 'portrait',
+      unit: 'mm',
+      format: 'a4'
+    });
+
+    const imgProps = pdf.getImageProperties(canvasData);
+    const pdfWidth = pdf.internal.pageSize.getWidth();
+    const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+
+    pdf.addImage(canvasData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+    
+    const fileName = `smartprice_placa_${textElements1.name.text.toLowerCase().replace(/\s+/g, '-')}.pdf`;
+    pdf.save(fileName);
+  };
+
+  const handleAddToQueue = () => {
+    setSelectedId(null);
+    // Small timeout to allow Konva to re-render without the transformer
+    setTimeout(() => {
+      const canvasData = (window as any).getCanvasData?.();
+      if (!canvasData) return;
+      addToQueue(canvasData);
+    }, 50);
+  };
+
+  if (!isAuthenticated) {
+    return <Login />;
+  }
+
+  if (currentView === 'queue') {
+    return <PrintQueue />;
+  }
+
+  return (
+    <div className={cn(
+      "min-h-screen bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 flex flex-col",
+      isPrinting && "bg-white p-0 m-0 overflow-visible"
+    )}>
+      {isPrinting && (
+        <div className="fixed inset-0 bg-zinc-100 dark:bg-zinc-950 z-[9999999] overflow-y-auto no-scrollbar no-print">
+          <div className="sticky top-0 z-[10000] bg-white/80 dark:bg-zinc-900/80 backdrop-blur-md border-b border-zinc-200 dark:border-zinc-800 p-4 flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <button 
+                onClick={() => setPrinting(false)}
+                className="p-2 hover:bg-zinc-200 dark:hover:bg-zinc-800 rounded-full transition-colors"
+              >
+                <ArrowLeft className="w-5 h-5" />
+              </button>
+              <h2 className="text-xl font-black tracking-tighter uppercase">Pré-visualização de Impressão</h2>
+            </div>
+            <div className="flex items-center gap-3">
+              <span className="text-xs font-bold text-zinc-500 uppercase tracking-widest">Plaquinha Individual A4</span>
+              <button 
+                onClick={confirmPrint}
+                className="flex items-center gap-2 px-6 py-2 bg-blue-600 text-white rounded-xl font-black uppercase tracking-tighter shadow-lg hover:bg-blue-700 transition-all"
+              >
+                <Printer className="w-4 h-4" />
+                Confirmar Impressão
+              </button>
+            </div>
+          </div>
+          <div className="flex flex-col items-center py-12 px-4">
+            <div className="bg-white shadow-[0_0_50px_rgba(0,0,0,0.1)] w-[210mm] h-[297mm] flex items-center justify-center overflow-hidden border border-zinc-200">
+              <CanvasPreview />
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Supabase Config Warning */}
+      {!isSupabaseConfigured && !isPrinting && (
+        <div className="bg-amber-500 text-white px-4 py-2 flex items-center justify-center gap-3 text-xs font-bold uppercase tracking-wider no-print">
+          <AlertTriangle className="w-4 h-4 animate-pulse" />
+          <span>Supabase não configurado! Adicione VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY nas variáveis de ambiente do seu domínio.</span>
+          <button 
+            onClick={() => window.open('https://app.supabase.com', '_blank')}
+            className="ml-4 px-3 py-1 bg-white text-amber-600 rounded-md hover:bg-amber-50 transition-colors"
+          >
+            Configurar Agora
+          </button>
+        </div>
+      )}
+
+      {/* Header */}
+      {!isPrinting && (
+        <header className="h-16 border-b border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 flex items-center justify-between px-6 sticky top-0 z-40 no-print">
+          <div className="flex items-center gap-2">
+            <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-blue-500/20">
+              <ShoppingBag className="w-6 h-6" />
+            </div>
+            <h1 className="text-xl font-black tracking-tighter">
+              SMART<span className="text-blue-600">PRICE</span>
+            </h1>
+          </div>
+
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2 bg-zinc-100 dark:bg-zinc-800 p-1 rounded-lg">
+              <button 
+                type="button"
+                onClick={handlePrint}
+                className="flex items-center gap-2 px-3 py-1.5 hover:bg-white dark:hover:bg-zinc-700 rounded-md transition-all text-sm font-bold"
+              >
+                <Printer className="w-4 h-4" />
+                Imprimir
+              </button>
+              <button 
+                onClick={handleDownloadPDF}
+                className="flex items-center gap-2 px-3 py-1.5 bg-blue-600 text-white rounded-md shadow-md shadow-blue-500/20 hover:bg-blue-700 transition-all text-sm font-bold"
+              >
+                <FileDown className="w-4 h-4" />
+                PDF
+              </button>
+              <button 
+                onClick={handleAddToQueue}
+                className="flex items-center gap-2 px-3 py-1.5 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 rounded-md shadow-md hover:scale-105 transition-all text-sm font-bold"
+                title="Adicionar à Fila Silenciosamente"
+              >
+                <ListPlus className="w-4 h-4" />
+                Fila
+              </button>
+              <button 
+                onClick={() => setView('queue')}
+                className="flex items-center gap-2 px-3 py-1.5 bg-zinc-200 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 rounded-md shadow-md hover:bg-zinc-300 dark:hover:bg-zinc-700 transition-all text-sm font-bold"
+              >
+                <LayoutGrid className="w-4 h-4" />
+                Ir para a Fila
+                {printQueue.length > 0 && (
+                  <span className="bg-red-500 text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center">
+                    {printQueue.length}
+                  </span>
+                )}
+              </button>
+            </div>
+
+            <div className="h-6 w-px bg-zinc-200 dark:border-zinc-800 mx-2" />
+
+            {userRole === 'admin' && (
+              <button 
+                onClick={() => setProductModalOpen(true)}
+                className="flex items-center gap-2 px-4 py-2 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 rounded-xl transition-all text-xs font-black uppercase tracking-tighter shadow-lg hover:scale-105 active:scale-95"
+              >
+                <Database className="w-4 h-4" />
+                Gerenciador de Produtos
+              </button>
+            )}
+
+            {userRole === 'admin' && (
+              <button 
+                onClick={() => setUserModalOpen(true)}
+                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl transition-all text-xs font-black uppercase tracking-tighter shadow-lg hover:bg-blue-700 hover:scale-105 active:scale-95"
+              >
+                <Users className="w-4 h-4" />
+                Gerenciar Usuários
+              </button>
+            )}
+
+            <button 
+              onClick={() => setSupportChatOpen(true)}
+              className={cn(
+                "relative flex items-center gap-2 px-4 py-2 rounded-xl transition-all text-xs font-black uppercase tracking-tighter shadow-lg hover:scale-105 active:scale-95",
+                userRole === 'admin' 
+                  ? "bg-zinc-800 dark:bg-zinc-100 text-white dark:text-zinc-900" 
+                  : "bg-blue-600 text-white"
+              )}
+              title={userRole === 'admin' ? "Central de Suporte" : "Enviar mensagem para o suporte (adicionar produto que está faltando)"}
+            >
+              <MessageCircle className="w-4 h-4" />
+              {userRole === 'admin' ? "Suporte" : "Suporte"}
+              {unreadSupportCount > 0 && (
+                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center animate-bounce border-2 border-white dark:border-zinc-900">
+                  {unreadSupportCount}
+                </span>
+              )}
+            </button>
+
+            <button 
+              onClick={() => {
+                alert('O app agora está configurado para usar o Supabase (PostgreSQL na nuvem). Certifique-se de criar as tabelas "products" e "settings" no seu painel do Supabase.');
+              }}
+              className="p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-full transition-colors text-zinc-400"
+              title="Info sobre Supabase"
+            >
+              <Database className="w-5 h-5" />
+            </button>
+
+            <button 
+              onClick={toggleTheme}
+              className="p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-full transition-colors"
+            >
+              {theme === 'light' ? <Moon className="w-5 h-5" /> : <Sun className="w-5 h-5" />}
+            </button>
+
+            <div className="h-6 w-px bg-zinc-200 dark:border-zinc-800 mx-2" />
+
+            <button 
+              onClick={logout}
+              className="flex items-center gap-2 px-3 py-1.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/10 rounded-lg transition-all text-xs font-black uppercase tracking-tighter"
+              title="Sair do Sistema"
+            >
+              <LogOut className="w-4 h-4" />
+              Sair
+            </button>
+          </div>
+        </header>
+      )}
+
+      {/* Main Content */}
+      <main className={cn("flex-grow flex overflow-hidden", isPrinting && "p-0 m-0 block overflow-visible")}>
+        {/* Left: Preview */}
+        <div className={cn(
+          "flex-grow relative border-r border-zinc-200 dark:border-zinc-800 print-area overflow-hidden",
+          isPrinting && "border-0 p-0 m-0 w-full h-full block overflow-visible"
+        )}>
+          <CanvasPreview />
+        </div>
+
+        {/* Right: Editor Panel */}
+        {!isPrinting && (
+          <aside className="w-[400px] flex-shrink-0 bg-white dark:bg-zinc-900 flex flex-col no-print">
+            {/* Tabs */}
+            <div className="flex border-b border-zinc-200 dark:border-zinc-800">
+              <button 
+                onClick={() => setActiveTab('select')}
+                className={cn(
+                  "flex-1 py-4 text-sm font-bold flex items-center justify-center gap-2 border-b-2 transition-all",
+                  activeTab === 'select' 
+                    ? "border-blue-600 text-blue-600 bg-blue-50/50 dark:bg-blue-900/10" 
+                    : "border-transparent text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300"
+                )}
+              >
+                <Search className="w-4 h-4" />
+                SELECIONAR
+              </button>
+              {userRole === 'admin' && (
+                <button 
+                  onClick={() => setActiveTab('adjustments')}
+                  className={cn(
+                    "flex-1 py-4 text-sm font-bold flex items-center justify-center gap-2 border-b-2 transition-all",
+                    activeTab === 'adjustments' 
+                      ? "border-blue-600 text-blue-600 bg-blue-50/50 dark:bg-blue-900/10" 
+                      : "border-transparent text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300"
+                  )}
+                >
+                  <SettingsIcon className="w-4 h-4" />
+                  AJUSTES
+                </button>
+              )}
+            </div>
+
+            {/* Layout Switcher Buttons */}
+            <div className="p-3 border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-800/20">
+              <div className="grid grid-cols-4 gap-1.5">
+                {layouts.map((layout, index) => (
+                  <button
+                    key={index}
+                    onClick={() => setActiveLayout(index)}
+                    className={cn(
+                      "py-2 px-0.5 text-[8px] font-black uppercase tracking-tighter rounded-lg border transition-all truncate",
+                      activeLayoutIndex === index
+                        ? "bg-blue-600 border-blue-600 text-white shadow-md shadow-blue-500/20"
+                        : "bg-white dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 text-zinc-500 hover:border-zinc-400"
+                    )}
+                    title={layout.name}
+                  >
+                    {layout.name.replace('Modelo ', '')}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Tab Content */}
+            <div className="flex-grow overflow-y-auto">
+              {activeTab === 'select' ? <ProductSelector /> : <Adjustments />}
+            </div>
+
+            {/* Footer Info */}
+            <div className="p-4 border-t border-zinc-200 dark:border-zinc-800 text-[10px] text-zinc-400 text-center uppercase tracking-widest font-bold">
+              SmartPrice v1.1 • Pronto para Impressão A4
+            </div>
+          </aside>
+        )}
+      </main>
+
+      {/* Product Management Modal */}
+      {isProductModalOpen && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 no-print">
+          <div className="bg-white dark:bg-zinc-900 w-full max-w-4xl max-h-[90vh] rounded-3xl shadow-2xl overflow-hidden flex flex-col">
+            <div className="p-6 border-b border-zinc-200 dark:border-zinc-800 flex justify-between items-center bg-zinc-50 dark:bg-zinc-800/50">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-blue-600 rounded-lg text-white">
+                  <Database className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold">Gerenciar Estoque</h3>
+                  <p className="text-xs text-zinc-500">Cadastre e edite seus produtos para as plaquinhas</p>
+                </div>
+              </div>
+              <button 
+                onClick={() => setProductModalOpen(false)} 
+                className="p-2 hover:bg-zinc-200 dark:hover:bg-zinc-700 rounded-full transition-colors"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+            <div className="flex-grow overflow-y-auto">
+              <ProductManager />
+            </div>
+          </div>
+        </div>
+      )}
+      {/* User Management Modal */}
+      {isUserModalOpen && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 no-print">
+          <div className="bg-white dark:bg-zinc-900 w-full max-w-4xl max-h-[90vh] rounded-3xl shadow-2xl overflow-hidden flex flex-col">
+            <div className="p-6 border-b border-zinc-200 dark:border-zinc-800 flex justify-between items-center bg-zinc-50 dark:bg-zinc-800/50">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-blue-600 rounded-lg text-white">
+                  <Users className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold">Gerenciar Usuários</h3>
+                  <p className="text-xs text-zinc-500">Controle quais CNPJs podem acessar o sistema</p>
+                </div>
+              </div>
+              <button 
+                onClick={() => setUserModalOpen(false)} 
+                className="p-2 hover:bg-zinc-200 dark:hover:bg-zinc-700 rounded-full transition-colors"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+            <div className="flex-grow overflow-y-auto">
+              <UserManagement />
+            </div>
+          </div>
+        </div>
+      )}
+      <SupportChat />
+      <Toaster position="top-right" richColors closeButton />
+    </div>
+  );
+}
