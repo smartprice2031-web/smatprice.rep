@@ -44,6 +44,7 @@ export interface Layout {
   };
   productImage1: ImageSettings;
   productImage2: ImageSettings;
+  productImage3: ImageSettings;
   textElements1: {
     name: TextSettings;
     description: TextSettings;
@@ -51,6 +52,12 @@ export interface Layout {
     price: TextSettings;
   };
   textElements2: {
+    name: TextSettings;
+    description: TextSettings;
+    subtitle: TextSettings;
+    price: TextSettings;
+  };
+  textElements3: {
     name: TextSettings;
     description: TextSettings;
     subtitle: TextSettings;
@@ -71,6 +78,7 @@ interface AppState {
   
   productImage1: ImageSettings;
   productImage2: ImageSettings;
+  productImage3: ImageSettings;
   
   textElements1: {
     name: TextSettings;
@@ -84,14 +92,20 @@ interface AppState {
     subtitle: TextSettings;
     price: TextSettings;
   };
+  textElements3: {
+    name: TextSettings;
+    description: TextSettings;
+    subtitle: TextSettings;
+    price: TextSettings;
+  };
 
   activeLayoutIndex: number;
   layouts: Layout[];
   setActiveLayout: (index: number) => void;
   setLayoutName: (index: number, name: string) => void;
 
-  setElement: (slot: 1 | 2, key: keyof AppState['textElements1'], settings: Partial<TextSettings>) => void;
-  setProductImage: (slot: 1 | 2, settings: Partial<ImageSettings>) => void;
+  setElement: (slot: 1 | 2 | 3, key: keyof AppState['textElements1'], settings: Partial<TextSettings>) => void;
+  setProductImage: (slot: 1 | 2 | 3, settings: Partial<ImageSettings>) => void;
   setBackground: (settings: Partial<AppState['background']>) => void;
   
   // Products
@@ -101,7 +115,7 @@ interface AppState {
   isUserModalOpen: boolean;
   setUserModalOpen: (open: boolean) => void;
   fetchProducts: () => Promise<void>;
-  selectProduct: (slot: 1 | 2, product: Product) => void;
+  selectProduct: (slot: 1 | 2 | 3, product: Product) => void;
   
   // Persistence
   saveLayout: () => Promise<void>;
@@ -150,11 +164,6 @@ interface AppState {
   messages: any[];
   setMessages: (messages: any[] | ((prev: any[]) => any[])) => void;
   
-  // GitHub Sync
-  isSyncingGithub: boolean;
-  syncProgress: number;
-  syncWithGithub: () => Promise<void>;
-
   login: (role: 'user' | 'admin', user: { username: string; cnpj: string; bandeira: string }) => void;
   logout: () => void;
 }
@@ -172,48 +181,77 @@ const DEFAULT_TEXT = {
   visible: true,
 };
 
-export const createDefaultLayout = (name: string): Layout => ({
-  name,
-  background: {
-    url: null,
-    mode: 'cover',
-    locked: false,
-  },
-  productImage1: {
-    url: null,
-    x: 50,
-    y: 150,
-    width: 250,
-    height: 250,
-    rotation: 0,
-    opacity: 1,
-    visible: true,
-    locked: false,
-  },
-  productImage2: {
-    url: null,
-    x: 50,
-    y: 650,
-    width: 250,
-    height: 250,
-    rotation: 0,
-    opacity: 1,
-    visible: true,
-    locked: false,
-  },
-  textElements1: {
-    name: { ...DEFAULT_TEXT, text: 'PRODUTO 1', y: 100, fontSize: 50 },
-    description: { ...DEFAULT_TEXT, text: 'Descrição do produto 1.', y: 180, fontSize: 25, isBold: false },
-    subtitle: { ...DEFAULT_TEXT, text: 'OFERTA ESPECIAL', y: 140, fontSize: 20 },
-    price: { ...DEFAULT_TEXT, text: 'R$ 0,00', y: 400, fontSize: 100, color: '#e11d48' },
-  },
-  textElements2: {
-    name: { ...DEFAULT_TEXT, text: 'PRODUTO 2', y: 600, fontSize: 50 },
-    description: { ...DEFAULT_TEXT, text: 'Descrição do produto 2.', y: 680, fontSize: 25, isBold: false },
-    subtitle: { ...DEFAULT_TEXT, text: 'OFERTA ESPECIAL', y: 640, fontSize: 20 },
-    price: { ...DEFAULT_TEXT, text: 'R$ 0,00', y: 900, fontSize: 100, color: '#e11d48' },
-  },
-});
+export const THREE_PRODUCT_LAYOUTS = [
+  'QUARTA FRALDA PL',
+  'SABADÃO PL',
+  'QUI KIDS PL',
+  'DERMO PL',
+  'MARONBA'
+];
+
+export const createDefaultLayout = (name: string): Layout => {
+  const showThird = THREE_PRODUCT_LAYOUTS.includes(name.toUpperCase());
+
+  return {
+    name,
+    background: {
+      url: null,
+      mode: 'cover',
+      locked: false,
+    },
+    productImage1: {
+      url: null,
+      x: 50,
+      y: 150,
+      width: 250,
+      height: 250,
+      rotation: 0,
+      opacity: 1,
+      visible: true,
+      locked: false,
+    },
+    productImage2: {
+      url: null,
+      x: 50,
+      y: 650,
+      width: 250,
+      height: 250,
+      rotation: 0,
+      opacity: 1,
+      visible: true,
+      locked: false,
+    },
+    productImage3: {
+      url: null,
+      x: 50,
+      y: 400,
+      width: 250,
+      height: 250,
+      rotation: 0,
+      opacity: 1,
+      visible: showThird,
+      locked: false,
+    },
+    textElements1: {
+      name: { ...DEFAULT_TEXT, text: 'PRODUTO 1', y: 100, fontSize: 50 },
+      description: { ...DEFAULT_TEXT, text: 'Descrição do produto 1.', y: 180, fontSize: 25, isBold: false },
+      subtitle: { ...DEFAULT_TEXT, text: 'OFERTA ESPECIAL', y: 140, fontSize: 20 },
+      price: { ...DEFAULT_TEXT, text: 'R$ 0,00', y: 400, fontSize: 100, color: '#e11d48' },
+    },
+    textElements2: {
+      name: { ...DEFAULT_TEXT, text: 'PRODUTO 2', y: 600, fontSize: 50 },
+      description: { ...DEFAULT_TEXT, text: 'Descrição do produto 2.', y: 680, fontSize: 25, isBold: false },
+      subtitle: { ...DEFAULT_TEXT, text: 'OFERTA ESPECIAL', y: 640, fontSize: 20 },
+      price: { ...DEFAULT_TEXT, text: 'R$ 0,00', y: 900, fontSize: 100, color: '#e11d48' },
+    },
+    textElements3: {
+      name: { ...DEFAULT_TEXT, text: 'PRODUTO 3', y: 350, fontSize: 50, visible: showThird },
+      description: { ...DEFAULT_TEXT, text: 'Descrição do produto 3.', y: 430, fontSize: 25, isBold: false, visible: showThird },
+      subtitle: { ...DEFAULT_TEXT, text: 'OFERTA ESPECIAL', y: 390, fontSize: 20, visible: showThird },
+      price: { ...DEFAULT_TEXT, text: 'R$ 0,00', y: 550, fontSize: 100, color: '#e11d48', visible: showThird },
+    },
+  };
+};
 
 export const useStore = create<AppState>()(
   persist(
@@ -264,6 +302,17 @@ export const useStore = create<AppState>()(
         visible: true,
         locked: false,
       },
+      productImage3: {
+        url: null,
+        x: 50,
+        y: 400,
+        width: 250,
+        height: 250,
+        rotation: 0,
+        opacity: 1,
+        visible: false,
+        locked: false,
+      },
 
       textElements1: {
         name: { ...DEFAULT_TEXT, text: 'PRODUTO 1', y: 100, fontSize: 50 },
@@ -277,6 +326,12 @@ export const useStore = create<AppState>()(
         subtitle: { ...DEFAULT_TEXT, text: 'OFERTA ESPECIAL', y: 640, fontSize: 20 },
         price: { ...DEFAULT_TEXT, text: 'R$ 0,00', y: 900, fontSize: 100, color: '#e11d48' },
       },
+      textElements3: {
+        name: { ...DEFAULT_TEXT, text: 'PRODUTO 3', y: 350, fontSize: 50, visible: false },
+        description: { ...DEFAULT_TEXT, text: 'Descrição do produto 3.', y: 430, fontSize: 25, isBold: false, visible: false },
+        subtitle: { ...DEFAULT_TEXT, text: 'OFERTA ESPECIAL', y: 390, fontSize: 20, visible: false },
+        price: { ...DEFAULT_TEXT, text: 'R$ 0,00', y: 550, fontSize: 100, color: '#e11d48', visible: false },
+      },
 
       setActiveLayout: (index) => {
         const state = get();
@@ -285,22 +340,28 @@ export const useStore = create<AppState>()(
           background: state.background,
           productImage1: state.productImage1,
           productImage2: state.productImage2,
+          productImage3: state.productImage3,
           textElements1: state.textElements1,
           textElements2: state.textElements2,
+          textElements3: state.textElements3,
         };
 
         const newLayouts = [...state.layouts];
         newLayouts[state.activeLayoutIndex] = currentLayout;
 
         const nextLayout = newLayouts[index];
+        const defaultNext = createDefaultLayout(nextLayout.name);
+        
         set({
           activeLayoutIndex: index,
           layouts: newLayouts,
-          background: nextLayout.background,
-          productImage1: nextLayout.productImage1,
-          productImage2: nextLayout.productImage2,
-          textElements1: nextLayout.textElements1,
-          textElements2: nextLayout.textElements2,
+          background: nextLayout.background || defaultNext.background,
+          productImage1: nextLayout.productImage1 || defaultNext.productImage1,
+          productImage2: nextLayout.productImage2 || defaultNext.productImage2,
+          productImage3: nextLayout.productImage3 || defaultNext.productImage3,
+          textElements1: nextLayout.textElements1 || defaultNext.textElements1,
+          textElements2: nextLayout.textElements2 || defaultNext.textElements2,
+          textElements3: nextLayout.textElements3 || defaultNext.textElements3,
         });
         get().saveLayout();
       },
@@ -308,14 +369,38 @@ export const useStore = create<AppState>()(
       setLayoutName: (index, name) => {
         set((state) => {
           const newLayouts = [...state.layouts];
-          newLayouts[index] = { ...newLayouts[index], name };
+          const showThird = THREE_PRODUCT_LAYOUTS.includes(name.toUpperCase());
+
+          const updatedLayout = { 
+            ...newLayouts[index], 
+            name,
+            productImage3: { ...newLayouts[index].productImage3, visible: showThird },
+            textElements3: {
+              name: { ...newLayouts[index].textElements3.name, visible: showThird },
+              description: { ...newLayouts[index].textElements3.description, visible: showThird },
+              subtitle: { ...newLayouts[index].textElements3.subtitle, visible: showThird },
+              price: { ...newLayouts[index].textElements3.price, visible: showThird },
+            }
+          };
+          
+          newLayouts[index] = updatedLayout;
+          
+          // If this is the active layout, also update the current state
+          if (index === state.activeLayoutIndex) {
+            return { 
+              layouts: newLayouts,
+              productImage3: updatedLayout.productImage3,
+              textElements3: updatedLayout.textElements3,
+            };
+          }
+          
           return { layouts: newLayouts };
         });
         get().saveLayoutDebounced();
       },
 
       setElement: (slot, key, settings) => {
-        const elementKey = slot === 1 ? 'textElements1' : 'textElements2';
+        const elementKey = slot === 1 ? 'textElements1' : slot === 2 ? 'textElements2' : 'textElements3';
         set((state) => ({
           [elementKey]: {
             ...state[elementKey],
@@ -326,7 +411,7 @@ export const useStore = create<AppState>()(
       },
 
       setProductImage: (slot, settings) => {
-        const imageKey = slot === 1 ? 'productImage1' : 'productImage2';
+        const imageKey = slot === 1 ? 'productImage1' : slot === 2 ? 'productImage2' : 'productImage3';
         set((state) => ({
           [imageKey]: { ...state[imageKey], ...settings }
         } as any));
@@ -391,8 +476,8 @@ export const useStore = create<AppState>()(
       },
 
       selectProduct: (slot, product) => {
-        const elementKey = slot === 1 ? 'textElements1' : 'textElements2';
-        const imageKey = slot === 1 ? 'productImage1' : 'productImage2';
+        const elementKey = slot === 1 ? 'textElements1' : slot === 2 ? 'textElements2' : 'textElements3';
+        const imageKey = slot === 1 ? 'productImage1' : slot === 2 ? 'productImage2' : 'productImage3';
         set((state) => ({
           [elementKey]: {
             ...state[elementKey],
@@ -419,8 +504,10 @@ export const useStore = create<AppState>()(
           background: state.background,
           productImage1: state.productImage1,
           productImage2: state.productImage2,
+          productImage3: state.productImage3,
           textElements1: state.textElements1,
           textElements2: state.textElements2,
+          textElements3: state.textElements3,
           activeLayoutIndex: state.activeLayoutIndex,
           layouts: state.layouts,
           updated_at: new Date().toISOString()
@@ -455,7 +542,30 @@ export const useStore = create<AppState>()(
             const currentState = get();
             
             // Ensure we have at least 11 layouts if the user wants them
-            let loadedLayouts = layout.layouts || currentState.layouts;
+            let loadedLayouts = (layout.layouts || currentState.layouts).map((l: any, idx: number) => {
+              const defaultL = createDefaultLayout(l.name || `Modelo ${idx + 1}`);
+              
+              // Re-evaluate visibility based on name to enforce the 2 vs 3 product rule
+              const showThird = THREE_PRODUCT_LAYOUTS.includes((l.name || '').toUpperCase());
+
+              const merged = {
+                ...defaultL,
+                ...l,
+                textElements1: l.textElements1 ? { ...defaultL.textElements1, ...l.textElements1 } : defaultL.textElements1,
+                textElements2: l.textElements2 ? { ...defaultL.textElements2, ...l.textElements2 } : defaultL.textElements2,
+                textElements3: l.textElements3 ? { ...defaultL.textElements3, ...l.textElements3 } : defaultL.textElements3,
+              };
+
+              // Enforce visibility
+              merged.productImage3.visible = showThird;
+              merged.textElements3.name.visible = showThird;
+              merged.textElements3.description.visible = showThird;
+              merged.textElements3.subtitle.visible = showThird;
+              merged.textElements3.price.visible = showThird;
+
+              return merged;
+            });
+
             if (loadedLayouts.length < 11) {
               const defaults = [
                 createDefaultLayout('Modelo 1'),
@@ -482,8 +592,10 @@ export const useStore = create<AppState>()(
               background: layout.background || currentState.background,
               productImage1: layout.productImage1 || currentState.productImage1,
               productImage2: layout.productImage2 || currentState.productImage2,
+              productImage3: layout.productImage3 || currentState.productImage3,
               textElements1: layout.textElements1 || currentState.textElements1,
               textElements2: layout.textElements2 || currentState.textElements2,
+              textElements3: layout.textElements3 || currentState.textElements3,
               activeLayoutIndex: layout.activeLayoutIndex !== undefined ? layout.activeLayoutIndex : currentState.activeLayoutIndex,
               layouts: loadedLayouts,
             } as any);
@@ -603,22 +715,6 @@ export const useStore = create<AppState>()(
         messages: typeof messages === 'function' ? messages(state.messages) : messages 
       })),
 
-      isSyncingGithub: false,
-      syncProgress: 0,
-      syncWithGithub: async () => {
-        set({ isSyncingGithub: true, syncProgress: 0 });
-        
-        // Simulate progress
-        for (let i = 0; i <= 100; i += 10) {
-          set({ syncProgress: i });
-          await new Promise(resolve => setTimeout(resolve, 300));
-        }
-        
-        // In a real app, we would push to GitHub here
-        // For now, we'll just simulate success
-        set({ isSyncingGithub: false, syncProgress: 0 });
-      },
-
       login: (role, user) => set({ isAuthenticated: true, userRole: role, currentUser: user }),
       logout: () => set({ isAuthenticated: false, userRole: null, currentUser: null }),
     }),
@@ -629,8 +725,10 @@ export const useStore = create<AppState>()(
         background: state.background,
         productImage1: state.productImage1,
         productImage2: state.productImage2,
+        productImage3: state.productImage3,
         textElements1: state.textElements1,
         textElements2: state.textElements2,
+        textElements3: state.textElements3,
         activeLayoutIndex: state.activeLayoutIndex,
         layouts: state.layouts,
         zoom: state.zoom,

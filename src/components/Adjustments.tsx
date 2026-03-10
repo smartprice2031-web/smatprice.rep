@@ -1,21 +1,24 @@
 import React from 'react';
-import { useStore, TextSettings, createDefaultLayout, Layout as LayoutType } from '../store';
+import { useStore, TextSettings, createDefaultLayout, Layout as LayoutType, THREE_PRODUCT_LAYOUTS } from '../store';
 import { Settings, Type, Image as ImageIcon, Layout, Eye, EyeOff, Lock, Unlock, AlignLeft, AlignCenter, AlignRight, Bold } from 'lucide-react';
 
 const Adjustments = () => {
   const { 
-    textElements1, textElements2, 
-    productImage1, productImage2, 
+    textElements1, textElements2, textElements3,
+    productImage1, productImage2, productImage3,
     background, setElement, setProductImage, setBackground,
-    userRole, layouts, setLayoutName
+    userRole, layouts, setLayoutName, activeLayoutIndex
   } = useStore();
+
+  const currentLayoutName = layouts[activeLayoutIndex]?.name || '';
+  const showThirdProduct = THREE_PRODUCT_LAYOUTS.includes(currentLayoutName.toUpperCase());
 
   const handleBackgroundUrlChange = (url: string) => {
     setBackground({ url });
   };
 
   const TextControl = ({ slot, label, elementKey, textElements }: { 
-    slot: 1 | 2, 
+    slot: 1 | 2 | 3, 
     label: string, 
     elementKey: keyof typeof textElements1,
     textElements: typeof textElements1
@@ -100,11 +103,11 @@ const Adjustments = () => {
     );
   };
 
-  const handleProductImageUrlChange = (slot: 1 | 2, url: string) => {
+  const handleProductImageUrlChange = (slot: 1 | 2 | 3, url: string) => {
     setProductImage(slot, { url });
   };
 
-  const ProductImageControl = ({ slot, productImage }: { slot: 1 | 2, productImage: typeof productImage1 }) => (
+  const ProductImageControl = ({ slot, productImage }: { slot: 1 | 2 | 3, productImage: typeof productImage1 }) => (
     <div className="p-3 bg-zinc-50 dark:bg-zinc-800/50 rounded-xl border border-zinc-200 dark:border-zinc-700 space-y-3">
       <div className="flex justify-between items-center">
         <span className="text-xs font-bold flex items-center gap-2">
@@ -291,6 +294,26 @@ const Adjustments = () => {
           <TextControl slot={2} label="Preço" elementKey="price" textElements={textElements2} />
         </div>
       </section>
+
+      {showThirdProduct && (
+        <>
+          <div className="h-px bg-zinc-200 dark:bg-zinc-800" />
+
+          {/* Product 3 Section */}
+          <section className="space-y-4">
+            <h3 className="text-sm font-black uppercase tracking-widest text-blue-600 flex items-center gap-2">
+              Produto Central (Opcional)
+            </h3>
+            <div className="space-y-4">
+              <ProductImageControl slot={3} productImage={productImage3} />
+              <TextControl slot={3} label="Nome" elementKey="name" textElements={textElements3} />
+              <TextControl slot={3} label="Subtítulo" elementKey="subtitle" textElements={textElements3} />
+              <TextControl slot={3} label="Descrição" elementKey="description" textElements={textElements3} />
+              <TextControl slot={3} label="Preço" elementKey="price" textElements={textElements3} />
+            </div>
+          </section>
+        </>
+      )}
     </div>
   );
 };

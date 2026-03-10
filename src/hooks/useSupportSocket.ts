@@ -14,6 +14,8 @@ export interface Message {
     cnpj: string;
   };
   text: string;
+  attachment?: string; // base64 or URL
+  attachmentType?: 'image' | 'file';
   timestamp: string;
 }
 
@@ -33,6 +35,11 @@ export function useSupportSocket() {
 
     socket.on('connect', () => {
       socket.emit('user:join', { ...currentUser, role: userRole });
+      
+      // Request notification permission
+      if ("Notification" in window && Notification.permission === "default") {
+        Notification.requestPermission();
+      }
     });
 
     socket.on('message:history', (history: Message[]) => {
@@ -69,6 +76,22 @@ export function useSupportSocket() {
           audio.play().catch(e => console.log('Audio play blocked'));
 
           setUnreadSupportCount(prev => prev + 1);
+
+          // System Notification
+          if ("Notification" in window && Notification.permission === "granted") {
+            const n = new Notification(`Nova mensagem de ${message.from.role === 'admin' ? 'Suporte' : message.from.username}`, {
+              body: message.text,
+              icon: '/favicon.ico'
+            });
+            n.onclick = () => {
+              window.focus();
+              useStore.getState().setSupportChatOpen(true);
+              if (userRole === 'admin' && message.from.cnpj) {
+                useStore.getState().setSelectedUserCnpj(message.from.cnpj);
+              }
+            };
+          }
+
           toast.info(`Nova mensagem de ${message.from.role === 'admin' ? 'Suporte' : message.from.username}`, {
             description: message.text.length > 50 ? message.text.substring(0, 50) + '...' : message.text,
             action: {
@@ -91,12 +114,14 @@ export function useSupportSocket() {
     };
   }, [currentUser, userRole, setMessages, setUnreadPerUser, setUnreadSupportCount]); 
 
-  const sendMessage = (text: string, toCnpj?: string) => {
+  const sendMessage = (text: string, toCnpj?: string, attachment?: { data: string, type: 'image' | 'file' }) => {
     if (!socketRef.current || !currentUser) return;
 
     const messageData = {
       from: { ...currentUser, role: userRole },
       text,
+      attachment: attachment?.data,
+      attachmentType: attachment?.type,
       to: userRole === 'admin' ? (toCnpj ? { cnpj: toCnpj } : undefined) : undefined
     };
 

@@ -39,6 +39,21 @@ const PrintQueue = () => {
     setTimeout(() => setPrinting(false), 500);
   };
 
+  const handleExportSinglePDF = (imgData: string, index: number) => {
+    const pdf = new jsPDF({
+      orientation: 'portrait',
+      unit: 'mm',
+      format: 'a4'
+    });
+
+    const imgProps = pdf.getImageProperties(imgData);
+    const pdfWidth = pdf.internal.pageSize.getWidth();
+    const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+    
+    pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+    pdf.save(`smartprice_tag_${index + 1}_${new Date().getTime()}.pdf`);
+  };
+
   if (isPrinting) {
     return (
       <div className="fixed inset-0 z-[9999] bg-zinc-100 dark:bg-zinc-950 overflow-y-auto no-scrollbar">
@@ -143,6 +158,13 @@ const PrintQueue = () => {
             <div key={index} className="group relative bg-white dark:bg-zinc-900 rounded-2xl shadow-xl overflow-hidden border border-zinc-200 dark:border-zinc-800 transition-all hover:shadow-2xl hover:-translate-y-1">
               <img src={imgData} alt={`Tag ${index + 1}`} className="w-full h-auto" />
               <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-4">
+                <button 
+                  onClick={() => handleExportSinglePDF(imgData, index)}
+                  className="p-3 bg-blue-600 text-white rounded-full hover:scale-110 active:scale-90 transition-all shadow-lg"
+                  title="Exportar PDF desta plaquinha"
+                >
+                  <FileDown className="w-5 h-5" />
+                </button>
                 <button 
                   onClick={() => removeFromQueue(index)}
                   className="p-3 bg-red-600 text-white rounded-full hover:scale-110 active:scale-90 transition-all shadow-lg"

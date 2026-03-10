@@ -1,14 +1,19 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { useStore, Product } from '../store';
+import { useStore, Product, THREE_PRODUCT_LAYOUTS } from '../store';
 import { Search, Package, Check, X, RefreshCw } from 'lucide-react';
 
 const ProductSelector = () => {
   const { 
     products, fetchProducts, selectProduct, 
-    textElements1, textElements2, setElement 
+    textElements1, textElements2, textElements3, setElement,
+    layouts, activeLayoutIndex
   } = useStore();
+
+  const currentLayoutName = layouts[activeLayoutIndex]?.name || '';
+  const showThirdProduct = THREE_PRODUCT_LAYOUTS.includes(currentLayoutName.toUpperCase());
   const [searchTerm1, setSearchTerm1] = useState('');
   const [searchTerm2, setSearchTerm2] = useState('');
+  const [searchTerm3, setSearchTerm3] = useState('');
 
   useEffect(() => {
     fetchProducts();
@@ -37,6 +42,7 @@ const ProductSelector = () => {
 
   const filteredProducts1 = useMemo(() => filterProducts(searchTerm1), [searchTerm1, products]);
   const filteredProducts2 = useMemo(() => filterProducts(searchTerm2), [searchTerm2, products]);
+  const filteredProducts3 = useMemo(() => filterProducts(searchTerm3), [searchTerm3, products]);
 
   return (
     <div className="p-4 space-y-6">
@@ -69,6 +75,26 @@ const ProductSelector = () => {
         isSyncing={isSyncing}
         handleSync={handleSync}
       />
+
+      {showThirdProduct && (
+        <>
+          <div className="h-px bg-zinc-200 dark:bg-zinc-800" />
+
+          <ProductSlot 
+            slot={3}
+            searchTerm={searchTerm3}
+            setSearchTerm={setSearchTerm3}
+            filteredProducts={filteredProducts3}
+            currentPrice={textElements3.price.text}
+            currentName={textElements3.name.text}
+            currentDescription={textElements3.description.text}
+            setElement={setElement}
+            selectProduct={selectProduct}
+            isSyncing={isSyncing}
+            handleSync={handleSync}
+          />
+        </>
+      )}
     </div>
   );
 };
@@ -86,7 +112,7 @@ const ProductSlot = ({
   isSyncing,
   handleSync
 }: { 
-  slot: 1 | 2, 
+  slot: 1 | 2 | 3, 
   searchTerm: string, 
   setSearchTerm: (v: string) => void, 
   filteredProducts: any[], 
@@ -101,7 +127,7 @@ const ProductSlot = ({
   <div className="space-y-4 p-4 bg-zinc-50 dark:bg-zinc-800/30 rounded-2xl border border-zinc-200 dark:border-zinc-800">
     <div className="flex items-center justify-between">
       <h3 className="text-xs font-black text-blue-600 uppercase tracking-widest">
-        Produto {slot === 1 ? 'Superior' : 'Inferior'}
+        Produto {slot === 1 ? 'Superior' : slot === 2 ? 'Inferior' : 'Central'}
       </h3>
       <button 
         onClick={handleSync}

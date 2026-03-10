@@ -8,8 +8,8 @@ const A4_HEIGHT = 1123; // 297mm at 96dpi
 
 const CanvasPreview = () => {
   const { 
-    textElements1, textElements2, 
-    productImage1, productImage2, 
+    textElements1, textElements2, textElements3,
+    productImage1, productImage2, productImage3,
     background, setElement, setProductImage,
     zoom, setZoom,
     selectedId, setSelectedId,
@@ -18,12 +18,14 @@ const CanvasPreview = () => {
   const stageRef = useRef<any>(null);
   const productImg1Ref = useRef<any>(null);
   const productImg2Ref = useRef<any>(null);
+  const productImg3Ref = useRef<any>(null);
   const trRef = useRef<any>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   
-  const [bgImg] = useImage(background.url || '');
-  const [prodImg1] = useImage(productImage1.url || '');
-  const [prodImg2] = useImage(productImage2.url || '');
+  const [bgImg] = useImage(background.url || '', 'anonymous');
+  const [prodImg1] = useImage(productImage1.url || '', 'anonymous');
+  const [prodImg2] = useImage(productImage2.url || '', 'anonymous');
+  const [prodImg3] = useImage(productImage3.url || '', 'anonymous');
   const [autoScale, setAutoScale] = useState(1);
 
   useEffect(() => {
@@ -83,7 +85,7 @@ const CanvasPreview = () => {
   }, []);
 
   // Price formatting logic
-  const renderPrice = (slot: 1 | 2, el: any, key: string) => {
+  const renderPrice = (slot: 1 | 2 | 3, el: any, key: string) => {
     const priceStr = (el.text || '0,00').trim();
     
     // Improved regex to handle thousands separators and different formats
@@ -165,11 +167,11 @@ const CanvasPreview = () => {
     );
   };
 
-  const renderProduct = (slot: 1 | 2) => {
-    const textElements = slot === 1 ? textElements1 : textElements2;
-    const productImage = slot === 1 ? productImage1 : productImage2;
-    const prodImg = slot === 1 ? prodImg1 : prodImg2;
-    const imgRef = slot === 1 ? productImg1Ref : productImg2Ref;
+  const renderProduct = (slot: 1 | 2 | 3) => {
+    const textElements = slot === 1 ? textElements1 : slot === 2 ? textElements2 : textElements3;
+    const productImage = slot === 1 ? productImage1 : slot === 2 ? productImage2 : productImage3;
+    const prodImg = slot === 1 ? prodImg1 : slot === 2 ? prodImg2 : prodImg3;
+    const imgRef = slot === 1 ? productImg1Ref : slot === 2 ? productImg2Ref : productImg3Ref;
 
     return (
       <Group key={`product-slot-${slot}`}>
@@ -344,6 +346,7 @@ const CanvasPreview = () => {
 
             {renderProduct(1)}
             {renderProduct(2)}
+            {renderProduct(3)}
 
             {selectedId && !isPrinting && (
               <Transformer

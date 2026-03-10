@@ -9,11 +9,11 @@ import UserManagement from './components/UserManagement';
 import SupportChat from './components/SupportChat';
 import Login from './components/Login';
 import { 
-  Sun, Moon, Printer, FileDown, 
+  Printer, FileDown, 
   LayoutDashboard, Package, Settings as SettingsIcon,
   ShoppingBag, Search, Database, X, ListPlus, LayoutGrid,
   ArrowLeft, LogOut, Users, MessageCircle, AlertTriangle,
-  Github, RefreshCw
+  RefreshCw
 } from 'lucide-react';
 import { jsPDF } from 'jspdf';
 import { clsx, type ClassValue } from 'clsx';
@@ -35,7 +35,7 @@ export default function App() {
     isAuthenticated, logout, userRole, isUserModalOpen, setUserModalOpen,
     isSupportChatOpen, setSupportChatOpen, unreadSupportCount,
     activeLayoutIndex, layouts, setActiveLayout,
-    isSyncingGithub, syncProgress, syncWithGithub
+    currentUser
   } = useStore();
   const [activeTab, setActiveTab] = useState<'select' | 'adjustments'>('select');
 
@@ -187,6 +187,20 @@ export default function App() {
             <h1 className="text-xl font-black tracking-tighter">
               SMART<span className="text-blue-600">PRICE</span>
             </h1>
+            
+            {/* User Info Badge */}
+            <div className="hidden lg:flex flex-col items-start ml-4 pl-4 border-l border-zinc-200 dark:border-zinc-800">
+              <span className="text-[9px] font-black uppercase tracking-widest text-zinc-400 leading-none mb-1">Acesso Identificado</span>
+              <div className="flex items-center gap-2">
+                <div className="flex flex-col">
+                  <span className="text-xs font-bold text-zinc-900 dark:text-zinc-100 leading-none">{currentUser?.username}</span>
+                  <span className="text-[10px] text-zinc-500 font-medium leading-none mt-1">{currentUser?.bandeira}</span>
+                </div>
+                <div className="px-2 py-1 bg-zinc-100 dark:bg-zinc-800 rounded-lg border border-zinc-200 dark:border-zinc-700">
+                  <span className="text-[10px] font-mono font-bold text-blue-600 dark:text-blue-400">{currentUser?.cnpj}</span>
+                </div>
+              </div>
+            </div>
           </div>
 
           <div className="flex items-center gap-4">
@@ -229,21 +243,6 @@ export default function App() {
             </div>
 
             <div className="h-6 w-px bg-zinc-200 dark:border-zinc-800 mx-2" />
-
-            {userRole === 'admin' && (
-              <button 
-                onClick={syncWithGithub}
-                disabled={isSyncingGithub}
-                className={cn(
-                  "flex items-center gap-2 px-4 py-2 rounded-xl transition-all text-xs font-black uppercase tracking-tighter shadow-lg hover:scale-105 active:scale-95",
-                  isSyncingGithub ? "bg-zinc-200 text-zinc-500" : "bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900"
-                )}
-                title="Sincronizar com GitHub (Subir modificações para todos)"
-              >
-                <Github className={cn("w-4 h-4", isSyncingGithub && "animate-spin")} />
-                {isSyncingGithub ? `Sincronizando ${syncProgress}%` : "Sincronizar GitHub"}
-              </button>
-            )}
 
             {userRole === 'admin' && (
               <button 
@@ -300,13 +299,6 @@ export default function App() {
               title="Atualizar Página (F5)"
             >
               <RefreshCw className="w-5 h-5" />
-            </button>
-
-            <button 
-              onClick={toggleTheme}
-              className="p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-full transition-colors"
-            >
-              {theme === 'light' ? <Moon className="w-5 h-5" /> : <Sun className="w-5 h-5" />}
             </button>
 
             <div className="h-6 w-px bg-zinc-200 dark:border-zinc-800 mx-2" />
@@ -456,30 +448,6 @@ export default function App() {
       )}
       <SupportChat />
       
-      {/* GitHub Sync Progress Bar (Floating) */}
-      {isSyncingGithub && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[9999] w-full max-w-md px-4 animate-in fade-in slide-in-from-bottom-4 duration-300">
-          <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-4 shadow-2xl">
-            <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center gap-2">
-                <Github className="w-4 h-4 animate-spin" />
-                <span className="text-xs font-black uppercase tracking-widest">Sincronizando com GitHub...</span>
-              </div>
-              <span className="text-xs font-bold text-blue-600">{syncProgress}%</span>
-            </div>
-            <div className="h-2 bg-zinc-100 dark:bg-zinc-800 rounded-full overflow-hidden">
-              <div 
-                className="h-full bg-blue-600 transition-all duration-300 ease-out"
-                style={{ width: `${syncProgress}%` }}
-              />
-            </div>
-            <p className="text-[10px] text-zinc-500 mt-2 text-center font-medium">
-              Subindo modificações e atualizando para todos os usuários.
-            </p>
-          </div>
-        </div>
-      )}
-
       <Toaster position="top-right" richColors closeButton />
     </div>
   );
