@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useStore } from '../store';
-import { Plus, Trash2, Shield, Store, Search, X, History, User, Calendar, Clock, Flag, Pencil, Save, Loader2 } from 'lucide-react';
+import { Plus, Trash2, Shield, Store, Search, X, History, User, Calendar, Clock, Flag, Pencil, Save, Loader2, Settings as SettingsIcon, Layout as LayoutGrid } from 'lucide-react';
 import { toast } from 'sonner';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
@@ -10,13 +10,15 @@ function cn(...inputs: ClassValue[]) {
 }
 
 export default function UserManagement() {
-  const { allowedStores, addAllowedStore, removeAllowedStore, accessLogs, flags, addFlag, removeFlag, updateFlag, saveUsersAndFlags } = useStore();
+  const { allowedStores, addAllowedStore, removeAllowedStore, accessLogs, flags, addFlag, removeFlag, updateFlag, saveUsersAndFlags, layouts } = useStore();
   const [activeTab, setActiveTab] = useState<'stores' | 'history' | 'flags'>('stores');
   const [newCnpj, setNewCnpj] = useState('');
   const [newBandeira, setNewBandeira] = useState('');
   const [newFlagName, setNewFlagName] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [isSaving, setIsSaving] = useState(false);
+  const [selectedLayouts, setSelectedLayouts] = useState<string[]>([]);
+  const [editingStoreLayouts, setEditingStoreLayouts] = useState<string | null>(null);
 
   // Fix: Ensure newBandeira is set when flags are loaded
   React.useEffect(() => {
@@ -31,10 +33,35 @@ export default function UserManagement() {
     
     addAllowedStore({
       cnpj: newCnpj.trim(),
-      bandeira: newBandeira
+      bandeira: newBandeira,
+      allowedLayouts: selectedLayouts.length > 0 ? selectedLayouts : layouts.map(l => l.name)
     });
     
     setNewCnpj('');
+    setSelectedLayouts([]);
+  };
+
+  const toggleLayout = (layoutName: string) => {
+    setSelectedLayouts(prev => 
+      prev.includes(layoutName) 
+        ? prev.filter(l => l !== layoutName) 
+        : [...prev, layoutName]
+    );
+  };
+
+  const toggleStoreLayout = (cnpj: string, layoutName: string) => {
+    const store = allowedStores.find(s => s.cnpj === cnpj);
+    if (!store) return;
+
+    const currentAllowed = store.allowedLayouts || layouts.map(l => l.name);
+    const newAllowed = currentAllowed.includes(layoutName)
+      ? currentAllowed.filter(l => l !== layoutName)
+      : [...currentAllowed, layoutName];
+
+    addAllowedStore({
+      ...store,
+      allowedLayouts: newAllowed
+    });
   };
 
   const [editingFlag, setEditingFlag] = useState<string | null>(null);
@@ -180,7 +207,31 @@ export default function UserManagement() {
                   </select>
                 </div>
 
-                <div className="flex items-end">
+                <div className="space-y-1 md:col-span-2">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 ml-1">Modelos de Plaquinhas Permitidos</label>
+                  <div className="flex flex-wrap gap-2 p-3 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-xl">
+                    {layouts.map(layout => (
+                      <button
+                        key={layout.name}
+                        type="button"
+                        onClick={() => toggleLayout(layout.name)}
+                        className={cn(
+                          "px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-tighter transition-all border",
+                          selectedLayouts.includes(layout.name)
+                            ? "bg-blue-600 border-blue-600 text-white shadow-md shadow-blue-500/20"
+                            : "bg-zinc-100 dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 text-zinc-500 hover:border-zinc-400"
+                        )}
+                      >
+                        {layout.name}
+                      </button>
+                    ))}
+                    {selectedLayouts.length === 0 && (
+                      <span className="text-[10px] text-zinc-400 font-bold italic py-1.5">Nenhum selecionado (todos serão permitidos por padrão)</span>
+                    )}
+                  </div>
+                </div>
+
+                <div className="flex items-end md:col-span-1">
                   <button
                     type="submit"
                     className="w-full h-[46px] bg-blue-600 hover:bg-blue-700 text-white font-black uppercase tracking-tighter rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-blue-500/20 transition-all active:scale-95"
@@ -224,25 +275,89 @@ export default function UserManagement() {
                   filteredStores.map((store) => (
                     <div 
                       key={store.cnpj}
-                      className="group flex items-center justify-between p-4 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl hover:border-blue-500/50 transition-all shadow-sm"
+                      className="group flex flex-col p-4 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl hover:border-blue-500/50 transition-all shadow-sm"
                     >
-                      <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 bg-zinc-100 dark:bg-zinc-800 rounded-xl flex items-center justify-center text-zinc-400 group-hover:bg-blue-50 dark:group-hover:bg-blue-900/20 group-hover:text-blue-600 transition-colors">
-                          <Store className="w-6 h-6" />
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center gap-4">
+                          <div className="w-12 h-12 bg-zinc-100 dark:bg-zinc-800 rounded-xl flex items-center justify-center text-zinc-400 group-hover:bg-blue-50 dark:group-hover:bg-blue-900/20 group-hover:text-blue-600 transition-colors">
+                            <Store className="w-6 h-6" />
+                          </div>
+                          <div>
+                            <p className="font-mono font-bold text-zinc-900 dark:text-zinc-100">{store.cnpj}</p>
+                            <p className="text-xs font-black uppercase tracking-tighter text-blue-600">{store.bandeira}</p>
+                          </div>
                         </div>
-                        <div>
-                          <p className="font-mono font-bold text-zinc-900 dark:text-zinc-100">{store.cnpj}</p>
-                          <p className="text-xs font-black uppercase tracking-tighter text-blue-600">{store.bandeira}</p>
+                        
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => setEditingStoreLayouts(editingStoreLayouts === store.cnpj ? null : store.cnpj)}
+                            className={cn(
+                              "p-2 rounded-lg transition-all",
+                              editingStoreLayouts === store.cnpj 
+                                ? "bg-blue-600 text-white" 
+                                : "text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+                            )}
+                            title="Gerenciar Modelos Permitidos"
+                          >
+                            <SettingsIcon className="w-5 h-5" />
+                          </button>
+                          <button
+                            onClick={() => removeAllowedStore(store.cnpj)}
+                            className="p-2 text-zinc-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/10 rounded-lg transition-all"
+                            title="Remover Autorização"
+                          >
+                            <Trash2 className="w-5 h-5" />
+                          </button>
                         </div>
                       </div>
-                      
-                      <button
-                        onClick={() => removeAllowedStore(store.cnpj)}
-                        className="p-2 text-zinc-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/10 rounded-lg transition-all opacity-0 group-hover:opacity-100"
-                        title="Remover Autorização"
-                      >
-                        <Trash2 className="w-5 h-5" />
-                      </button>
+
+                      {/* Layouts Selection for this store */}
+                      <div className={cn(
+                        "overflow-hidden transition-all duration-300",
+                        editingStoreLayouts === store.cnpj ? "max-h-[500px] opacity-100 mt-2" : "max-h-0 opacity-0"
+                      )}>
+                        <div className="p-4 bg-zinc-50 dark:bg-zinc-800/50 rounded-xl border border-zinc-200 dark:border-zinc-700">
+                          <div className="flex items-center gap-2 mb-3">
+                            <LayoutGrid className="w-4 h-4 text-blue-600" />
+                            <h4 className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Modelos Permitidos para este CNPJ</h4>
+                          </div>
+                          <div className="flex flex-wrap gap-1.5">
+                            {layouts.map(layout => {
+                              const isAllowed = (store.allowedLayouts || layouts.map(l => l.name)).includes(layout.name);
+                              return (
+                                <button
+                                  key={layout.name}
+                                  onClick={() => toggleStoreLayout(store.cnpj, layout.name)}
+                                  className={cn(
+                                    "px-2 py-1 rounded-md text-[9px] font-black uppercase tracking-tighter transition-all border",
+                                    isAllowed
+                                      ? "bg-blue-600 border-blue-600 text-white"
+                                      : "bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-700 text-zinc-400"
+                                  )}
+                                >
+                                  {layout.name}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Summary of allowed layouts when not editing */}
+                      {editingStoreLayouts !== store.cnpj && (
+                        <div className="flex flex-wrap gap-1 mt-1">
+                          {(store.allowedLayouts || layouts.map(l => l.name)).slice(0, 5).map(name => (
+                            <span key={name} className="text-[8px] font-bold text-zinc-400 bg-zinc-100 dark:bg-zinc-800 px-1.5 py-0.5 rounded uppercase">
+                              {name}
+                            </span>
+                          ))}
+                          {(store.allowedLayouts || layouts.map(l => l.name)).length > 5 && (
+                            <span className="text-[8px] font-bold text-zinc-400 bg-zinc-100 dark:bg-zinc-800 px-1.5 py-0.5 rounded uppercase">
+                              +{(store.allowedLayouts || layouts.map(l => l.name)).length - 5}
+                            </span>
+                          )}
+                        </div>
+                      )}
                     </div>
                   ))
                 )}

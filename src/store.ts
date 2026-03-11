@@ -143,8 +143,8 @@ interface AppState {
   addFlag: (flag: string) => void;
   removeFlag: (flag: string) => void;
   updateFlag: (oldFlag: string, newFlag: string) => void;
-  allowedStores: { cnpj: string; bandeira: string }[];
-  addAllowedStore: (store: { cnpj: string; bandeira: string }) => void;
+  allowedStores: { cnpj: string; bandeira: string; allowedLayouts?: string[] }[];
+  addAllowedStore: (store: { cnpj: string; bandeira: string; allowedLayouts?: string[] }) => void;
   removeAllowedStore: (cnpj: string) => void;
   saveUsersAndFlags: () => Promise<void>;
   loadUsersAndFlags: () => Promise<void>;
@@ -182,15 +182,14 @@ const DEFAULT_TEXT = {
 };
 
 export const THREE_PRODUCT_LAYOUTS = [
-  'QUARTA FRALDA PL',
-  'SABADÃO PL',
-  'QUI KIDS PL',
-  'DERMO PL',
-  'MARONBA'
+  'MARONBA',
+  'OFERTA 3',
+  'COMBO 3'
 ];
 
 export const createDefaultLayout = (name: string): Layout => {
-  const showThird = THREE_PRODUCT_LAYOUTS.includes(name.toUpperCase());
+  const upperName = name.toUpperCase();
+  const showThird = THREE_PRODUCT_LAYOUTS.some(layout => upperName.includes(layout));
 
   return {
     name,
@@ -369,7 +368,8 @@ export const useStore = create<AppState>()(
       setLayoutName: (index, name) => {
         set((state) => {
           const newLayouts = [...state.layouts];
-          const showThird = THREE_PRODUCT_LAYOUTS.includes(name.toUpperCase());
+          const upperName = name.toUpperCase();
+          const showThird = THREE_PRODUCT_LAYOUTS.some(layout => upperName.includes(layout));
 
           const updatedLayout = { 
             ...newLayouts[index], 
@@ -546,7 +546,8 @@ export const useStore = create<AppState>()(
               const defaultL = createDefaultLayout(l.name || `Modelo ${idx + 1}`);
               
               // Re-evaluate visibility based on name to enforce the 2 vs 3 product rule
-              const showThird = THREE_PRODUCT_LAYOUTS.includes((l.name || '').toUpperCase());
+              const upperName = (l.name || '').toUpperCase();
+              const showThird = THREE_PRODUCT_LAYOUTS.some(layout => upperName.includes(layout));
 
               const merged = {
                 ...defaultL,
@@ -637,9 +638,16 @@ export const useStore = create<AppState>()(
       })),
 
       allowedStores: [],
-      addAllowedStore: (store) => set((state) => ({ 
-        allowedStores: [...state.allowedStores.filter(s => s.cnpj !== store.cnpj), store] 
-      })),
+      addAllowedStore: (store) => set((state) => {
+        const existing = state.allowedStores.find(s => s.cnpj === store.cnpj);
+        const updatedStore = {
+          ...store,
+          allowedLayouts: store.allowedLayouts || existing?.allowedLayouts || []
+        };
+        return { 
+          allowedStores: [...state.allowedStores.filter(s => s.cnpj !== store.cnpj), updatedStore] 
+        };
+      }),
       removeAllowedStore: (cnpj) => set((state) => ({ 
         allowedStores: state.allowedStores.filter(s => s.cnpj !== cnpj) 
       })),

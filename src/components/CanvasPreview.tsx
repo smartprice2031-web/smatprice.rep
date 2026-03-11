@@ -6,7 +6,7 @@ import useImage from 'use-image';
 const A4_WIDTH = 794; // 210mm at 96dpi
 const A4_HEIGHT = 1123; // 297mm at 96dpi
 
-const CanvasPreview = () => {
+const CanvasPreview = ({ id = "placa" }: { id?: string }) => {
   const { 
     textElements1, textElements2, textElements3,
     productImage1, productImage2, productImage3,
@@ -77,12 +77,15 @@ const CanvasPreview = () => {
   }, [selectedId]);
 
   const handleExport = () => {
-    return stageRef.current.toDataURL({ pixelRatio: 3 });
+    if (!stageRef.current) return '';
+    return stageRef.current.toDataURL({ pixelRatio: 4 });
   };
 
   useEffect(() => {
-    (window as any).getCanvasData = handleExport;
-  }, []);
+    if (id === "placa") {
+      (window as any).getCanvasData = handleExport;
+    }
+  }, [id]);
 
   // Price formatting logic
   const renderPrice = (slot: 1 | 2 | 3, el: any, key: string) => {
@@ -312,7 +315,7 @@ const CanvasPreview = () => {
 
       <div className={`flex-1 w-full overflow-auto flex items-center justify-center ${isPrinting ? 'p-0 m-0 bg-white' : 'p-8'}`}>
         <div 
-          id="placa"
+          id={id}
           className={`bg-white ${isPrinting ? 'shadow-none' : 'shadow-2xl transition-transform duration-300 ease-out'}`}
           style={{ 
             width: A4_WIDTH, 
@@ -325,7 +328,7 @@ const CanvasPreview = () => {
           width={A4_WIDTH}
           height={A4_HEIGHT}
           ref={stageRef}
-          pixelRatio={2}
+          pixelRatio={4}
           onMouseDown={(e) => {
             if (e.target === e.target.getStage()) {
               setSelectedId(null);

@@ -11,7 +11,7 @@ const Adjustments = () => {
   } = useStore();
 
   const currentLayoutName = layouts[activeLayoutIndex]?.name || '';
-  const showThirdProduct = THREE_PRODUCT_LAYOUTS.includes(currentLayoutName.toUpperCase());
+  const showThirdProduct = THREE_PRODUCT_LAYOUTS.some(layout => currentLayoutName.toUpperCase().includes(layout));
 
   const handleBackgroundUrlChange = (url: string) => {
     setBackground({ url });

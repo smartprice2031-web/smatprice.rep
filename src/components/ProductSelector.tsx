@@ -10,7 +10,7 @@ const ProductSelector = () => {
   } = useStore();
 
   const currentLayoutName = layouts[activeLayoutIndex]?.name || '';
-  const showThirdProduct = THREE_PRODUCT_LAYOUTS.includes(currentLayoutName.toUpperCase());
+  const showThirdProduct = THREE_PRODUCT_LAYOUTS.some(layout => currentLayoutName.toUpperCase().includes(layout));
   const [searchTerm1, setSearchTerm1] = useState('');
   const [searchTerm2, setSearchTerm2] = useState('');
   const [searchTerm3, setSearchTerm3] = useState('');
@@ -132,10 +132,11 @@ const ProductSlot = ({
       <button 
         onClick={handleSync}
         disabled={isSyncing}
-        className="p-1.5 text-zinc-400 hover:text-blue-600 transition-colors disabled:opacity-50"
+        className="flex items-center gap-1.5 px-2 py-1 text-zinc-400 hover:text-blue-600 transition-colors disabled:opacity-50 text-[10px] font-black uppercase tracking-tighter"
         title="Sincronizar produtos"
       >
-        <RefreshCw className={`w-3.5 h-3.5 ${isSyncing ? 'animate-spin' : ''}`} />
+        <RefreshCw className={`w-3 h-3 ${isSyncing ? 'animate-spin' : ''}`} />
+        {isSyncing ? 'Sincronizando...' : 'Atualizar'}
       </button>
     </div>
 

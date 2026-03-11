@@ -35,9 +35,40 @@ export default function App() {
     isAuthenticated, logout, userRole, isUserModalOpen, setUserModalOpen,
     isSupportChatOpen, setSupportChatOpen, unreadSupportCount,
     activeLayoutIndex, layouts, setActiveLayout,
-    currentUser
+    currentUser, allowedStores
   } = useStore();
   const [activeTab, setActiveTab] = useState<'select' | 'adjustments'>('select');
+
+  // Filter layouts based on user permissions
+  const filteredLayouts = React.useMemo(() => {
+    if (userRole === 'admin') return layouts;
+    const store = allowedStores.find(s => s.cnpj === currentUser?.cnpj);
+    if (!store || !store.allowedLayouts) return layouts;
+    return layouts.filter(l => store.allowedLayouts?.includes(l.name));
+  }, [layouts, userRole, currentUser, allowedStores]);
+
+  // Map filtered index back to original index for setActiveLayout
+  const handleLayoutSelect = (layoutName: string) => {
+    const originalIndex = layouts.findIndex(l => l.name === layoutName);
+    if (originalIndex !== -1) {
+      setActiveLayout(originalIndex);
+    }
+  };
+
+  // Ensure activeLayoutIndex points to an allowed layout
+  React.useEffect(() => {
+    if (filteredLayouts.length > 0) {
+      const currentLayout = layouts[activeLayoutIndex];
+      const isAllowed = filteredLayouts.some(l => l.name === currentLayout?.name);
+      
+      if (!isAllowed) {
+        const firstAllowedIndex = layouts.findIndex(l => l.name === filteredLayouts[0].name);
+        if (firstAllowedIndex !== -1) {
+          setActiveLayout(firstAllowedIndex);
+        }
+      }
+    }
+  }, [filteredLayouts, activeLayoutIndex, layouts, setActiveLayout]);
 
   // Initialize support socket globally for background notifications
   useSupportSocket();
@@ -133,6 +164,13 @@ export default function App() {
       "min-h-screen bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 flex flex-col",
       isPrinting && "bg-white p-0 m-0 overflow-visible"
     )}>
+      {/* Dedicated Print Area for Single Tag */}
+      {isPrinting && currentView === 'editor' && (
+        <div className="hidden print:block">
+          <CanvasPreview id="placa" />
+        </div>
+      )}
+
       {isPrinting && (
         <div className="fixed inset-0 bg-zinc-100 dark:bg-zinc-950 z-[9999999] overflow-y-auto no-scrollbar no-print">
           <div className="sticky top-0 z-[10000] bg-white/80 dark:bg-zinc-900/80 backdrop-blur-md border-b border-zinc-200 dark:border-zinc-800 p-4 flex items-center justify-between">
@@ -156,9 +194,9 @@ export default function App() {
               </button>
             </div>
           </div>
-          <div className="flex flex-col items-center py-12 px-4">
+          <div className="flex flex-col items-center py-12 px-4 no-print">
             <div className="bg-white shadow-[0_0_50px_rgba(0,0,0,0.1)] w-[210mm] h-[297mm] flex items-center justify-center overflow-hidden border border-zinc-200">
-              <CanvasPreview />
+              <CanvasPreview id="placa-preview" />
             </div>
           </div>
         </div>
@@ -295,10 +333,11 @@ export default function App() {
 
             <button 
               onClick={() => window.location.reload()}
-              className="p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-full transition-colors text-zinc-600 dark:text-zinc-400"
+              className="flex items-center gap-2 px-3 py-1.5 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-all text-zinc-600 dark:text-zinc-400 text-xs font-black uppercase tracking-tighter"
               title="Atualizar Página (F5)"
             >
-              <RefreshCw className="w-5 h-5" />
+              <RefreshCw className="w-4 h-4" />
+              Atualizar
             </button>
 
             <div className="h-6 w-px bg-zinc-200 dark:border-zinc-800 mx-2" />
@@ -316,11 +355,11 @@ export default function App() {
       )}
 
       {/* Main Content */}
-      <main className={cn("flex-grow flex overflow-hidden", isPrinting && "p-0 m-0 block overflow-visible")}>
+      <main className={cn("flex-grow flex overflow-hidden", isPrinting && "overflow-visible")}>
         {/* Left: Preview */}
         <div className={cn(
           "flex-grow relative border-r border-zinc-200 dark:border-zinc-800 print-area overflow-hidden",
-          isPrinting && "border-0 p-0 m-0 w-full h-full block overflow-visible"
+          isPrinting && "overflow-visible"
         )}>
           <CanvasPreview />
         </div>
@@ -361,21 +400,24 @@ export default function App() {
             {/* Layout Switcher Buttons */}
             <div className="p-3 border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-800/20">
               <div className="grid grid-cols-4 gap-1.5">
-                {layouts.map((layout, index) => (
-                  <button
-                    key={index}
-                    onClick={() => setActiveLayout(index)}
-                    className={cn(
-                      "py-2 px-0.5 text-[8px] font-black uppercase tracking-tighter rounded-lg border transition-all truncate",
-                      activeLayoutIndex === index
-                        ? "bg-blue-600 border-blue-600 text-white shadow-md shadow-blue-500/20"
-                        : "bg-white dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 text-zinc-500 hover:border-zinc-400"
-                    )}
-                    title={layout.name}
-                  >
-                    {layout.name.replace('Modelo ', '')}
-                  </button>
-                ))}
+                {filteredLayouts.map((layout) => {
+                  const originalIndex = layouts.findIndex(l => l.name === layout.name);
+                  return (
+                    <button
+                      key={layout.name}
+                      onClick={() => handleLayoutSelect(layout.name)}
+                      className={cn(
+                        "py-2 px-0.5 text-[8px] font-black uppercase tracking-tighter rounded-lg border transition-all truncate",
+                        activeLayoutIndex === originalIndex
+                          ? "bg-blue-600 border-blue-600 text-white shadow-md shadow-blue-500/20"
+                          : "bg-white dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 text-zinc-500 hover:border-zinc-400"
+                      )}
+                      title={layout.name}
+                    >
+                      {layout.name.replace('Modelo ', '')}
+                    </button>
+                  );
+                })}
               </div>
             </div>
 
