@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useStore, Product } from '../store';
-import { Plus, Search, Edit2, Trash2, Package, RefreshCw } from 'lucide-react';
+import { Plus, Search, Edit2, Trash2, Package, RefreshCw, AlertTriangle } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+
+import { toast } from 'sonner';
 
 const ProductManager = () => {
   const { products, fetchProducts, selectProduct } = useStore();
@@ -23,6 +25,8 @@ const ProductManager = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isSyncing, setIsSyncing] = useState(false);
   const [connectionError, setConnectionError] = useState<string | null>(null);
+
+  const [confirmDelete, setConfirmDelete] = useState<{ id: string | number } | null>(null);
 
   const checkConnection = async () => {
     const url = import.meta.env.VITE_SUPABASE_URL;
@@ -69,10 +73,10 @@ const ProductManager = () => {
       setIsBulkModalOpen(false);
       setBulkData('');
       await fetchProducts();
-      alert('Produtos adicionados com sucesso!');
+      toast.success('Produtos adicionados com sucesso!');
     } catch (error: any) {
       console.error("Error bulk inserting products:", error);
-      alert("Erro ao importar produtos. Verifique se o formato JSON está correto. Exemplo: [{\"name\": \"Prod 1\", \"price\": \"R$ 10,00\"}]");
+      toast.error("Erro ao importar produtos. Verifique se o formato JSON está correto.");
     }
   };
 
@@ -107,12 +111,14 @@ const ProductManager = () => {
           .eq('id', editingProduct.id);
         
         if (error) throw error;
+        toast.success('Produto atualizado com sucesso!');
       } else {
         const { error } = await supabase
           .from('products')
           .insert([{ ...formData }]);
         
         if (error) throw error;
+        toast.success('Produto cadastrado com sucesso!');
       }
       
       setIsModalOpen(false);
@@ -121,23 +127,25 @@ const ProductManager = () => {
       fetchProducts();
     } catch (error) {
       console.error("Error saving product to Supabase:", error);
-      alert("Erro ao salvar produto no Supabase. Verifique sua configuração e tabelas.");
+      toast.error("Erro ao salvar produto no Supabase.");
     }
   };
 
   const handleDelete = async (id: string | number) => {
-    if (confirm('Tem certeza que deseja excluir este produto?')) {
-      try {
-        const { error } = await supabase
-          .from('products')
-          .delete()
-          .eq('id', id);
-        
-        if (error) throw error;
-        fetchProducts();
-      } catch (error) {
-        console.error("Error deleting product from Supabase:", error);
-      }
+    try {
+      const { error } = await supabase
+        .from('products')
+        .delete()
+        .eq('id', id);
+      
+      if (error) throw error;
+      toast.success('Produto excluído com sucesso!');
+      fetchProducts();
+    } catch (error) {
+      console.error("Error deleting product from Supabase:", error);
+      toast.error("Erro ao excluir produto.");
+    } finally {
+      setConfirmDelete(null);
     }
   };
 
@@ -257,7 +265,7 @@ const ProductManager = () => {
                   <Edit2 className="w-4 h-4" />
                 </button>
                 <button 
-                  onClick={() => product.id !== undefined && handleDelete(product.id)}
+                  onClick={() => product.id !== undefined && setConfirmDelete({ id: product.id })}
                   className="p-2 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-lg text-red-600"
                 >
                   <Trash2 className="w-4 h-4" />
@@ -421,6 +429,34 @@ const ProductManager = () => {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {confirmDelete && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[60] p-4">
+          <div className="bg-white dark:bg-zinc-900 w-full max-w-sm rounded-2xl shadow-2xl p-6 space-y-4">
+            <div className="flex items-center gap-3 text-red-600">
+              <AlertTriangle className="w-6 h-6" />
+              <h3 className="text-lg font-bold">Confirmar Exclusão</h3>
+            </div>
+            <p className="text-sm text-zinc-500">
+              Tem certeza que deseja excluir este produto? Esta ação não pode ser desfeita.
+            </p>
+            <div className="flex gap-3 pt-2">
+              <button 
+                onClick={() => setConfirmDelete(null)}
+                className="flex-1 px-4 py-2 border border-zinc-200 dark:border-zinc-700 rounded-lg hover:bg-zinc-50 dark:hover:bg-zinc-800 text-sm font-bold"
+              >
+                Cancelar
+              </button>
+              <button 
+                onClick={() => handleDelete(confirmDelete.id)}
+                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 text-sm font-bold"
+              >
+                Excluir
+              </button>
+            </div>
           </div>
         </div>
       )}

@@ -121,8 +121,15 @@ export function useSupportSocket() {
       }
     });
 
+    // Local cleanup: remove messages older than 6 hours from state
+    const cleanupInterval = setInterval(() => {
+      const sixHoursAgo = Date.now() - 6 * 60 * 60 * 1000;
+      setMessages(prev => prev.filter(m => new Date(m.timestamp).getTime() > sixHoursAgo));
+    }, 60000); // Check every minute
+
     return () => {
       socket.disconnect();
+      clearInterval(cleanupInterval);
     };
   }, [currentUser, userRole, setMessages, setUnreadPerUser, setUnreadSupportCount]); 
 

@@ -1,6 +1,7 @@
 import React from 'react';
 import { useStore, TextSettings, createDefaultLayout, Layout as LayoutType, THREE_PRODUCT_LAYOUTS } from '../store';
-import { Settings, Type, Image as ImageIcon, Layout, Eye, EyeOff, Lock, Unlock, AlignLeft, AlignCenter, AlignRight, Bold } from 'lucide-react';
+import { Settings, Type, Image as ImageIcon, Layout, Eye, EyeOff, Lock, Unlock, AlignLeft, AlignCenter, AlignRight, Bold, AlertTriangle } from 'lucide-react';
+import { toast } from 'sonner';
 
 const Adjustments = () => {
   const { 
@@ -10,8 +11,31 @@ const Adjustments = () => {
     userRole, layouts, setLayoutName, activeLayoutIndex
   } = useStore();
 
+  const [showResetConfirm, setShowResetConfirm] = React.useState(false);
+
   const currentLayoutName = layouts[activeLayoutIndex]?.name || '';
   const showThirdProduct = THREE_PRODUCT_LAYOUTS.some(layout => currentLayoutName.toUpperCase().includes(layout));
+
+  const handleReset = () => {
+    useStore.setState((state) => ({
+      layouts: [
+        createDefaultLayout('Modelo 1'),
+        createDefaultLayout('Modelo 2'),
+        createDefaultLayout('Modelo 3'),
+        createDefaultLayout('Modelo 4'),
+        createDefaultLayout('Modelo 5'),
+        createDefaultLayout('Modelo 6'),
+        createDefaultLayout('Modelo 7'),
+        createDefaultLayout('Modelo 8'),
+        createDefaultLayout('Modelo 9'),
+        createDefaultLayout('Modelo 10'),
+        createDefaultLayout('Padrão Ultra'),
+      ]
+    }));
+    useStore.getState().saveLayout();
+    toast.success('Modelos resetados com sucesso!');
+    setShowResetConfirm(false);
+  };
 
   const handleBackgroundUrlChange = (url: string) => {
     setBackground({ url });
@@ -179,27 +203,8 @@ const Adjustments = () => {
               Nomes dos Modelos
             </h3>
             <button 
-              onClick={() => {
-                if (confirm('Deseja resetar todos os modelos para o padrão? Isso apagará as customizações de nomes e posições.')) {
-                  useStore.setState((state) => ({
-                    layouts: [
-                      createDefaultLayout('Modelo 1'),
-                      createDefaultLayout('Modelo 2'),
-                      createDefaultLayout('Modelo 3'),
-                      createDefaultLayout('Modelo 4'),
-                      createDefaultLayout('Modelo 5'),
-                      createDefaultLayout('Modelo 6'),
-                      createDefaultLayout('Modelo 7'),
-                      createDefaultLayout('Modelo 8'),
-                      createDefaultLayout('Modelo 9'),
-                      createDefaultLayout('Modelo 10'),
-                      createDefaultLayout('Padrão Ultra'),
-                    ]
-                  }));
-                  useStore.getState().saveLayout();
-                }
-              }}
-              className="text-[10px] font-bold text-red-500 hover:text-red-600 uppercase tracking-widest"
+              onClick={() => setShowResetConfirm(true)}
+              className="text-[10px] font-bold text-zinc-400 hover:text-red-500 uppercase tracking-widest transition-colors"
             >
               Resetar Modelos
             </button>
@@ -313,6 +318,34 @@ const Adjustments = () => {
             </div>
           </section>
         </>
+      )}
+
+      {showResetConfirm && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[60] p-4">
+          <div className="bg-white dark:bg-zinc-900 w-full max-w-sm rounded-2xl shadow-2xl p-6 space-y-4">
+            <div className="flex items-center gap-3 text-red-600">
+              <AlertTriangle className="w-6 h-6" />
+              <h3 className="text-lg font-bold">Resetar Modelos</h3>
+            </div>
+            <p className="text-sm text-zinc-500">
+              Deseja resetar todos os modelos para o padrão? Isso apagará permanentemente as customizações de nomes e posições.
+            </p>
+            <div className="flex gap-3 pt-2">
+              <button 
+                onClick={() => setShowResetConfirm(false)}
+                className="flex-1 px-4 py-2 border border-zinc-200 dark:border-zinc-700 rounded-lg hover:bg-zinc-50 dark:hover:bg-zinc-800 text-sm font-bold"
+              >
+                Cancelar
+              </button>
+              <button 
+                onClick={handleReset}
+                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 text-sm font-bold"
+              >
+                Resetar
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

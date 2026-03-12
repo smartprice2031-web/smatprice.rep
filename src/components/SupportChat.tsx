@@ -5,6 +5,8 @@ import { MessageCircle, Send, X, User, Shield, Clock, AlertCircle, Paperclip, Ca
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
+import { toast } from 'sonner';
+
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
@@ -47,7 +49,7 @@ export default function SupportChat() {
       }
     } catch (err) {
       console.error("Error accessing camera:", err);
-      alert("Não foi possível acessar a câmera.");
+      toast.error("Não foi possível acessar a câmera.");
       setIsCameraOpen(false);
     }
   };

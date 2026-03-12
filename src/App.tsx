@@ -26,6 +26,8 @@ function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
+import { toast } from 'sonner';
+
 export default function App() {
   const { 
     theme, toggleTheme, textElements1, 
@@ -355,7 +357,7 @@ export default function App() {
 
             <button 
               onClick={() => {
-                alert('O app agora está configurado para usar o Supabase (PostgreSQL na nuvem). Certifique-se de criar as tabelas "products" e "settings" no seu painel do Supabase.');
+                toast.info('O app agora está configurado para usar o Supabase (PostgreSQL na nuvem). Certifique-se de criar as tabelas "products" e "settings" no seu painel do Supabase.');
               }}
               className="p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-full transition-colors text-zinc-400"
               title="Info sobre Supabase"
