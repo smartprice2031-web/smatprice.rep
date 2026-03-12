@@ -10,7 +10,11 @@ dotenv.config();
 
 const supabaseUrl = process.env.VITE_SUPABASE_URL || '';
 const supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY || '';
-const supabase = createClient(supabaseUrl, supabaseAnonKey);
+
+// Initialize Supabase only if credentials are provided
+const supabase = (supabaseUrl && supabaseAnonKey) 
+  ? createClient(supabaseUrl, supabaseAnonKey) 
+  : null;
 
 async function startServer() {
   const app = express();
@@ -19,136 +23,157 @@ async function startServer() {
     cors: {
       origin: "*",
       methods: ["GET", "POST"]
-    }
+    },
+    maxHttpBufferSize: 1e8 // 100mb for attachments
   });
 
   const PORT = 3000;
 
   app.use(express.json({ limit: '50mb' }));
 
+  // In-memory fallback for the last 100 messages
+  let inMemoryMessages: any[] = [];
+
   // Cleanup old messages every 10 minutes
   setInterval(async () => {
-    if (!supabaseUrl || !supabaseAnonKey) return;
+    const sixHoursAgo = new Date(Date.now() - 6 * 60 * 60 * 1000);
     
-    const sixHoursAgo = new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString();
-    const { error } = await supabase
-      .from('chat_messages')
-      .delete()
-      .lt('created_at', sixHoursAgo);
-    
-    if (error) {
-      if (error.code !== 'PGRST116') { // Ignore "no rows" errors if that's the code
-        console.error('Error cleaning up messages:', error);
+    // Cleanup in-memory
+    inMemoryMessages = inMemoryMessages.filter(m => new Date(m.timestamp) > sixHoursAgo);
+
+    // Cleanup Supabase
+    if (supabase) {
+      try {
+        const { error } = await supabase
+          .from('chat_messages')
+          .delete()
+          .lt('created_at', sixHoursAgo.toISOString());
+        
+        if (error && error.code !== 'PGRST116') {
+          console.error('Error cleaning up Supabase messages:', error);
+        }
+      } catch (err) {
+        console.error('Supabase cleanup exception:', err);
       }
-    } else {
-      console.log('Cleaned up old messages (older than 6h)');
     }
   }, 10 * 60 * 1000);
 
   const activeUsers = new Map();
 
   io.on("connection", (socket) => {
-    console.log("User connected:", socket.id);
+    console.log("New socket connection:", socket.id);
 
     socket.on("user:join", async (userData) => {
       activeUsers.set(socket.id, userData);
       
-      // Join a room specific to the user's CNPJ
       if (userData.cnpj) {
         socket.join(`user_${userData.cnpj}`);
       }
 
-      // If admin, join admin room
       if (userData.role === 'admin') {
         socket.join("admin_room");
       }
 
-      // Send message history from Supabase
-      if (supabaseUrl && supabaseAnonKey) {
-        const { data: history, error } = await supabase
-          .from('chat_messages')
-          .select('*')
-          .order('created_at', { ascending: true });
+      let history: any[] = [];
 
-        if (!error && history) {
-          const formattedHistory = history.map(m => ({
-            id: m.id,
-            text: m.text,
-            timestamp: m.created_at,
-            from: {
-              cnpj: m.from_cnpj,
-              username: m.from_username,
-              role: m.from_role
-            },
-            to: m.to_cnpj ? {
-              cnpj: m.to_cnpj,
-              username: m.to_username
-            } : null,
-            attachment: m.attachment,
-            attachmentType: m.attachment_type
-          })).filter(m => 
-            userData.role === 'admin' || m.from.cnpj === userData.cnpj || m.to?.cnpj === userData.cnpj
-          );
+      // Try to load from Supabase first
+      if (supabase) {
+        try {
+          const { data, error } = await supabase
+            .from('chat_messages')
+            .select('*')
+            .order('created_at', { ascending: true });
 
-          socket.emit("message:history", formattedHistory);
-        } else if (error) {
-          console.error('Error fetching chat history:', error);
-          socket.emit("message:history", []);
+          if (!error && data) {
+            history = data.map(m => ({
+              id: m.id,
+              text: m.text,
+              timestamp: m.created_at,
+              from: {
+                cnpj: m.from_cnpj,
+                username: m.from_username,
+                role: m.from_role
+              },
+              to: m.to_cnpj ? {
+                cnpj: m.to_cnpj,
+                username: m.to_username
+              } : null,
+              attachment: m.attachment,
+              attachmentType: m.attachment_type
+            }));
+          }
+        } catch (err) {
+          console.error('Error fetching Supabase history:', err);
         }
-      } else {
-        socket.emit("message:history", []);
       }
+
+      // Merge with in-memory (and remove duplicates)
+      const combinedHistory = [...history, ...inMemoryMessages];
+      const uniqueHistory = Array.from(new Map(combinedHistory.map(m => [m.id, m])).values())
+        .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+
+      // Filter for the specific user
+      const filteredHistory = uniqueHistory.filter(m => 
+        userData.role === 'admin' || m.from.cnpj === userData.cnpj || m.to?.cnpj === userData.cnpj
+      );
+
+      socket.emit("message:history", filteredHistory);
     });
 
     socket.on("message:send", async (messageData) => {
       const fullMessage = {
         ...messageData,
-        id: Date.now().toString(),
+        id: `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         timestamp: new Date().toISOString()
       };
 
-      // Save to Supabase
-      if (supabaseUrl && supabaseAnonKey) {
-        const { error } = await supabase
-          .from('chat_messages')
-          .insert([{
-            id: fullMessage.id,
-            from_cnpj: fullMessage.from.cnpj,
-            from_username: fullMessage.from.username,
-            from_role: fullMessage.from.role,
-            to_cnpj: fullMessage.to?.cnpj || null,
-            to_username: fullMessage.to?.username || null,
-            text: fullMessage.text,
-            attachment: fullMessage.attachment || null,
-            attachment_type: fullMessage.attachmentType || null,
-            created_at: fullMessage.timestamp
-          }]);
+      // Store in-memory
+      inMemoryMessages.push(fullMessage);
+      if (inMemoryMessages.length > 500) inMemoryMessages.shift();
 
-        if (error) console.error('Error saving message to Supabase:', error);
+      // Store in Supabase
+      if (supabase) {
+        try {
+          const { error } = await supabase
+            .from('chat_messages')
+            .insert([{
+              id: fullMessage.id,
+              from_cnpj: fullMessage.from.cnpj,
+              from_username: fullMessage.from.username,
+              from_role: fullMessage.from.role,
+              to_cnpj: fullMessage.to?.cnpj || null,
+              to_username: fullMessage.to?.username || null,
+              text: fullMessage.text,
+              attachment: fullMessage.attachment || null,
+              attachment_type: fullMessage.attachmentType || null,
+              created_at: fullMessage.timestamp
+            }]);
+
+          if (error) console.error('Supabase insert error:', error);
+        } catch (err) {
+          console.error('Supabase insert exception:', err);
+        }
       }
 
+      // Route message
       if (messageData.from.role === 'admin') {
-        // Admin sending to specific user
         if (messageData.to?.cnpj) {
-          // Send to the specific user's room
+          // Send to user and all admins
           io.to(`user_${messageData.to.cnpj}`).emit("message:receive", fullMessage);
-          // Also send to all admins so they see the reply in their history
           io.to("admin_room").emit("message:receive", fullMessage);
         } else {
-          // Fallback: broadcast if no target
+          // Broadcast to everyone if no target
           io.emit("message:receive", fullMessage);
         }
       } else {
-        // User sending to admin
+        // Send to all admins and back to the user's rooms
         io.to("admin_room").emit("message:receive", fullMessage);
-        // Also send back to the user's own room (for sync across tabs)
         io.to(`user_${messageData.from.cnpj}`).emit("message:receive", fullMessage);
       }
     });
 
     socket.on("disconnect", () => {
       activeUsers.delete(socket.id);
-      console.log("User disconnected:", socket.id);
     });
   });
 

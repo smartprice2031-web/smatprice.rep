@@ -281,6 +281,10 @@ export const useStore = create<AppState>()(
         createDefaultLayout('Modelo 14'),
         createDefaultLayout('Modelo 15'),
         createDefaultLayout('Modelo 16'),
+        createDefaultLayout('Modelo 17'),
+        createDefaultLayout('Modelo 18'),
+        createDefaultLayout('Modelo 19'),
+        createDefaultLayout('Modelo 20'),
         createDefaultLayout('Padrão Ultra'),
       ],
 
@@ -578,7 +582,7 @@ export const useStore = create<AppState>()(
               return merged;
             });
 
-            if (loadedLayouts.length < 17) {
+            if (loadedLayouts.length < 21) {
               const defaults = [
                 createDefaultLayout('QUARTA FRALDA PL'),
                 createDefaultLayout('SABADÃO PL'),
@@ -596,11 +600,15 @@ export const useStore = create<AppState>()(
                 createDefaultLayout('Modelo 14'),
                 createDefaultLayout('Modelo 15'),
                 createDefaultLayout('Modelo 16'),
+                createDefaultLayout('Modelo 17'),
+                createDefaultLayout('Modelo 18'),
+                createDefaultLayout('Modelo 19'),
+                createDefaultLayout('Modelo 20'),
                 createDefaultLayout('Padrão Ultra'),
               ];
               // Merge: keep existing ones, add missing ones from defaults
               const merged = [...loadedLayouts];
-              for (let i = merged.length; i < 17; i++) {
+              for (let i = merged.length; i < 21; i++) {
                 merged.push(defaults[i]);
               }
               loadedLayouts = merged;

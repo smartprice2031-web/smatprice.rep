@@ -19,16 +19,26 @@ const Adjustments = () => {
   const handleReset = () => {
     useStore.setState((state) => ({
       layouts: [
-        createDefaultLayout('Modelo 1'),
-        createDefaultLayout('Modelo 2'),
-        createDefaultLayout('Modelo 3'),
-        createDefaultLayout('Modelo 4'),
-        createDefaultLayout('Modelo 5'),
+        createDefaultLayout('QUARTA FRALDA PL'),
+        createDefaultLayout('SABADÃO PL'),
+        createDefaultLayout('QUI KIDS PL'),
+        createDefaultLayout('DERMO PL'),
+        createDefaultLayout('MARONBA'),
         createDefaultLayout('Modelo 6'),
         createDefaultLayout('Modelo 7'),
         createDefaultLayout('Modelo 8'),
         createDefaultLayout('Modelo 9'),
         createDefaultLayout('Modelo 10'),
+        createDefaultLayout('Modelo 11'),
+        createDefaultLayout('Modelo 12'),
+        createDefaultLayout('Modelo 13'),
+        createDefaultLayout('Modelo 14'),
+        createDefaultLayout('Modelo 15'),
+        createDefaultLayout('Modelo 16'),
+        createDefaultLayout('Modelo 17'),
+        createDefaultLayout('Modelo 18'),
+        createDefaultLayout('Modelo 19'),
+        createDefaultLayout('Modelo 20'),
         createDefaultLayout('Padrão Ultra'),
       ]
     }));

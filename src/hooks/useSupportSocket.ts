@@ -30,10 +30,11 @@ export function useSupportSocket() {
   useEffect(() => {
     if (!currentUser) return;
 
-    const socket = io(window.location.origin);
+    const socket = io(); // Connect to same host/port
     socketRef.current = socket;
 
     socket.on('connect', () => {
+      console.log('Connected to support server');
       socket.emit('user:join', { ...currentUser, role: userRole });
       
       // Request notification permission
@@ -42,34 +43,40 @@ export function useSupportSocket() {
       }
     });
 
+    socket.on('connect_error', (err) => {
+      console.error('Socket connection error:', err);
+      toast.error('Erro ao conectar ao chat de suporte. Tentando reconectar...');
+    });
+
     socket.on('message:history', (history: Message[]) => {
       setMessages(history);
     });
 
     socket.on('message:receive', (message: Message) => {
-      // Avoid duplicate messages in state (since we might receive it via multiple rooms)
+      // Avoid duplicate messages in state
       setMessages(prev => {
         if (prev.some(m => m.id === message.id)) return prev;
         return [...prev, message];
       });
       
-      // Access latest state without re-running the effect
       const state = useStore.getState();
       const isFromMe = message.from.cnpj === currentUser.cnpj && message.from.username === currentUser.username;
       
       if (!isFromMe) {
+        // Always play sound for incoming messages
+        const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3');
+        audio.play().catch(e => console.log('Audio play blocked by browser policy'));
+
         // Notification logic
         let shouldNotify = false;
         
         if (!state.isSupportChatOpen) {
           shouldNotify = true;
         } else if (userRole === 'admin') {
-          // If admin has chat open, but the message is from a user NOT currently selected
           if (message.from.cnpj !== state.selectedUserCnpj) {
             shouldNotify = true;
           }
         } else {
-          // User has chat open, but maybe the window is not focused
           if (document.hidden) {
             shouldNotify = true;
           }
@@ -81,31 +88,32 @@ export function useSupportSocket() {
         }
 
         if (shouldNotify) {
-          // Play notification sound
-          const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3');
-          audio.play().catch(e => console.log('Audio play blocked'));
-
           setUnreadSupportCount(prev => prev + 1);
 
           const senderName = message.from.role === 'admin' ? 'Suporte SmartPrice' : message.from.username;
 
           // System Notification
           if ("Notification" in window && Notification.permission === "granted") {
-            const n = new Notification(`Nova mensagem de ${senderName}`, {
-              body: message.text,
-              icon: '/favicon.ico'
-            });
-            n.onclick = () => {
-              window.focus();
-              useStore.getState().setSupportChatOpen(true);
-              if (userRole === 'admin' && message.from.cnpj) {
-                useStore.getState().setSelectedUserCnpj(message.from.cnpj);
-              }
-            };
+            try {
+              const n = new Notification(`Nova mensagem de ${senderName}`, {
+                body: message.text,
+                icon: '/favicon.ico'
+              });
+              n.onclick = () => {
+                window.focus();
+                useStore.getState().setSupportChatOpen(true);
+                if (userRole === 'admin' && message.from.cnpj) {
+                  useStore.getState().setSelectedUserCnpj(message.from.cnpj);
+                }
+              };
+            } catch (e) {
+              console.error('Error showing system notification:', e);
+            }
           }
 
           toast.info(`Nova mensagem de ${senderName}`, {
             description: message.text.length > 50 ? message.text.substring(0, 50) + '...' : message.text,
+            duration: 5000,
             action: {
               label: 'Ver',
               onClick: () => {
