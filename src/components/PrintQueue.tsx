@@ -7,12 +7,14 @@ const PrintQueue = () => {
   const { printQueue, removeFromQueue, clearQueue, setView, setPrinting, isPrinting } = useStore();
 
   const handlePrintAll = () => {
+    if (printQueue.length === 0) return;
     setPrinting(true);
-    // Automatically trigger print dialog like Ctrl+P
+    // Give time for the print preview to render before opening the dialog
     setTimeout(() => {
       window.print();
-      setPrinting(false);
-    }, 300);
+      // We don't immediately setPrinting(false) to allow the user to see the preview
+      // if they cancel the print dialog. They can close it manually.
+    }, 500);
   };
 
   const handleExportPDFAll = async () => {
@@ -86,24 +88,24 @@ const PrintQueue = () => {
           </div>
         </div>
 
-        <div className="flex flex-col items-center gap-8 py-12 px-4">
+        <div className="flex flex-col items-center gap-8 py-12 px-4 no-print">
           {printQueue.map((imgData, index) => (
             <div key={index} className="relative group">
-              <div className="absolute -left-12 top-0 text-zinc-400 font-black text-2xl no-print">
+              <div className="absolute -left-12 top-0 text-zinc-400 font-black text-2xl">
                 {index + 1}
               </div>
               <div className="bg-white shadow-[0_0_50px_rgba(0,0,0,0.1)] w-[210mm] h-[297mm] flex items-center justify-center overflow-hidden border border-zinc-200">
-                <img src={imgData} className="w-full h-full object-contain" />
+                <img src={imgData} className="w-full h-full object-contain" alt={`Plaquinha ${index + 1}`} />
               </div>
             </div>
           ))}
         </div>
 
-        {/* Hidden Print Area for actual browser print command - Only one instance needed */}
-        <div id="print-queue-area" className="hidden print:block">
+        {/* Actual Print Area - Optimized for Browser Print */}
+        <div id="print-queue-area" className="fixed inset-0 z-[-1] bg-white hidden print:block">
           {printQueue.map((imgData, index) => (
-            <div key={index} className="print-page w-[210mm] h-[297mm] flex items-center justify-center overflow-hidden bg-white">
-              <img src={imgData} className="w-full h-full object-contain" />
+            <div key={index} className="print-page">
+              <img src={imgData} alt={`Print Tag ${index + 1}`} />
             </div>
           ))}
         </div>

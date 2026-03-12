@@ -27,11 +27,19 @@ async function startServer() {
 
     socket.on("user:join", (userData) => {
       activeUsers.set(socket.id, userData);
+      
+      // Join a room specific to the user's CNPJ
+      if (userData.cnpj) {
+        socket.join(`user_${userData.cnpj}`);
+      }
+
       // If admin, join admin room
       if (userData.role === 'admin') {
         socket.join("admin_room");
       }
+
       // Send message history
+      // Admins see everything, users only see messages involving them
       socket.emit("message:history", messages.filter(m => 
         userData.role === 'admin' || m.from.cnpj === userData.cnpj || m.to?.cnpj === userData.cnpj
       ));
@@ -47,12 +55,20 @@ async function startServer() {
 
       if (messageData.from.role === 'admin') {
         // Admin sending to specific user
-        io.emit("message:receive", fullMessage);
+        if (messageData.to?.cnpj) {
+          // Send to the specific user's room
+          io.to(`user_${messageData.to.cnpj}`).emit("message:receive", fullMessage);
+          // Also send to all admins so they see the reply in their history
+          io.to("admin_room").emit("message:receive", fullMessage);
+        } else {
+          // Fallback: broadcast if no target (shouldn't happen with current UI)
+          io.emit("message:receive", fullMessage);
+        }
       } else {
         // User sending to admin
         io.to("admin_room").emit("message:receive", fullMessage);
-        // Also send back to the user themselves for UI update
-        socket.emit("message:receive", fullMessage);
+        // Also send back to the user's own room (for sync across tabs)
+        io.to(`user_${messageData.from.cnpj}`).emit("message:receive", fullMessage);
       }
     });
 

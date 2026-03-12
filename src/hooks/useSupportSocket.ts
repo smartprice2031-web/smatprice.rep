@@ -47,7 +47,11 @@ export function useSupportSocket() {
     });
 
     socket.on('message:receive', (message: Message) => {
-      setMessages(prev => [...prev, message]);
+      // Avoid duplicate messages in state (since we might receive it via multiple rooms)
+      setMessages(prev => {
+        if (prev.some(m => m.id === message.id)) return prev;
+        return [...prev, message];
+      });
       
       // Access latest state without re-running the effect
       const state = useStore.getState();
@@ -63,11 +67,17 @@ export function useSupportSocket() {
           // If admin has chat open, but the message is from a user NOT currently selected
           if (message.from.cnpj !== state.selectedUserCnpj) {
             shouldNotify = true;
-            // Update per-user unread count for admin
-            if (message.from.cnpj) {
-              setUnreadPerUser(message.from.cnpj, prev => prev + 1);
-            }
           }
+        } else {
+          // User has chat open, but maybe the window is not focused
+          if (document.hidden) {
+            shouldNotify = true;
+          }
+        }
+
+        // Update unread counts
+        if (userRole === 'admin' && message.from.cnpj && message.from.cnpj !== state.selectedUserCnpj) {
+          setUnreadPerUser(message.from.cnpj, prev => prev + 1);
         }
 
         if (shouldNotify) {
@@ -77,9 +87,11 @@ export function useSupportSocket() {
 
           setUnreadSupportCount(prev => prev + 1);
 
+          const senderName = message.from.role === 'admin' ? 'Suporte SmartPrice' : message.from.username;
+
           // System Notification
           if ("Notification" in window && Notification.permission === "granted") {
-            const n = new Notification(`Nova mensagem de ${message.from.role === 'admin' ? 'Suporte' : message.from.username}`, {
+            const n = new Notification(`Nova mensagem de ${senderName}`, {
               body: message.text,
               icon: '/favicon.ico'
             });
@@ -92,7 +104,7 @@ export function useSupportSocket() {
             };
           }
 
-          toast.info(`Nova mensagem de ${message.from.role === 'admin' ? 'Suporte' : message.from.username}`, {
+          toast.info(`Nova mensagem de ${senderName}`, {
             description: message.text.length > 50 ? message.text.substring(0, 50) + '...' : message.text,
             action: {
               label: 'Ver',

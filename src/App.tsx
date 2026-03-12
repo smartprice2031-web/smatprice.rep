@@ -144,8 +144,8 @@ export default function App() {
     // Automatically trigger print dialog like Ctrl+P
     setTimeout(() => {
       window.print();
-      setPrinting(false);
-    }, 300);
+      // Keep printing state for a bit so user can see it
+    }, 500);
   };
 
   const confirmPrint = () => {
