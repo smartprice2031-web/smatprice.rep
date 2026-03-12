@@ -35,7 +35,7 @@ export default function App() {
     isAuthenticated, logout, userRole, isUserModalOpen, setUserModalOpen,
     isSupportChatOpen, setSupportChatOpen, unreadSupportCount,
     activeLayoutIndex, layouts, setActiveLayout,
-    currentUser, allowedStores
+    currentUser, allowedStores, lastLoginTimestamp
   } = useStore();
   const [activeTab, setActiveTab] = useState<'select' | 'adjustments'>('select');
 
@@ -80,6 +80,33 @@ export default function App() {
   }, [userRole, activeTab]);
 
   useEffect(() => {
+    // Force logout on fresh access (new tab/window)
+    const sessionActive = sessionStorage.getItem('smartprice_session_active');
+    if (!sessionActive) {
+      logout();
+      sessionStorage.setItem('smartprice_session_active', 'true');
+    }
+
+    if (isAuthenticated && lastLoginTimestamp) {
+      const SIX_HOURS = 6 * 60 * 60 * 1000;
+      
+      const checkSession = () => {
+        const now = Date.now();
+        if (now - lastLoginTimestamp > SIX_HOURS) {
+          logout();
+        }
+      };
+
+      // Check on mount
+      checkSession();
+
+      // Check every minute
+      const interval = setInterval(checkSession, 60000);
+      return () => clearInterval(interval);
+    }
+  }, [isAuthenticated, lastLoginTimestamp, logout]);
+
+  useEffect(() => {
     loadLayout();
 
     const handleBeforePrint = () => setPrinting(true);
@@ -114,6 +141,11 @@ export default function App() {
   const handlePrint = () => {
     setSelectedId(null);
     setPrinting(true);
+    // Automatically trigger print dialog like Ctrl+P
+    setTimeout(() => {
+      window.print();
+      setPrinting(false);
+    }, 300);
   };
 
   const confirmPrint = () => {

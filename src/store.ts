@@ -151,6 +151,7 @@ interface AppState {
   accessLogs: { cnpj: string; username: string; bandeira: string; timestamp: string }[];
   addAccessLog: (log: { cnpj: string; username: string; bandeira: string }) => void;
   isAuthenticated: boolean;
+  lastLoginTimestamp: number | null;
   userRole: 'user' | 'admin' | null;
   currentUser: { username: string; cnpj: string; bandeira: string } | null;
   isSupportChatOpen: boolean;
@@ -183,6 +184,10 @@ const DEFAULT_TEXT = {
 
 export const THREE_PRODUCT_LAYOUTS = [
   'MARONBA',
+  'QUARTA FRALDA PL',
+  'SABADÃO PL',
+  'QUI KIDS PL',
+  'DERMO PL',
   'OFERTA 3',
   'COMBO 3'
 ];
@@ -201,9 +206,9 @@ export const createDefaultLayout = (name: string): Layout => {
     productImage1: {
       url: null,
       x: 50,
-      y: 150,
-      width: 250,
-      height: 250,
+      y: showThird ? 120 : 150,
+      width: showThird ? 200 : 250,
+      height: showThird ? 200 : 250,
       rotation: 0,
       opacity: 1,
       visible: true,
@@ -212,9 +217,9 @@ export const createDefaultLayout = (name: string): Layout => {
     productImage2: {
       url: null,
       x: 50,
-      y: 650,
-      width: 250,
-      height: 250,
+      y: showThird ? 780 : 650,
+      width: showThird ? 200 : 250,
+      height: showThird ? 200 : 250,
       rotation: 0,
       opacity: 1,
       visible: true,
@@ -223,31 +228,31 @@ export const createDefaultLayout = (name: string): Layout => {
     productImage3: {
       url: null,
       x: 50,
-      y: 400,
-      width: 250,
-      height: 250,
+      y: 450,
+      width: 200,
+      height: 200,
       rotation: 0,
       opacity: 1,
       visible: showThird,
       locked: false,
     },
     textElements1: {
-      name: { ...DEFAULT_TEXT, text: 'PRODUTO 1', y: 100, fontSize: 50 },
-      description: { ...DEFAULT_TEXT, text: 'Descrição do produto 1.', y: 180, fontSize: 25, isBold: false },
-      subtitle: { ...DEFAULT_TEXT, text: 'OFERTA ESPECIAL', y: 140, fontSize: 20 },
-      price: { ...DEFAULT_TEXT, text: 'R$ 0,00', y: 400, fontSize: 100, color: '#e11d48' },
+      name: { ...DEFAULT_TEXT, text: 'PRODUTO SUPERIOR', y: showThird ? 50 : 100, fontSize: showThird ? 40 : 50 },
+      description: { ...DEFAULT_TEXT, text: 'Descrição do produto.', y: showThird ? 100 : 180, fontSize: 20, isBold: false },
+      subtitle: { ...DEFAULT_TEXT, text: 'OFERTA', y: showThird ? 80 : 140, fontSize: 15 },
+      price: { ...DEFAULT_TEXT, text: 'R$ 0,00', y: showThird ? 300 : 400, fontSize: showThird ? 80 : 100, color: '#e11d48' },
     },
     textElements2: {
-      name: { ...DEFAULT_TEXT, text: 'PRODUTO 2', y: 600, fontSize: 50 },
-      description: { ...DEFAULT_TEXT, text: 'Descrição do produto 2.', y: 680, fontSize: 25, isBold: false },
-      subtitle: { ...DEFAULT_TEXT, text: 'OFERTA ESPECIAL', y: 640, fontSize: 20 },
-      price: { ...DEFAULT_TEXT, text: 'R$ 0,00', y: 900, fontSize: 100, color: '#e11d48' },
+      name: { ...DEFAULT_TEXT, text: 'PRODUTO INFERIOR', y: showThird ? 710 : 600, fontSize: showThird ? 40 : 50 },
+      description: { ...DEFAULT_TEXT, text: 'Descrição do produto.', y: showThird ? 760 : 680, fontSize: 20, isBold: false },
+      subtitle: { ...DEFAULT_TEXT, text: 'OFERTA', y: showThird ? 740 : 640, fontSize: 15 },
+      price: { ...DEFAULT_TEXT, text: 'R$ 0,00', y: showThird ? 960 : 900, fontSize: showThird ? 80 : 100, color: '#e11d48' },
     },
     textElements3: {
-      name: { ...DEFAULT_TEXT, text: 'PRODUTO 3', y: 350, fontSize: 50, visible: showThird },
-      description: { ...DEFAULT_TEXT, text: 'Descrição do produto 3.', y: 430, fontSize: 25, isBold: false, visible: showThird },
-      subtitle: { ...DEFAULT_TEXT, text: 'OFERTA ESPECIAL', y: 390, fontSize: 20, visible: showThird },
-      price: { ...DEFAULT_TEXT, text: 'R$ 0,00', y: 550, fontSize: 100, color: '#e11d48', visible: showThird },
+      name: { ...DEFAULT_TEXT, text: 'PRODUTO CENTRAL', y: 380, fontSize: 40, visible: showThird },
+      description: { ...DEFAULT_TEXT, text: 'Descrição do produto.', y: 430, fontSize: 20, isBold: false, visible: showThird },
+      subtitle: { ...DEFAULT_TEXT, text: 'OFERTA', y: 410, fontSize: 15, visible: showThird },
+      price: { ...DEFAULT_TEXT, text: 'R$ 0,00', y: 630, fontSize: 80, color: '#e11d48', visible: showThird },
     },
   };
 };
@@ -260,16 +265,22 @@ export const useStore = create<AppState>()(
 
       activeLayoutIndex: 0,
       layouts: [
-        createDefaultLayout('Modelo 1'),
-        createDefaultLayout('Modelo 2'),
-        createDefaultLayout('Modelo 3'),
-        createDefaultLayout('Modelo 4'),
-        createDefaultLayout('Modelo 5'),
+        createDefaultLayout('QUARTA FRALDA PL'),
+        createDefaultLayout('SABADÃO PL'),
+        createDefaultLayout('QUI KIDS PL'),
+        createDefaultLayout('DERMO PL'),
+        createDefaultLayout('MARONBA'),
         createDefaultLayout('Modelo 6'),
         createDefaultLayout('Modelo 7'),
         createDefaultLayout('Modelo 8'),
         createDefaultLayout('Modelo 9'),
         createDefaultLayout('Modelo 10'),
+        createDefaultLayout('Modelo 11'),
+        createDefaultLayout('Modelo 12'),
+        createDefaultLayout('Modelo 13'),
+        createDefaultLayout('Modelo 14'),
+        createDefaultLayout('Modelo 15'),
+        createDefaultLayout('Modelo 16'),
         createDefaultLayout('Padrão Ultra'),
       ],
 
@@ -567,23 +578,29 @@ export const useStore = create<AppState>()(
               return merged;
             });
 
-            if (loadedLayouts.length < 11) {
+            if (loadedLayouts.length < 17) {
               const defaults = [
-                createDefaultLayout('Modelo 1'),
-                createDefaultLayout('Modelo 2'),
-                createDefaultLayout('Modelo 3'),
-                createDefaultLayout('Modelo 4'),
-                createDefaultLayout('Modelo 5'),
+                createDefaultLayout('QUARTA FRALDA PL'),
+                createDefaultLayout('SABADÃO PL'),
+                createDefaultLayout('QUI KIDS PL'),
+                createDefaultLayout('DERMO PL'),
+                createDefaultLayout('MARONBA'),
                 createDefaultLayout('Modelo 6'),
                 createDefaultLayout('Modelo 7'),
                 createDefaultLayout('Modelo 8'),
                 createDefaultLayout('Modelo 9'),
                 createDefaultLayout('Modelo 10'),
+                createDefaultLayout('Modelo 11'),
+                createDefaultLayout('Modelo 12'),
+                createDefaultLayout('Modelo 13'),
+                createDefaultLayout('Modelo 14'),
+                createDefaultLayout('Modelo 15'),
+                createDefaultLayout('Modelo 16'),
                 createDefaultLayout('Padrão Ultra'),
               ];
               // Merge: keep existing ones, add missing ones from defaults
               const merged = [...loadedLayouts];
-              for (let i = merged.length; i < 11; i++) {
+              for (let i = merged.length; i < 17; i++) {
                 merged.push(defaults[i]);
               }
               loadedLayouts = merged;
@@ -700,6 +717,7 @@ export const useStore = create<AppState>()(
       })),
 
       isAuthenticated: false,
+      lastLoginTimestamp: null,
       userRole: null,
       currentUser: null,
       isSupportChatOpen: false,
@@ -723,8 +741,18 @@ export const useStore = create<AppState>()(
         messages: typeof messages === 'function' ? messages(state.messages) : messages 
       })),
 
-      login: (role, user) => set({ isAuthenticated: true, userRole: role, currentUser: user }),
-      logout: () => set({ isAuthenticated: false, userRole: null, currentUser: null }),
+      login: (role, user) => set({ 
+        isAuthenticated: true, 
+        userRole: role, 
+        currentUser: user,
+        lastLoginTimestamp: Date.now() 
+      }),
+      logout: () => set({ 
+        isAuthenticated: false, 
+        userRole: null, 
+        currentUser: null,
+        lastLoginTimestamp: null 
+      }),
     }),
     {
       name: 'smartprice-storage',
@@ -744,6 +772,7 @@ export const useStore = create<AppState>()(
         accessLogs: state.accessLogs,
         flags: state.flags,
         isAuthenticated: state.isAuthenticated,
+        lastLoginTimestamp: state.lastLoginTimestamp,
         userRole: state.userRole,
         currentUser: state.currentUser,
         currentView: state.currentView,

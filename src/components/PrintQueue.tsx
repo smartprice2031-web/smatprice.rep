@@ -8,6 +8,11 @@ const PrintQueue = () => {
 
   const handlePrintAll = () => {
     setPrinting(true);
+    // Automatically trigger print dialog like Ctrl+P
+    setTimeout(() => {
+      window.print();
+      setPrinting(false);
+    }, 300);
   };
 
   const handleExportPDFAll = async () => {
@@ -56,7 +61,7 @@ const PrintQueue = () => {
 
   if (isPrinting) {
     return (
-      <div className="fixed inset-0 z-[9999] bg-zinc-100 dark:bg-zinc-950 overflow-y-auto no-scrollbar">
+      <div className="fixed inset-0 z-[9999] bg-zinc-100 dark:bg-zinc-950 overflow-y-auto no-scrollbar no-print">
         <div className="sticky top-0 z-[10000] bg-white/80 dark:bg-zinc-900/80 backdrop-blur-md border-b border-zinc-200 dark:border-zinc-800 p-4 flex items-center justify-between no-print">
           <div className="flex items-center gap-4">
             <button 
