@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useStore } from '../store';
 import { useSupportSocket, Message } from '../hooks/useSupportSocket';
-import { MessageCircle, Send, X, User, Shield, Clock, AlertCircle, Paperclip, Camera, Trash2, FileText, Image as ImageIcon } from 'lucide-react';
+import { MessageCircle, Send, X, User, Shield, Clock, AlertCircle, Paperclip, Trash2, FileText, Image as ImageIcon } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
@@ -20,9 +20,7 @@ export default function SupportChat() {
   const { sendMessage, isConnected } = useSupportSocket();
   const [inputText, setInputText] = useState('');
   const [attachment, setAttachment] = useState<{ data: string, type: 'image' | 'file', name: string } | null>(null);
-  const [isCameraOpen, setIsCameraOpen] = useState(false);
   const [showScrollButton, setShowScrollButton] = useState(false);
-  const videoRef = useRef<HTMLVideoElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -37,43 +35,6 @@ export default function SupportChat() {
   const scrollToBottom = () => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-    }
-  };
-
-  const startCamera = async () => {
-    try {
-      setIsCameraOpen(true);
-      const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-      }
-    } catch (err) {
-      console.error("Error accessing camera:", err);
-      toast.error("Não foi possível acessar a câmera.");
-      setIsCameraOpen(false);
-    }
-  };
-
-  const stopCamera = () => {
-    if (videoRef.current && videoRef.current.srcObject) {
-      const stream = videoRef.current.srcObject as MediaStream;
-      stream.getTracks().forEach(track => track.stop());
-    }
-    setIsCameraOpen(false);
-  };
-
-  const takePhoto = () => {
-    if (videoRef.current) {
-      const canvas = document.createElement('canvas');
-      canvas.width = videoRef.current.videoWidth;
-      canvas.height = videoRef.current.videoHeight;
-      const ctx = canvas.getContext('2d');
-      if (ctx) {
-        ctx.drawImage(videoRef.current, 0, 0);
-        const data = canvas.toDataURL('image/jpeg');
-        setAttachment({ data, type: 'image', name: 'foto_webcam.jpg' });
-        stopCamera();
-      }
     }
   };
 
@@ -334,26 +295,6 @@ export default function SupportChat() {
                     </div>
                   )}
 
-                  {/* Camera Preview */}
-                  {isCameraOpen && (
-                    <div className="mb-4 relative rounded-2xl overflow-hidden bg-black aspect-video border-2 border-blue-600">
-                      <video ref={videoRef} autoPlay playsInline className="w-full h-full object-cover" />
-                      <div className="absolute bottom-4 left-0 right-0 flex justify-center gap-4">
-                        <button 
-                          onClick={takePhoto}
-                          className="bg-blue-600 text-white px-6 py-2 rounded-full font-black uppercase tracking-tighter shadow-xl hover:bg-blue-700"
-                        >
-                          Tirar Foto
-                        </button>
-                        <button 
-                          onClick={stopCamera}
-                          className="bg-zinc-800 text-white px-6 py-2 rounded-full font-black uppercase tracking-tighter shadow-xl hover:bg-zinc-700"
-                        >
-                          Cancelar
-                        </button>
-                      </div>
-                    </div>
-                  )}
 
                   <form onSubmit={handleSendMessage} className="flex gap-3">
                     <div className="flex gap-2">
@@ -370,14 +311,6 @@ export default function SupportChat() {
                         title="Anexar Arquivo"
                       >
                         <Paperclip className="w-5 h-5" />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={startCamera}
-                        className="bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-600 dark:text-zinc-400 p-4 rounded-2xl transition-all active:scale-95"
-                        title="Tirar Foto"
-                      >
-                        <Camera className="w-5 h-5" />
                       </button>
                     </div>
                     <input

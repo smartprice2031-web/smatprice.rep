@@ -208,7 +208,25 @@ export default function UserManagement() {
                 </div>
 
                 <div className="space-y-1 md:col-span-2">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 ml-1">Modelos de Plaquinhas Permitidos</label>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 ml-1">Modelos de Plaquinhas Permitidos</label>
+                    <div className="flex gap-2">
+                      <button 
+                        type="button"
+                        onClick={() => setSelectedLayouts(layouts.map(l => l.name))}
+                        className="text-[9px] font-black text-blue-600 uppercase tracking-tighter hover:underline"
+                      >
+                        Selecionar Todos
+                      </button>
+                      <button 
+                        type="button"
+                        onClick={() => setSelectedLayouts([])}
+                        className="text-[9px] font-black text-red-500 uppercase tracking-tighter hover:underline"
+                      >
+                        Limpar
+                      </button>
+                    </div>
+                  </div>
                   <div className="flex flex-wrap gap-2 p-3 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-xl">
                     {layouts.map(layout => (
                       <button
@@ -317,9 +335,25 @@ export default function UserManagement() {
                         editingStoreLayouts === store.cnpj ? "max-h-[500px] opacity-100 mt-2" : "max-h-0 opacity-0"
                       )}>
                         <div className="p-4 bg-zinc-50 dark:bg-zinc-800/50 rounded-xl border border-zinc-200 dark:border-zinc-700">
-                          <div className="flex items-center gap-2 mb-3">
-                            <LayoutGrid className="w-4 h-4 text-blue-600" />
-                            <h4 className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Modelos Permitidos para este CNPJ</h4>
+                          <div className="flex items-center justify-between mb-3">
+                            <div className="flex items-center gap-2">
+                              <LayoutGrid className="w-4 h-4 text-blue-600" />
+                              <h4 className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Modelos Permitidos para este CNPJ</h4>
+                            </div>
+                            <div className="flex gap-2">
+                              <button 
+                                onClick={() => addAllowedStore({ ...store, allowedLayouts: layouts.map(l => l.name) })}
+                                className="text-[8px] font-black text-blue-600 uppercase tracking-tighter hover:underline"
+                              >
+                                Todos
+                              </button>
+                              <button 
+                                onClick={() => addAllowedStore({ ...store, allowedLayouts: [] })}
+                                className="text-[8px] font-black text-red-500 uppercase tracking-tighter hover:underline"
+                              >
+                                Nenhum
+                              </button>
+                            </div>
                           </div>
                           <div className="flex flex-wrap gap-1.5">
                             {layouts.map(layout => {

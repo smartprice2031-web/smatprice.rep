@@ -19,28 +19,32 @@ export interface Message {
   timestamp: string;
 }
 
+let socketInstance: Socket | null = null;
+
 export function useSupportSocket() {
   const { 
     currentUser, userRole, 
     setUnreadSupportCount, setUnreadPerUser,
     messages, setMessages 
   } = useStore();
-  const [isConnected, setIsConnected] = useState(false);
-  const socketRef = useRef<Socket | null>(null);
+  const [isConnected, setIsConnected] = useState(socketInstance?.connected || false);
 
   useEffect(() => {
     if (!currentUser) return;
 
-    const socket = io(window.location.origin, {
-      path: '/socket.io/',
-      transports: ['polling', 'websocket'],
-      reconnectionAttempts: 10,
-      reconnectionDelay: 2000,
-      timeout: 20000
-    });
-    socketRef.current = socket;
+    if (!socketInstance) {
+      socketInstance = io({
+        path: '/socket.io/',
+        transports: ['polling', 'websocket'],
+        reconnectionAttempts: 20,
+        reconnectionDelay: 1000,
+        timeout: 10000
+      });
+    }
 
-    socket.on('connect', () => {
+    const socket = socketInstance;
+
+    const onConnect = () => {
       console.log('Connected to support server with ID:', socket.id);
       setIsConnected(true);
       socket.emit('user:join', { ...currentUser, role: userRole });
@@ -49,35 +53,29 @@ export function useSupportSocket() {
       if ("Notification" in window && Notification.permission === "default") {
         Notification.requestPermission();
       }
-    });
+    };
 
-    socket.on('connect_error', (err) => {
+    const onConnectError = (err: any) => {
       console.error('Socket connection error details:', err.message, err);
       setIsConnected(false);
-      // Only show toast if it's a persistent issue
-      if (socket.active === false) {
-        toast.error('Erro ao conectar ao chat de suporte. Tentando reconectar...', {
-          id: 'socket-error' // Prevent multiple toasts
-        });
-      }
-    });
+    };
 
-    socket.on('reconnect', (attempt) => {
+    const onReconnect = (attempt: number) => {
       console.log('Socket reconnected after', attempt, 'attempts');
       setIsConnected(true);
       toast.success('Chat de suporte reconectado!');
-    });
+    };
 
-    socket.on('disconnect', () => {
+    const onDisconnect = () => {
       console.log('Socket disconnected');
       setIsConnected(false);
-    });
+    };
 
-    socket.on('message:history', (history: Message[]) => {
+    const onHistory = (history: Message[]) => {
       setMessages(history);
-    });
+    };
 
-    socket.on('message:receive', (message: Message) => {
+    const onReceive = (message: Message) => {
       // Avoid duplicate messages in state
       setMessages(prev => {
         if (prev.some(m => m.id === message.id)) return prev;
@@ -152,7 +150,19 @@ export function useSupportSocket() {
           });
         }
       }
-    });
+    };
+
+    socket.on('connect', onConnect);
+    socket.on('connect_error', onConnectError);
+    socket.on('reconnect', onReconnect);
+    socket.on('disconnect', onDisconnect);
+    socket.on('message:history', onHistory);
+    socket.on('message:receive', onReceive);
+
+    // If already connected, trigger the join logic
+    if (socket.connected) {
+      onConnect();
+    }
 
     // Local cleanup: remove messages older than 6 hours from state
     const cleanupInterval = setInterval(() => {
@@ -161,13 +171,18 @@ export function useSupportSocket() {
     }, 60000); // Check every minute
 
     return () => {
-      socket.disconnect();
+      socket.off('connect', onConnect);
+      socket.off('connect_error', onConnectError);
+      socket.off('reconnect', onReconnect);
+      socket.off('disconnect', onDisconnect);
+      socket.off('message:history', onHistory);
+      socket.off('message:receive', onReceive);
       clearInterval(cleanupInterval);
     };
   }, [currentUser, userRole, setMessages, setUnreadPerUser, setUnreadSupportCount]); 
 
   const sendMessage = (text: string, toCnpj?: string, attachment?: { data: string, type: 'image' | 'file' }) => {
-    if (!socketRef.current || !currentUser) return;
+    if (!socketInstance || !socketInstance.connected || !currentUser) return;
 
     const messageData = {
       from: { ...currentUser, role: userRole },
@@ -177,7 +192,7 @@ export function useSupportSocket() {
       to: userRole === 'admin' ? (toCnpj ? { cnpj: toCnpj } : undefined) : undefined
     };
 
-    socketRef.current.emit('message:send', messageData);
+    socketInstance.emit('message:send', messageData);
   };
 
   return { messages, setMessages, sendMessage, isConnected };

@@ -664,7 +664,7 @@ export const useStore = create<AppState>()(
         const existing = state.allowedStores.find(s => s.cnpj === store.cnpj);
         const updatedStore = {
           ...store,
-          allowedLayouts: store.allowedLayouts || existing?.allowedLayouts || []
+          allowedLayouts: store.allowedLayouts !== undefined ? store.allowedLayouts : (existing?.allowedLayouts || [])
         };
         return { 
           allowedStores: [...state.allowedStores.filter(s => s.cnpj !== store.cnpj), updatedStore] 
