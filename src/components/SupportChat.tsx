@@ -17,7 +17,7 @@ export default function SupportChat() {
     setUnreadSupportCount, selectedUserCnpj, setSelectedUserCnpj,
     unreadPerUser, setUnreadPerUser, messages
   } = useStore();
-  const { sendMessage } = useSupportSocket();
+  const { sendMessage, isConnected } = useSupportSocket();
   const [inputText, setInputText] = useState('');
   const [attachment, setAttachment] = useState<{ data: string, type: 'image' | 'file', name: string } | null>(null);
   const [isCameraOpen, setIsCameraOpen] = useState(false);
@@ -146,9 +146,15 @@ export default function SupportChat() {
               <MessageCircle className="w-6 h-6" />
             </div>
             <div>
-              <h3 className="text-xl font-black tracking-tighter uppercase">Suporte SmartPrice</h3>
+              <div className="flex items-center gap-2">
+                <h3 className="text-xl font-black tracking-tighter uppercase">Suporte SmartPrice</h3>
+                <div className={cn(
+                  "w-2 h-2 rounded-full animate-pulse",
+                  isConnected ? "bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]" : "bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.5)]"
+                )} />
+              </div>
               <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">
-                {userRole === 'admin' ? 'Central de Atendimento' : 'Enviar mensagem para o suporte'}
+                {isConnected ? (userRole === 'admin' ? 'Central de Atendimento' : 'Enviar mensagem para o suporte') : 'Desconectado - Tentando reconectar...'}
               </p>
             </div>
           </div>

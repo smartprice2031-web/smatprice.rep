@@ -63,7 +63,8 @@ const PrintQueue = () => {
 
   if (isPrinting) {
     return (
-      <div className="fixed inset-0 z-[9999] bg-zinc-100 dark:bg-zinc-950 overflow-y-auto no-scrollbar no-print">
+      <div className="fixed inset-0 z-[9999] bg-zinc-100 dark:bg-zinc-950 overflow-y-auto no-scrollbar">
+        {/* UI Header - Hidden during print */}
         <div className="sticky top-0 z-[10000] bg-white/80 dark:bg-zinc-900/80 backdrop-blur-md border-b border-zinc-200 dark:border-zinc-800 p-4 flex items-center justify-between no-print">
           <div className="flex items-center gap-4">
             <button 
@@ -88,6 +89,7 @@ const PrintQueue = () => {
           </div>
         </div>
 
+        {/* Preview Area - Hidden during print */}
         <div className="flex flex-col items-center gap-8 py-12 px-4 no-print">
           {printQueue.map((imgData, index) => (
             <div key={index} className="relative group">
@@ -102,7 +104,7 @@ const PrintQueue = () => {
         </div>
 
         {/* Actual Print Area - Optimized for Browser Print */}
-        <div id="print-queue-area" className="fixed inset-0 z-[-1] bg-white hidden print:block">
+        <div id="print-queue-area" className="hidden print:block">
           {printQueue.map((imgData, index) => (
             <div key={index} className="print-page">
               <img src={imgData} alt={`Print Tag ${index + 1}`} />

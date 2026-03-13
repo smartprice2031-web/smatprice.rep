@@ -556,11 +556,18 @@ export const useStore = create<AppState>()(
             const layout = data.value;
             const currentState = get();
             
-            // Ensure we have at least 11 layouts if the user wants them
+            // Deduplicate by name and ensure we have the correct set
+            const defaultNames = [
+              'QUARTA FRALDA PL', 'SABADÃO PL', 'QUI KIDS PL', 'DERMO PL', 'MARONBA',
+              'Modelo 6', 'Modelo 7', 'Modelo 8', 'Modelo 9', 'Modelo 10',
+              'Modelo 11', 'Modelo 12', 'Modelo 13', 'Modelo 14', 'Modelo 15',
+              'Modelo 16', 'Modelo 17', 'Modelo 18', 'Modelo 19', 'Modelo 20',
+              'Padrão Ultra'
+            ];
+
             let loadedLayouts = (layout.layouts || currentState.layouts).map((l: any, idx: number) => {
               const defaultL = createDefaultLayout(l.name || `Modelo ${idx + 1}`);
               
-              // Re-evaluate visibility based on name to enforce the 2 vs 3 product rule
               const upperName = (l.name || '').toUpperCase();
               const showThird = THREE_PRODUCT_LAYOUTS.some(layout => upperName.includes(layout));
 
@@ -572,7 +579,6 @@ export const useStore = create<AppState>()(
                 textElements3: l.textElements3 ? { ...defaultL.textElements3, ...l.textElements3 } : defaultL.textElements3,
               };
 
-              // Enforce visibility
               merged.productImage3.visible = showThird;
               merged.textElements3.name.visible = showThird;
               merged.textElements3.description.visible = showThird;
@@ -582,37 +588,28 @@ export const useStore = create<AppState>()(
               return merged;
             });
 
-            if (loadedLayouts.length < 21) {
-              const defaults = [
-                createDefaultLayout('QUARTA FRALDA PL'),
-                createDefaultLayout('SABADÃO PL'),
-                createDefaultLayout('QUI KIDS PL'),
-                createDefaultLayout('DERMO PL'),
-                createDefaultLayout('MARONBA'),
-                createDefaultLayout('Modelo 6'),
-                createDefaultLayout('Modelo 7'),
-                createDefaultLayout('Modelo 8'),
-                createDefaultLayout('Modelo 9'),
-                createDefaultLayout('Modelo 10'),
-                createDefaultLayout('Modelo 11'),
-                createDefaultLayout('Modelo 12'),
-                createDefaultLayout('Modelo 13'),
-                createDefaultLayout('Modelo 14'),
-                createDefaultLayout('Modelo 15'),
-                createDefaultLayout('Modelo 16'),
-                createDefaultLayout('Modelo 17'),
-                createDefaultLayout('Modelo 18'),
-                createDefaultLayout('Modelo 19'),
-                createDefaultLayout('Modelo 20'),
-                createDefaultLayout('Padrão Ultra'),
-              ];
-              // Merge: keep existing ones, add missing ones from defaults
-              const merged = [...loadedLayouts];
-              for (let i = merged.length; i < 21; i++) {
-                merged.push(defaults[i]);
+            // Filter out duplicates and ensure all defaults exist
+            const uniqueLayouts: any[] = [];
+            const seenNames = new Set<string>();
+
+            loadedLayouts.forEach((l: any) => {
+              const upperName = l.name.toUpperCase();
+              if (!seenNames.has(upperName)) {
+                uniqueLayouts.push(l);
+                seenNames.add(upperName);
               }
-              loadedLayouts = merged;
-            }
+            });
+
+            // Add missing defaults
+            defaultNames.forEach(name => {
+              if (!seenNames.has(name.toUpperCase())) {
+                uniqueLayouts.push(createDefaultLayout(name));
+                seenNames.add(name.toUpperCase());
+              }
+            });
+
+            // Final sort/order check if needed, but for now just use uniqueLayouts
+            loadedLayouts = uniqueLayouts;
 
             set({
               background: layout.background || currentState.background,

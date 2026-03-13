@@ -20,10 +20,14 @@ async function startServer() {
   const app = express();
   const httpServer = createServer(app);
   const io = new Server(httpServer, {
+    path: "/socket.io/",
     cors: {
       origin: "*",
-      methods: ["GET", "POST"]
+      methods: ["GET", "POST"],
+      credentials: true
     },
+    transports: ['polling', 'websocket'],
+    allowEIO3: true,
     maxHttpBufferSize: 1e8 // 100mb for attachments
   });
 
@@ -61,9 +65,14 @@ async function startServer() {
   const activeUsers = new Map();
 
   io.on("connection", (socket) => {
-    console.log("New socket connection:", socket.id);
+    console.log("New socket connection attempt:", socket.id);
+
+    socket.on("error", (err) => {
+      console.error("Socket error for", socket.id, ":", err);
+    });
 
     socket.on("user:join", async (userData) => {
+      console.log("User joined chat:", userData.username, userData.cnpj, "Role:", userData.role);
       activeUsers.set(socket.id, userData);
       
       if (userData.cnpj) {

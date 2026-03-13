@@ -25,16 +25,24 @@ export function useSupportSocket() {
     setUnreadSupportCount, setUnreadPerUser,
     messages, setMessages 
   } = useStore();
+  const [isConnected, setIsConnected] = useState(false);
   const socketRef = useRef<Socket | null>(null);
 
   useEffect(() => {
     if (!currentUser) return;
 
-    const socket = io(); // Connect to same host/port
+    const socket = io(window.location.origin, {
+      path: '/socket.io/',
+      transports: ['polling', 'websocket'],
+      reconnectionAttempts: 10,
+      reconnectionDelay: 2000,
+      timeout: 20000
+    });
     socketRef.current = socket;
 
     socket.on('connect', () => {
-      console.log('Connected to support server');
+      console.log('Connected to support server with ID:', socket.id);
+      setIsConnected(true);
       socket.emit('user:join', { ...currentUser, role: userRole });
       
       // Request notification permission
@@ -44,8 +52,25 @@ export function useSupportSocket() {
     });
 
     socket.on('connect_error', (err) => {
-      console.error('Socket connection error:', err);
-      toast.error('Erro ao conectar ao chat de suporte. Tentando reconectar...');
+      console.error('Socket connection error details:', err.message, err);
+      setIsConnected(false);
+      // Only show toast if it's a persistent issue
+      if (socket.active === false) {
+        toast.error('Erro ao conectar ao chat de suporte. Tentando reconectar...', {
+          id: 'socket-error' // Prevent multiple toasts
+        });
+      }
+    });
+
+    socket.on('reconnect', (attempt) => {
+      console.log('Socket reconnected after', attempt, 'attempts');
+      setIsConnected(true);
+      toast.success('Chat de suporte reconectado!');
+    });
+
+    socket.on('disconnect', () => {
+      console.log('Socket disconnected');
+      setIsConnected(false);
     });
 
     socket.on('message:history', (history: Message[]) => {
@@ -155,5 +180,5 @@ export function useSupportSocket() {
     socketRef.current.emit('message:send', messageData);
   };
 
-  return { messages, setMessages, sendMessage };
+  return { messages, setMessages, sendMessage, isConnected };
 }
