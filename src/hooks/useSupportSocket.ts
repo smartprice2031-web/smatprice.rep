@@ -20,14 +20,15 @@ export interface Message {
 }
 
 let socketInstance: Socket | null = null;
+let listenersAttached = false;
 
 export function useSupportSocket() {
   const { 
     currentUser, userRole, 
     setUnreadSupportCount, setUnreadPerUser,
-    messages, setMessages 
+    messages, setMessages,
+    setIsChatConnected, isChatConnected
   } = useStore();
-  const [isConnected, setIsConnected] = useState(socketInstance?.connected || false);
 
   useEffect(() => {
     if (!currentUser) return;
@@ -46,7 +47,7 @@ export function useSupportSocket() {
 
     const onConnect = () => {
       console.log('Connected to support server with ID:', socket.id);
-      setIsConnected(true);
+      setIsChatConnected(true);
       socket.emit('user:join', { ...currentUser, role: userRole });
       
       // Request notification permission
@@ -57,18 +58,18 @@ export function useSupportSocket() {
 
     const onConnectError = (err: any) => {
       console.error('Socket connection error details:', err.message, err);
-      setIsConnected(false);
+      setIsChatConnected(false);
     };
 
     const onReconnect = (attempt: number) => {
       console.log('Socket reconnected after', attempt, 'attempts');
-      setIsConnected(true);
+      setIsChatConnected(true);
       toast.success('Chat de suporte reconectado!');
     };
 
     const onDisconnect = () => {
       console.log('Socket disconnected');
-      setIsConnected(false);
+      setIsChatConnected(false);
     };
 
     const onHistory = (history: Message[]) => {
@@ -152,12 +153,15 @@ export function useSupportSocket() {
       }
     };
 
-    socket.on('connect', onConnect);
-    socket.on('connect_error', onConnectError);
-    socket.on('reconnect', onReconnect);
-    socket.on('disconnect', onDisconnect);
-    socket.on('message:history', onHistory);
-    socket.on('message:receive', onReceive);
+    if (!listenersAttached) {
+      socket.on('connect', onConnect);
+      socket.on('connect_error', onConnectError);
+      socket.on('reconnect', onReconnect);
+      socket.on('disconnect', onDisconnect);
+      socket.on('message:history', onHistory);
+      socket.on('message:receive', onReceive);
+      listenersAttached = true;
+    }
 
     // If already connected, trigger the join logic
     if (socket.connected) {
@@ -171,15 +175,12 @@ export function useSupportSocket() {
     }, 60000); // Check every minute
 
     return () => {
-      socket.off('connect', onConnect);
-      socket.off('connect_error', onConnectError);
-      socket.off('reconnect', onReconnect);
-      socket.off('disconnect', onDisconnect);
-      socket.off('message:history', onHistory);
-      socket.off('message:receive', onReceive);
+      // We don't remove listeners here because we want them to persist across hook instances
+      // since we're using a global socketInstance and listenersAttached flag.
+      // This ensures that even if SupportChat unmounts, the App.tsx instance keeps listening.
       clearInterval(cleanupInterval);
     };
-  }, [currentUser, userRole, setMessages, setUnreadPerUser, setUnreadSupportCount]); 
+  }, [currentUser, userRole, setMessages, setUnreadPerUser, setUnreadSupportCount, setIsChatConnected]); 
 
   const sendMessage = (text: string, toCnpj?: string, attachment?: { data: string, type: 'image' | 'file' }) => {
     if (!socketInstance || !socketInstance.connected || !currentUser) return;
@@ -195,5 +196,5 @@ export function useSupportSocket() {
     socketInstance.emit('message:send', messageData);
   };
 
-  return { messages, setMessages, sendMessage, isConnected };
+  return { messages, setMessages, sendMessage, isConnected: isChatConnected };
 }

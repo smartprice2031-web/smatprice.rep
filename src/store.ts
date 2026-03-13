@@ -156,6 +156,8 @@ interface AppState {
   currentUser: { username: string; cnpj: string; bandeira: string } | null;
   isSupportChatOpen: boolean;
   setSupportChatOpen: (open: boolean) => void;
+  isChatConnected: boolean;
+  setIsChatConnected: (connected: boolean) => void;
   unreadSupportCount: number;
   setUnreadSupportCount: (count: number | ((prev: number) => number)) => void;
   selectedUserCnpj: string | null;
@@ -189,7 +191,13 @@ export const THREE_PRODUCT_LAYOUTS = [
   'QUI KIDS PL',
   'DERMO PL',
   'OFERTA 3',
-  'COMBO 3'
+  'COMBO 3',
+  'MODELO 15',
+  'MODELO 16',
+  'MODELO 17',
+  'MODELO 18',
+  'MODELO 19',
+  'MODELO 20'
 ];
 
 export const createDefaultLayout = (name: string): Layout => {
@@ -366,16 +374,28 @@ export const useStore = create<AppState>()(
         const nextLayout = newLayouts[index];
         const defaultNext = createDefaultLayout(nextLayout.name);
         
+        // Force visibility based on name
+        const upperName = (nextLayout.name || '').toUpperCase();
+        const showThird = THREE_PRODUCT_LAYOUTS.some(layout => upperName.includes(layout));
+
+        const productImage3 = nextLayout.productImage3 || defaultNext.productImage3;
+        const textElements3 = nextLayout.textElements3 || defaultNext.textElements3;
+
         set({
           activeLayoutIndex: index,
           layouts: newLayouts,
           background: nextLayout.background || defaultNext.background,
           productImage1: nextLayout.productImage1 || defaultNext.productImage1,
           productImage2: nextLayout.productImage2 || defaultNext.productImage2,
-          productImage3: nextLayout.productImage3 || defaultNext.productImage3,
+          productImage3: { ...productImage3, visible: showThird },
           textElements1: nextLayout.textElements1 || defaultNext.textElements1,
           textElements2: nextLayout.textElements2 || defaultNext.textElements2,
-          textElements3: nextLayout.textElements3 || defaultNext.textElements3,
+          textElements3: {
+            name: { ...textElements3.name, visible: showThird },
+            description: { ...textElements3.description, visible: showThird },
+            subtitle: { ...textElements3.subtitle, visible: showThird },
+            price: { ...textElements3.price, visible: showThird },
+          },
         });
         get().saveLayout();
       },
@@ -611,14 +631,29 @@ export const useStore = create<AppState>()(
             // Final sort/order check if needed, but for now just use uniqueLayouts
             loadedLayouts = uniqueLayouts;
 
+            const activeLayout = loadedLayouts[layout.activeLayoutIndex || 0] || loadedLayouts[0];
+            const defaultActive = createDefaultLayout(activeLayout.name);
+            
+            // Force visibility for active layout
+            const activeUpperName = (activeLayout.name || '').toUpperCase();
+            const activeShowThird = THREE_PRODUCT_LAYOUTS.some(l => activeUpperName.includes(l));
+
             set({
               background: layout.background || currentState.background,
               productImage1: layout.productImage1 || currentState.productImage1,
               productImage2: layout.productImage2 || currentState.productImage2,
-              productImage3: layout.productImage3 || currentState.productImage3,
+              productImage3: { 
+                ...(layout.productImage3 || currentState.productImage3), 
+                visible: activeShowThird 
+              },
               textElements1: layout.textElements1 || currentState.textElements1,
               textElements2: layout.textElements2 || currentState.textElements2,
-              textElements3: layout.textElements3 || currentState.textElements3,
+              textElements3: {
+                name: { ...(layout.textElements3?.name || currentState.textElements3.name), visible: activeShowThird },
+                description: { ...(layout.textElements3?.description || currentState.textElements3.description), visible: activeShowThird },
+                subtitle: { ...(layout.textElements3?.subtitle || currentState.textElements3.subtitle), visible: activeShowThird },
+                price: { ...(layout.textElements3?.price || currentState.textElements3.price), visible: activeShowThird },
+              },
               activeLayoutIndex: layout.activeLayoutIndex !== undefined ? layout.activeLayoutIndex : currentState.activeLayoutIndex,
               layouts: loadedLayouts,
             } as any);
@@ -727,6 +762,8 @@ export const useStore = create<AppState>()(
       currentUser: null,
       isSupportChatOpen: false,
       setSupportChatOpen: (open) => set({ isSupportChatOpen: open }),
+      isChatConnected: false,
+      setIsChatConnected: (connected) => set({ isChatConnected: connected }),
       unreadSupportCount: 0,
       setUnreadSupportCount: (count) => set((state) => ({ 
         unreadSupportCount: typeof count === 'function' ? count(state.unreadSupportCount) : count 

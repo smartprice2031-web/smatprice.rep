@@ -207,46 +207,40 @@ const ProductSlot = ({
 
     {/* Product List */}
     <div className="space-y-2 max-h-[200px] overflow-y-auto pr-1 custom-scrollbar">
-      {searchTerm.trim() ? (
-        filteredProducts.length > 0 ? (
-          filteredProducts.map((product) => {
-            const isSelected = currentName === product.name;
-            return (
-              <button
-                key={product.id}
-                onClick={() => {
-                  selectProduct(slot, product);
-                  setSearchTerm('');
-                }}
-                className={`w-full text-left p-2 rounded-xl border transition-all flex items-center gap-3 group ${
-                  isSelected 
-                    ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20' 
-                    : 'border-zinc-100 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700 bg-white dark:bg-zinc-900'
-                }`}
-              >
-                <div className="w-8 h-8 rounded-lg bg-zinc-100 dark:bg-zinc-800 overflow-hidden flex-shrink-0">
-                  {product.image ? (
-                    <img src={product.image} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
-                  ) : (
-                    <Package className="w-full h-full p-1.5 text-zinc-400" />
-                  )}
-                </div>
-                <div className="flex-grow min-w-0">
-                  <h4 className="font-bold text-xs truncate uppercase">{product.name}</h4>
-                  <p className="text-[10px] text-blue-600 font-black">{product.price}</p>
-                </div>
-                {isSelected && <Check className="w-3 h-3 text-blue-500 flex-shrink-0" />}
-              </button>
-            );
-          })
-        ) : (
-          <div className="text-center py-4 text-zinc-500 text-xs">
-            Nenhum produto encontrado.
-          </div>
-        )
+      {filteredProducts.length > 0 ? (
+        filteredProducts.map((product) => {
+          const isSelected = currentName === product.name;
+          return (
+            <button
+              key={product.id}
+              onClick={() => {
+                selectProduct(slot, product);
+                setSearchTerm('');
+              }}
+              className={`w-full text-left p-2 rounded-xl border transition-all flex items-center gap-3 group ${
+                isSelected 
+                  ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20' 
+                  : 'border-zinc-100 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700 bg-white dark:bg-zinc-900'
+              }`}
+            >
+              <div className="w-8 h-8 rounded-lg bg-zinc-100 dark:bg-zinc-800 overflow-hidden flex-shrink-0">
+                {product.image ? (
+                  <img src={product.image} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                ) : (
+                  <Package className="w-full h-full p-1.5 text-zinc-400" />
+                )}
+              </div>
+              <div className="flex-grow min-w-0">
+                <h4 className="font-bold text-xs truncate uppercase">{product.name}</h4>
+                <p className="text-[10px] text-blue-600 font-black">{product.price}</p>
+              </div>
+              {isSelected && <Check className="w-3 h-3 text-blue-500 flex-shrink-0" />}
+            </button>
+          );
+        })
       ) : (
-        <div className="text-center py-6 text-zinc-400 text-[10px] uppercase tracking-widest font-bold opacity-50">
-          Digite para buscar produtos
+        <div className="text-center py-4 text-zinc-500 text-xs">
+          Nenhum produto encontrado.
         </div>
       )}
     </div>
