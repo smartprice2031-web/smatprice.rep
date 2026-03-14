@@ -89,6 +89,7 @@ const CanvasPreview = ({ id = "placa" }: { id?: string }) => {
 
   // Price formatting logic
   const renderPrice = (slot: 1 | 2 | 3, el: any, key: string) => {
+    if (slot === 3 && !productImage3.visible) return null;
     const priceStr = (el.text || '0,00').trim();
     
     // Improved regex to handle thousands separators and different formats
@@ -171,6 +172,7 @@ const CanvasPreview = ({ id = "placa" }: { id?: string }) => {
   };
 
   const renderProduct = (slot: 1 | 2 | 3) => {
+    if (slot === 3 && !productImage3.visible) return null;
     const textElements = slot === 1 ? textElements1 : slot === 2 ? textElements2 : textElements3;
     const productImage = slot === 1 ? productImage1 : slot === 2 ? productImage2 : productImage3;
     const prodImg = slot === 1 ? prodImg1 : slot === 2 ? prodImg2 : prodImg3;

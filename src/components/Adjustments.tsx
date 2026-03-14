@@ -1,5 +1,5 @@
 import React from 'react';
-import { useStore, TextSettings, createDefaultLayout, Layout as LayoutType, THREE_PRODUCT_LAYOUTS } from '../store';
+import { useStore, TextSettings, createDefaultLayout, Layout as LayoutType, isThreeProduct } from '../store';
 import { Settings, Type, Image as ImageIcon, Layout, Eye, EyeOff, Lock, Unlock, AlignLeft, AlignCenter, AlignRight, Bold, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -8,38 +8,40 @@ const Adjustments = () => {
     textElements1, textElements2, textElements3,
     productImage1, productImage2, productImage3,
     background, setElement, setProductImage, setBackground,
-    userRole, layouts, setLayoutName, activeLayoutIndex
+    userRole, layouts, setLayoutName, activeLayoutIndex,
+    setSlotVisibility
   } = useStore();
 
   const [showResetConfirm, setShowResetConfirm] = React.useState(false);
 
   const currentLayoutName = layouts[activeLayoutIndex]?.name || '';
-  const showThirdProduct = THREE_PRODUCT_LAYOUTS.some(layout => currentLayoutName.toUpperCase().includes(layout));
+  const canHaveThirdProduct = isThreeProduct(currentLayoutName, activeLayoutIndex);
+  const showThirdProduct = productImage3.visible;
 
   const handleReset = () => {
     useStore.setState((state) => ({
       layouts: [
-        createDefaultLayout('QUARTA FRALDA PL'),
-        createDefaultLayout('SABADÃO PL'),
-        createDefaultLayout('QUI KIDS PL'),
-        createDefaultLayout('DERMO PL'),
-        createDefaultLayout('MARONBA'),
-        createDefaultLayout('Modelo 6'),
-        createDefaultLayout('Modelo 7'),
-        createDefaultLayout('Modelo 8'),
-        createDefaultLayout('Modelo 9'),
-        createDefaultLayout('Modelo 10'),
-        createDefaultLayout('Modelo 11'),
-        createDefaultLayout('Modelo 12'),
-        createDefaultLayout('Modelo 13'),
-        createDefaultLayout('Modelo 14'),
-        createDefaultLayout('Modelo 15'),
-        createDefaultLayout('Modelo 16'),
-        createDefaultLayout('Modelo 17'),
-        createDefaultLayout('Modelo 18'),
-        createDefaultLayout('Modelo 19'),
-        createDefaultLayout('Modelo 20'),
-        createDefaultLayout('Padrão Ultra'),
+        createDefaultLayout('QUARTA FRALDA PL', 0),
+        createDefaultLayout('SABADÃO PL', 1),
+        createDefaultLayout('QUI KIDS PL', 2),
+        createDefaultLayout('DERMO PL', 3),
+        createDefaultLayout('MARONBA', 4),
+        createDefaultLayout('Modelo 6', 5),
+        createDefaultLayout('Modelo 7', 6),
+        createDefaultLayout('Modelo 8', 7),
+        createDefaultLayout('Modelo 9', 8),
+        createDefaultLayout('Modelo 10', 9),
+        createDefaultLayout('Modelo 11', 10),
+        createDefaultLayout('Modelo 12', 11),
+        createDefaultLayout('Modelo 13', 12),
+        createDefaultLayout('Modelo 14', 13),
+        createDefaultLayout('Modelo 15', 14),
+        createDefaultLayout('Modelo 16', 15),
+        createDefaultLayout('Modelo 17', 16),
+        createDefaultLayout('Modelo 18', 17),
+        createDefaultLayout('Modelo 19', 18),
+        createDefaultLayout('Modelo 20', 19),
+        createDefaultLayout('Padrão Ultra', 20),
       ]
     }));
     useStore.getState().saveLayout();
@@ -310,22 +312,34 @@ const Adjustments = () => {
         </div>
       </section>
 
-      {showThirdProduct && (
+      {canHaveThirdProduct && (
         <>
           <div className="h-px bg-zinc-200 dark:bg-zinc-800" />
 
           {/* Product 3 Section */}
           <section className="space-y-4">
-            <h3 className="text-sm font-black uppercase tracking-widest text-blue-600 flex items-center gap-2">
-              Produto Central (Opcional)
-            </h3>
-            <div className="space-y-4">
-              <ProductImageControl slot={3} productImage={productImage3} />
-              <TextControl slot={3} label="Nome" elementKey="name" textElements={textElements3} />
-              <TextControl slot={3} label="Subtítulo" elementKey="subtitle" textElements={textElements3} />
-              <TextControl slot={3} label="Descrição" elementKey="description" textElements={textElements3} />
-              <TextControl slot={3} label="Preço" elementKey="price" textElements={textElements3} />
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-black uppercase tracking-widest text-blue-600 flex items-center gap-2">
+                Produto Central (Opcional)
+              </h3>
+              <button 
+                onClick={() => setSlotVisibility(3, !showThirdProduct)}
+                className={`p-1.5 rounded-lg transition-colors ${showThirdProduct ? 'text-blue-600 bg-blue-50 dark:bg-blue-900/20' : 'text-zinc-400 bg-zinc-100 dark:bg-zinc-800'}`}
+                title={showThirdProduct ? "Ocultar Produto Central" : "Mostrar Produto Central"}
+              >
+                {showThirdProduct ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+              </button>
             </div>
+            
+            {showThirdProduct && (
+              <div className="space-y-4">
+                <ProductImageControl slot={3} productImage={productImage3} />
+                <TextControl slot={3} label="Nome" elementKey="name" textElements={textElements3} />
+                <TextControl slot={3} label="Subtítulo" elementKey="subtitle" textElements={textElements3} />
+                <TextControl slot={3} label="Descrição" elementKey="description" textElements={textElements3} />
+                <TextControl slot={3} label="Preço" elementKey="price" textElements={textElements3} />
+              </div>
+            )}
           </section>
         </>
       )}

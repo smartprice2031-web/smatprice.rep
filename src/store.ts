@@ -169,6 +169,7 @@ interface AppState {
   
   login: (role: 'user' | 'admin', user: { username: string; cnpj: string; bandeira: string }) => void;
   logout: () => void;
+  setSlotVisibility: (slot: 1 | 2 | 3, visible: boolean) => void;
 }
 
 let saveTimeout: NodeJS.Timeout | null = null;
@@ -192,6 +193,7 @@ export const THREE_PRODUCT_LAYOUTS = [
   'DERMO PL',
   'OFERTA 3',
   'COMBO 3',
+  'MODELO 14',
   'MODELO 15',
   'MODELO 16',
   'MODELO 17',
@@ -200,9 +202,12 @@ export const THREE_PRODUCT_LAYOUTS = [
   'MODELO 20'
 ];
 
-export const createDefaultLayout = (name: string): Layout => {
-  const upperName = name.toUpperCase();
-  const showThird = THREE_PRODUCT_LAYOUTS.some(layout => upperName.includes(layout));
+export const isThreeProduct = (name: string, index?: number) => {
+  return true;
+};
+
+export const createDefaultLayout = (name: string, index?: number): Layout => {
+  const showThird = isThreeProduct(name, index);
 
   return {
     name,
@@ -273,27 +278,27 @@ export const useStore = create<AppState>()(
 
       activeLayoutIndex: 0,
       layouts: [
-        createDefaultLayout('QUARTA FRALDA PL'),
-        createDefaultLayout('SABADÃO PL'),
-        createDefaultLayout('QUI KIDS PL'),
-        createDefaultLayout('DERMO PL'),
-        createDefaultLayout('MARONBA'),
-        createDefaultLayout('Modelo 6'),
-        createDefaultLayout('Modelo 7'),
-        createDefaultLayout('Modelo 8'),
-        createDefaultLayout('Modelo 9'),
-        createDefaultLayout('Modelo 10'),
-        createDefaultLayout('Modelo 11'),
-        createDefaultLayout('Modelo 12'),
-        createDefaultLayout('Modelo 13'),
-        createDefaultLayout('Modelo 14'),
-        createDefaultLayout('Modelo 15'),
-        createDefaultLayout('Modelo 16'),
-        createDefaultLayout('Modelo 17'),
-        createDefaultLayout('Modelo 18'),
-        createDefaultLayout('Modelo 19'),
-        createDefaultLayout('Modelo 20'),
-        createDefaultLayout('Padrão Ultra'),
+        createDefaultLayout('QUARTA FRALDA PL', 0),
+        createDefaultLayout('SABADÃO PL', 1),
+        createDefaultLayout('QUI KIDS PL', 2),
+        createDefaultLayout('DERMO PL', 3),
+        createDefaultLayout('MARONBA', 4),
+        createDefaultLayout('Modelo 6', 5),
+        createDefaultLayout('Modelo 7', 6),
+        createDefaultLayout('Modelo 8', 7),
+        createDefaultLayout('Modelo 9', 8),
+        createDefaultLayout('Modelo 10', 9),
+        createDefaultLayout('Modelo 11', 10),
+        createDefaultLayout('Modelo 12', 11),
+        createDefaultLayout('Modelo 13', 12),
+        createDefaultLayout('Modelo 14', 13),
+        createDefaultLayout('Modelo 15', 14),
+        createDefaultLayout('Modelo 16', 15),
+        createDefaultLayout('Modelo 17', 16),
+        createDefaultLayout('Modelo 18', 17),
+        createDefaultLayout('Modelo 19', 18),
+        createDefaultLayout('Modelo 20', 19),
+        createDefaultLayout('Padrão Ultra', 20),
       ],
 
       background: {
@@ -357,8 +362,11 @@ export const useStore = create<AppState>()(
 
       setActiveLayout: (index) => {
         const state = get();
+        if (index < 0 || !state.layouts[index]) return;
+
+        // 1. Save current active layout state into the layouts array
         const currentLayout: Layout = {
-          name: state.layouts[state.activeLayoutIndex].name,
+          name: state.layouts[state.activeLayoutIndex]?.name || `Modelo ${state.activeLayoutIndex + 1}`,
           background: state.background,
           productImage1: state.productImage1,
           productImage2: state.productImage2,
@@ -371,31 +379,20 @@ export const useStore = create<AppState>()(
         const newLayouts = [...state.layouts];
         newLayouts[state.activeLayoutIndex] = currentLayout;
 
+        // 2. Prepare the next layout
         const nextLayout = newLayouts[index];
-        const defaultNext = createDefaultLayout(nextLayout.name);
+        const defaultNext = createDefaultLayout(nextLayout.name, index);
         
-        // Force visibility based on name
-        const upperName = (nextLayout.name || '').toUpperCase();
-        const showThird = THREE_PRODUCT_LAYOUTS.some(layout => upperName.includes(layout));
-
-        const productImage3 = nextLayout.productImage3 || defaultNext.productImage3;
-        const textElements3 = nextLayout.textElements3 || defaultNext.textElements3;
-
         set({
           activeLayoutIndex: index,
           layouts: newLayouts,
           background: nextLayout.background || defaultNext.background,
           productImage1: nextLayout.productImage1 || defaultNext.productImage1,
           productImage2: nextLayout.productImage2 || defaultNext.productImage2,
-          productImage3: { ...productImage3, visible: showThird },
+          productImage3: nextLayout.productImage3 || defaultNext.productImage3,
           textElements1: nextLayout.textElements1 || defaultNext.textElements1,
           textElements2: nextLayout.textElements2 || defaultNext.textElements2,
-          textElements3: {
-            name: { ...textElements3.name, visible: showThird },
-            description: { ...textElements3.description, visible: showThird },
-            subtitle: { ...textElements3.subtitle, visible: showThird },
-            price: { ...textElements3.price, visible: showThird },
-          },
+          textElements3: nextLayout.textElements3 || defaultNext.textElements3,
         });
         get().saveLayout();
       },
@@ -403,31 +400,12 @@ export const useStore = create<AppState>()(
       setLayoutName: (index, name) => {
         set((state) => {
           const newLayouts = [...state.layouts];
-          const upperName = name.toUpperCase();
-          const showThird = THREE_PRODUCT_LAYOUTS.some(layout => upperName.includes(layout));
-
           const updatedLayout = { 
             ...newLayouts[index], 
-            name,
-            productImage3: { ...newLayouts[index].productImage3, visible: showThird },
-            textElements3: {
-              name: { ...newLayouts[index].textElements3.name, visible: showThird },
-              description: { ...newLayouts[index].textElements3.description, visible: showThird },
-              subtitle: { ...newLayouts[index].textElements3.subtitle, visible: showThird },
-              price: { ...newLayouts[index].textElements3.price, visible: showThird },
-            }
+            name
           };
           
           newLayouts[index] = updatedLayout;
-          
-          // If this is the active layout, also update the current state
-          if (index === state.activeLayoutIndex) {
-            return { 
-              layouts: newLayouts,
-              productImage3: updatedLayout.productImage3,
-              textElements3: updatedLayout.textElements3,
-            };
-          }
           
           return { layouts: newLayouts };
         });
@@ -457,6 +435,33 @@ export const useStore = create<AppState>()(
         set((state) => ({
           background: { ...state.background, ...settings }
         }));
+        get().saveLayoutDebounced();
+      },
+
+      setSlotVisibility: (slot, visible) => {
+        const imageKey = slot === 1 ? 'productImage1' : slot === 2 ? 'productImage2' : 'productImage3';
+        const textKey = slot === 1 ? 'textElements1' : slot === 2 ? 'textElements2' : 'textElements3';
+        
+        set((state) => {
+          const newState: any = {
+            [imageKey]: { ...state[imageKey], visible },
+            [textKey]: {
+              name: { ...state[textKey].name, visible },
+              description: { ...state[textKey].description, visible },
+              subtitle: { ...state[textKey].subtitle, visible },
+              price: { ...state[textKey].price, visible },
+            }
+          };
+
+          const newLayouts = [...state.layouts];
+          newLayouts[state.activeLayoutIndex] = {
+            ...newLayouts[state.activeLayoutIndex],
+            [imageKey]: newState[imageKey],
+            [textKey]: newState[textKey]
+          };
+
+          return { ...newState, layouts: newLayouts };
+        });
         get().saveLayoutDebounced();
       },
 
@@ -586,11 +591,8 @@ export const useStore = create<AppState>()(
             ];
 
             let loadedLayouts = (layout.layouts || currentState.layouts).map((l: any, idx: number) => {
-              const defaultL = createDefaultLayout(l.name || `Modelo ${idx + 1}`);
+              const defaultL = createDefaultLayout(l.name || `Modelo ${idx + 1}`, idx);
               
-              const upperName = (l.name || '').toUpperCase();
-              const showThird = THREE_PRODUCT_LAYOUTS.some(layout => upperName.includes(layout));
-
               const merged = {
                 ...defaultL,
                 ...l,
@@ -598,12 +600,6 @@ export const useStore = create<AppState>()(
                 textElements2: l.textElements2 ? { ...defaultL.textElements2, ...l.textElements2 } : defaultL.textElements2,
                 textElements3: l.textElements3 ? { ...defaultL.textElements3, ...l.textElements3 } : defaultL.textElements3,
               };
-
-              merged.productImage3.visible = showThird;
-              merged.textElements3.name.visible = showThird;
-              merged.textElements3.description.visible = showThird;
-              merged.textElements3.subtitle.visible = showThird;
-              merged.textElements3.price.visible = showThird;
 
               return merged;
             });
@@ -632,28 +628,15 @@ export const useStore = create<AppState>()(
             loadedLayouts = uniqueLayouts;
 
             const activeLayout = loadedLayouts[layout.activeLayoutIndex || 0] || loadedLayouts[0];
-            const defaultActive = createDefaultLayout(activeLayout.name);
-            
-            // Force visibility for active layout
-            const activeUpperName = (activeLayout.name || '').toUpperCase();
-            const activeShowThird = THREE_PRODUCT_LAYOUTS.some(l => activeUpperName.includes(l));
 
             set({
               background: layout.background || currentState.background,
               productImage1: layout.productImage1 || currentState.productImage1,
               productImage2: layout.productImage2 || currentState.productImage2,
-              productImage3: { 
-                ...(layout.productImage3 || currentState.productImage3), 
-                visible: activeShowThird 
-              },
+              productImage3: layout.productImage3 || currentState.productImage3 || activeLayout.productImage3,
               textElements1: layout.textElements1 || currentState.textElements1,
               textElements2: layout.textElements2 || currentState.textElements2,
-              textElements3: {
-                name: { ...(layout.textElements3?.name || currentState.textElements3.name), visible: activeShowThird },
-                description: { ...(layout.textElements3?.description || currentState.textElements3.description), visible: activeShowThird },
-                subtitle: { ...(layout.textElements3?.subtitle || currentState.textElements3.subtitle), visible: activeShowThird },
-                price: { ...(layout.textElements3?.price || currentState.textElements3.price), visible: activeShowThird },
-              },
+              textElements3: layout.textElements3 || currentState.textElements3 || activeLayout.textElements3,
               activeLayoutIndex: layout.activeLayoutIndex !== undefined ? layout.activeLayoutIndex : currentState.activeLayoutIndex,
               layouts: loadedLayouts,
             } as any);

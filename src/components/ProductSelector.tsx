@@ -1,16 +1,16 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { useStore, Product, THREE_PRODUCT_LAYOUTS } from '../store';
+import { useStore, Product } from '../store';
 import { Search, Package, Check, X, RefreshCw } from 'lucide-react';
 
 const ProductSelector = () => {
   const { 
     products, fetchProducts, selectProduct, 
-    textElements1, textElements2, textElements3, setElement,
+    textElements1, textElements2, textElements3, 
+    productImage3, setElement,
     layouts, activeLayoutIndex
   } = useStore();
 
-  const currentLayoutName = layouts[activeLayoutIndex]?.name || '';
-  const showThirdProduct = THREE_PRODUCT_LAYOUTS.some(layout => currentLayoutName.toUpperCase().includes(layout));
+  const showThirdProduct = productImage3.visible;
   const [searchTerm1, setSearchTerm1] = useState('');
   const [searchTerm2, setSearchTerm2] = useState('');
   const [searchTerm3, setSearchTerm3] = useState('');
