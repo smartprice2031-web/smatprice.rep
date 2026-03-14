@@ -44,8 +44,15 @@ export default function App() {
   // Filter layouts based on user permissions
   const filteredLayouts = React.useMemo(() => {
     if (userRole === 'admin') return layouts;
-    const store = allowedStores.find(s => s.cnpj === currentUser?.cnpj);
-    if (!store || !store.allowedLayouts) return layouts;
+    
+    // Normalize CNPJ for comparison
+    const normalizedUserCnpj = currentUser?.cnpj.replace(/[^\d]/g, '');
+    const store = allowedStores.find(s => s.cnpj.replace(/[^\d]/g, '') === normalizedUserCnpj);
+    
+    // If no store found or allowedLayouts is undefined, show all layouts
+    if (!store || store.allowedLayouts === undefined) return layouts;
+    
+    // If allowedLayouts is an array (even empty), filter by it
     return layouts.filter(l => store.allowedLayouts?.includes(l.name));
   }, [layouts, userRole, currentUser, allowedStores]);
 

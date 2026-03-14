@@ -679,13 +679,15 @@ export const useStore = create<AppState>()(
 
       allowedStores: [],
       addAllowedStore: (store) => set((state) => {
-        const existing = state.allowedStores.find(s => s.cnpj === store.cnpj);
+        const normalizedCnpj = store.cnpj.trim();
+        const existing = state.allowedStores.find(s => s.cnpj === normalizedCnpj);
         const updatedStore = {
           ...store,
-          allowedLayouts: store.allowedLayouts !== undefined ? store.allowedLayouts : (existing?.allowedLayouts || [])
+          cnpj: normalizedCnpj,
+          allowedLayouts: store.allowedLayouts !== undefined ? store.allowedLayouts : (existing?.allowedLayouts || undefined)
         };
         return { 
-          allowedStores: [...state.allowedStores.filter(s => s.cnpj !== store.cnpj), updatedStore] 
+          allowedStores: [...state.allowedStores.filter(s => s.cnpj !== normalizedCnpj), updatedStore] 
         };
       }),
       removeAllowedStore: (cnpj) => set((state) => ({ 

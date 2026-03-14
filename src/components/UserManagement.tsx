@@ -53,7 +53,12 @@ export default function UserManagement() {
     const store = allowedStores.find(s => s.cnpj === cnpj);
     if (!store) return;
 
-    const currentAllowed = store.allowedLayouts || layouts.map(l => l.name);
+    // If allowedLayouts is undefined, it means ALL are allowed. 
+    // To toggle one, we first need to initialize it with ALL layouts.
+    const currentAllowed = store.allowedLayouts !== undefined 
+      ? store.allowedLayouts 
+      : layouts.map(l => l.name);
+      
     const newAllowed = currentAllowed.includes(layoutName)
       ? currentAllowed.filter(l => l !== layoutName)
       : [...currentAllowed, layoutName];
@@ -99,10 +104,13 @@ export default function UserManagement() {
     setEditFlagName(flag);
   };
 
-  const filteredStores = allowedStores.filter(store => 
-    store.cnpj.includes(searchTerm) || 
-    store.bandeira.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredStores = allowedStores.filter(store => {
+    const normalizedSearch = searchTerm.replace(/[^\d]/g, '');
+    const normalizedCnpj = store.cnpj.replace(/[^\d]/g, '');
+    return normalizedCnpj.includes(normalizedSearch) || 
+           store.cnpj.includes(searchTerm) ||
+           store.bandeira.toLowerCase().includes(searchTerm.toLowerCase());
+  });
 
   const filteredLogs = accessLogs.filter(log =>
     log.cnpj.includes(searchTerm) ||
@@ -357,7 +365,7 @@ export default function UserManagement() {
                           </div>
                           <div className="flex flex-wrap gap-1.5">
                             {layouts.map(layout => {
-                              const isAllowed = (store.allowedLayouts || layouts.map(l => l.name)).includes(layout.name);
+                              const isAllowed = store.allowedLayouts === undefined || store.allowedLayouts.includes(layout.name);
                               return (
                                 <button
                                   key={layout.name}
@@ -380,15 +388,27 @@ export default function UserManagement() {
                       {/* Summary of allowed layouts when not editing */}
                       {editingStoreLayouts !== store.cnpj && (
                         <div className="flex flex-wrap gap-1 mt-1">
-                          {(store.allowedLayouts || layouts.map(l => l.name)).slice(0, 5).map(name => (
-                            <span key={name} className="text-[8px] font-bold text-zinc-400 bg-zinc-100 dark:bg-zinc-800 px-1.5 py-0.5 rounded uppercase">
-                              {name}
+                          {store.allowedLayouts === undefined ? (
+                            <span className="text-[8px] font-bold text-blue-600 bg-blue-50 dark:bg-blue-900/20 px-1.5 py-0.5 rounded uppercase">
+                              Todos os Modelos Liberados
                             </span>
-                          ))}
-                          {(store.allowedLayouts || layouts.map(l => l.name)).length > 5 && (
-                            <span className="text-[8px] font-bold text-zinc-400 bg-zinc-100 dark:bg-zinc-800 px-1.5 py-0.5 rounded uppercase">
-                              +{(store.allowedLayouts || layouts.map(l => l.name)).length - 5}
+                          ) : store.allowedLayouts.length === 0 ? (
+                            <span className="text-[8px] font-bold text-red-500 bg-red-50 dark:bg-red-900/20 px-1.5 py-0.5 rounded uppercase">
+                              Nenhum Modelo Liberado
                             </span>
+                          ) : (
+                            <>
+                              {store.allowedLayouts.slice(0, 5).map(name => (
+                                <span key={name} className="text-[8px] font-bold text-zinc-400 bg-zinc-100 dark:bg-zinc-800 px-1.5 py-0.5 rounded uppercase">
+                                  {name}
+                                </span>
+                              ))}
+                              {store.allowedLayouts.length > 5 && (
+                                <span className="text-[8px] font-bold text-zinc-400 bg-zinc-100 dark:bg-zinc-800 px-1.5 py-0.5 rounded uppercase">
+                                  +{store.allowedLayouts.length - 5}
+                                </span>
+                              )}
+                            </>
                           )}
                         </div>
                       )}
