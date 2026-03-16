@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useStore } from '../store';
-import { Plus, Trash2, Shield, Store, Search, X, History, User, Calendar, Clock, Flag, Pencil, Save, Loader2, Settings as SettingsIcon, Layout as LayoutGrid } from 'lucide-react';
+import { Plus, Trash2, Shield, Store, Search, X, History, User, Calendar, Clock, Flag, Pencil, Save, Loader2, Settings as SettingsIcon, Layout as LayoutGrid, Layout } from 'lucide-react';
 import { toast } from 'sonner';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
@@ -10,7 +10,7 @@ function cn(...inputs: ClassValue[]) {
 }
 
 export default function UserManagement() {
-  const { allowedStores, addAllowedStore, removeAllowedStore, accessLogs, flags, addFlag, removeFlag, updateFlag, saveUsersAndFlags, layouts } = useStore();
+  const { allowedStores, addAllowedStore, removeAllowedStore, accessLogs, flags, addFlag, removeFlag, updateFlag, saveUsersAndFlags, layouts, toggleEncarteAccess } = useStore();
   const [activeTab, setActiveTab] = useState<'stores' | 'history' | 'flags'>('stores');
   const [newCnpj, setNewCnpj] = useState('');
   const [newBandeira, setNewBandeira] = useState('');
@@ -383,6 +383,27 @@ export default function UserManagement() {
                               );
                             })}
                           </div>
+                        </div>
+                      </div>
+
+                      {/* Encarte Online Access Toggle */}
+                      <div className="mt-4 pt-4 border-t border-zinc-100 dark:border-zinc-800">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <Layout className="w-4 h-4 text-emerald-600" />
+                            <h4 className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Acesso ao Encarte Online</h4>
+                          </div>
+                          <button
+                            onClick={() => toggleEncarteAccess(store.cnpj)}
+                            className={cn(
+                              "px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all border shadow-sm",
+                              store.hasEncarteAccess
+                                ? "bg-emerald-600 border-emerald-600 text-white"
+                                : "bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-700 text-zinc-400"
+                            )}
+                          >
+                            {store.hasEncarteAccess ? 'Ativado' : 'Desativado'}
+                          </button>
                         </div>
                       </div>
 

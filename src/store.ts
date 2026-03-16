@@ -66,6 +66,8 @@ export interface Layout {
   hasThirdProduct?: boolean;
 }
 
+export type View = 'editor' | 'queue' | 'encarte';
+
 interface AppState {
   theme: 'light' | 'dark';
   toggleTheme: () => void;
@@ -136,8 +138,8 @@ interface AppState {
   addToQueue: (imageData: string) => void;
   removeFromQueue: (index: number) => void;
   clearQueue: () => void;
-  currentView: 'editor' | 'queue';
-  setView: (view: 'editor' | 'queue') => void;
+  currentView: View;
+  setView: (view: View) => void;
   realtimeInitialized: boolean;
   
   // Auth
@@ -145,8 +147,8 @@ interface AppState {
   addFlag: (flag: string) => void;
   removeFlag: (flag: string) => void;
   updateFlag: (oldFlag: string, newFlag: string) => void;
-  allowedStores: { cnpj: string; bandeira: string; allowedLayouts?: number[] }[];
-  addAllowedStore: (store: { cnpj: string; bandeira: string; allowedLayouts?: number[] }) => void;
+  allowedStores: { cnpj: string; bandeira: string; allowedLayouts?: number[]; hasEncarteAccess?: boolean }[];
+  addAllowedStore: (store: { cnpj: string; bandeira: string; allowedLayouts?: number[]; hasEncarteAccess?: boolean }) => void;
   removeAllowedStore: (cnpj: string) => void;
   saveUsersAndFlags: () => Promise<void>;
   loadUsersAndFlags: () => Promise<void>;
@@ -172,6 +174,7 @@ interface AppState {
   login: (role: 'user' | 'admin', user: { username: string; cnpj: string; bandeira: string }) => void;
   logout: () => void;
   setSlotVisibility: (slot: 1 | 2 | 3, visible: boolean) => void;
+  toggleEncarteAccess: (cnpj: string) => void;
 }
 
 let saveTimeout: NodeJS.Timeout | null = null;
@@ -752,7 +755,8 @@ export const useStore = create<AppState>()(
         const updatedStore = {
           ...store,
           cnpj: store.cnpj.trim(),
-          allowedLayouts: store.allowedLayouts !== undefined ? store.allowedLayouts : (existingIndex !== -1 ? state.allowedStores[existingIndex].allowedLayouts : undefined)
+          allowedLayouts: store.allowedLayouts !== undefined ? store.allowedLayouts : (existingIndex !== -1 ? state.allowedStores[existingIndex].allowedLayouts : undefined),
+          hasEncarteAccess: store.hasEncarteAccess !== undefined ? store.hasEncarteAccess : (existingIndex !== -1 ? state.allowedStores[existingIndex].hasEncarteAccess : false)
         };
 
         let newAllowedStores;
@@ -770,6 +774,17 @@ export const useStore = create<AppState>()(
         return { 
           allowedStores: state.allowedStores.filter(s => s.cnpj.replace(/[^\d]/g, '') !== normalizedCnpj) 
         };
+      }),
+
+      toggleEncarteAccess: (cnpj) => set((state) => {
+        const normalizedCnpj = cnpj.replace(/[^\d]/g, '');
+        const newAllowedStores = state.allowedStores.map(s => 
+          s.cnpj.replace(/[^\d]/g, '') === normalizedCnpj 
+            ? { ...s, hasEncarteAccess: !s.hasEncarteAccess }
+            : s
+        );
+        state.saveUsersAndFlags();
+        return { allowedStores: newAllowedStores };
       }),
 
       saveUsersAndFlags: async () => {

@@ -8,12 +8,13 @@ import PrintQueue from './components/PrintQueue';
 import UserManagement from './components/UserManagement';
 import SupportChat from './components/SupportChat';
 import Login from './components/Login';
+import EncarteCreator from './components/EncarteCreator';
 import { 
   Printer, FileDown, 
   LayoutDashboard, Package, Settings as SettingsIcon,
   ShoppingBag, Search, Database, X, ListPlus, LayoutGrid,
   ArrowLeft, LogOut, Users, MessageCircle, AlertTriangle,
-  RefreshCw
+  RefreshCw, Layout
 } from 'lucide-react';
 import { jsPDF } from 'jspdf';
 import { clsx, type ClassValue } from 'clsx';
@@ -199,6 +200,10 @@ export default function App() {
     return <PrintQueue />;
   }
 
+  if (currentView === 'encarte') {
+    return <EncarteCreator />;
+  }
+
   return (
     <div className={cn(
       "min-h-screen bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 flex flex-col",
@@ -320,8 +325,24 @@ export default function App() {
               </button>
             </div>
 
-            <div className="h-6 w-px bg-zinc-200 dark:border-zinc-800 mx-2" />
+            {/* Encarte Online Button */}
+            {(userRole === 'admin' || allowedStores.find(s => s.cnpj.replace(/[^\d]/g, '') === currentUser?.cnpj.replace(/[^\d]/g, ''))?.hasEncarteAccess) && (
+              <button 
+                onClick={() => setView('encarte')}
+                className={cn(
+                  "flex items-center gap-2 px-4 py-2 rounded-xl transition-all text-xs font-black uppercase tracking-tighter shadow-lg hover:scale-105 active:scale-95",
+                  (currentView as string) === 'encarte'
+                    ? "bg-emerald-600 text-white"
+                    : "bg-white dark:bg-zinc-800 text-emerald-600 border border-emerald-600/20"
+                )}
+              >
+                <Layout className="w-4 h-4" />
+                Encarte Online
+              </button>
+            )}
 
+            <div className="h-6 w-px bg-zinc-200 dark:border-zinc-800 mx-2" />
+            
             {userRole === 'admin' && (
               <button 
                 onClick={() => setProductModalOpen(true)}

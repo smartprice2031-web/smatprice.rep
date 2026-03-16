@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useStore, Product } from '../store';
 import { Search, Package, Check, X, RefreshCw } from 'lucide-react';
 
-const ProductSelector = () => {
+const ProductSelector: React.FC<{ onSelect?: (product: Product) => void }> = ({ onSelect }) => {
   const { 
     products, fetchProducts, selectProduct, 
     textElements1, textElements2, textElements3, 
@@ -14,6 +14,7 @@ const ProductSelector = () => {
   const [searchTerm1, setSearchTerm1] = useState('');
   const [searchTerm2, setSearchTerm2] = useState('');
   const [searchTerm3, setSearchTerm3] = useState('');
+  const [generalSearchTerm, setGeneralSearchTerm] = useState('');
 
   useEffect(() => {
     fetchProducts();
@@ -43,6 +44,51 @@ const ProductSelector = () => {
   const filteredProducts1 = useMemo(() => filterProducts(searchTerm1), [searchTerm1, products]);
   const filteredProducts2 = useMemo(() => filterProducts(searchTerm2), [searchTerm2, products]);
   const filteredProducts3 = useMemo(() => filterProducts(searchTerm3), [searchTerm3, products]);
+  const generalFilteredProducts = useMemo(() => filterProducts(generalSearchTerm), [generalSearchTerm, products]);
+
+  if (onSelect) {
+    return (
+      <div className="space-y-4">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 w-4 h-4" />
+          <input
+            type="text"
+            placeholder="Buscar produto pelo nome..."
+            className="w-full pl-10 pr-4 py-3 bg-zinc-100 dark:bg-zinc-800 border-none rounded-2xl text-sm focus:ring-2 focus:ring-emerald-500 outline-none transition-all"
+            value={generalSearchTerm}
+            onChange={(e) => setGeneralSearchTerm(e.target.value)}
+          />
+        </div>
+
+        <div className="grid grid-cols-1 gap-2 max-h-[50vh] overflow-y-auto pr-2 custom-scrollbar">
+          {generalFilteredProducts.map((product) => (
+            <button
+              key={product.id}
+              onClick={() => onSelect(product)}
+              className="w-full text-left p-3 rounded-2xl border border-zinc-100 dark:border-zinc-800 hover:border-emerald-500 dark:hover:border-emerald-500 bg-white dark:bg-zinc-900 transition-all flex items-center gap-4 group"
+            >
+              <div className="w-12 h-12 rounded-xl bg-zinc-100 dark:bg-zinc-800 overflow-hidden flex-shrink-0">
+                {product.image ? (
+                  <img src={product.image} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                ) : (
+                  <Package className="w-full h-full p-2 text-zinc-400" />
+                )}
+              </div>
+              <div className="flex-grow min-w-0">
+                <h4 className="font-bold text-sm truncate uppercase">{product.name}</h4>
+                <p className="text-xs text-emerald-600 font-black">{product.price}</p>
+              </div>
+            </button>
+          ))}
+          {generalFilteredProducts.length === 0 && (
+            <div className="text-center py-12 text-zinc-500 text-sm italic">
+              Nenhum produto encontrado.
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-4 space-y-6">
