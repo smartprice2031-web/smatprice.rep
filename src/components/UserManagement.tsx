@@ -34,7 +34,7 @@ export default function UserManagement() {
     addAllowedStore({
       cnpj: newCnpj.trim(),
       bandeira: newBandeira,
-      allowedLayouts: selectedLayouts.length > 0 ? selectedLayouts : layouts.map((_, i) => i)
+      allowedLayouts: selectedLayouts
     });
     
     setNewCnpj('');
@@ -50,7 +50,8 @@ export default function UserManagement() {
   };
 
   const toggleStoreLayout = (cnpj: string, index: number) => {
-    const store = allowedStores.find(s => s.cnpj === cnpj);
+    const normalizedCnpj = cnpj.replace(/[^\d]/g, '');
+    const store = allowedStores.find(s => s.cnpj.replace(/[^\d]/g, '') === normalizedCnpj);
     if (!store) return;
 
     // If allowedLayouts is undefined, it means ALL are allowed. 
@@ -252,7 +253,7 @@ export default function UserManagement() {
                       </button>
                     ))}
                     {selectedLayouts.length === 0 && (
-                      <span className="text-[10px] text-zinc-400 font-bold italic py-1.5">Nenhum selecionado (todos serão permitidos por padrão)</span>
+                      <span className="text-[10px] text-zinc-400 font-bold italic py-1.5">Nenhum selecionado (o usuário não verá nenhum modelo até que você selecione)</span>
                     )}
                   </div>
                 </div>
@@ -388,11 +389,7 @@ export default function UserManagement() {
                       {/* Summary of allowed layouts when not editing */}
                       {editingStoreLayouts !== store.cnpj && (
                         <div className="flex flex-wrap gap-1 mt-1">
-                          {store.allowedLayouts === undefined ? (
-                            <span className="text-[8px] font-bold text-blue-600 bg-blue-50 dark:bg-blue-900/20 px-1.5 py-0.5 rounded uppercase">
-                              Todos os Modelos Liberados
-                            </span>
-                          ) : store.allowedLayouts.length === 0 ? (
+                          {store.allowedLayouts === undefined || store.allowedLayouts.length === 0 ? (
                             <span className="text-[8px] font-bold text-red-500 bg-red-50 dark:bg-red-900/20 px-1.5 py-0.5 rounded uppercase">
                               Nenhum Modelo Liberado
                             </span>

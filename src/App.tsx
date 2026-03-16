@@ -43,22 +43,25 @@ export default function App() {
 
   // Filter layouts based on user permissions
   const filteredLayouts = React.useMemo(() => {
-    if (userRole === 'admin') return layouts;
+    if (userRole === 'admin') return layouts.map((l, i) => ({ ...l, originalIndex: i }));
     
     // Normalize CNPJ for comparison
     const normalizedUserCnpj = currentUser?.cnpj.replace(/[^\d]/g, '');
     const store = allowedStores.find(s => s.cnpj.replace(/[^\d]/g, '') === normalizedUserCnpj);
     
-    // If no store found or allowedLayouts is undefined, show all layouts
-    if (!store || store.allowedLayouts === undefined) return layouts;
+    // If no store found or allowedLayouts is undefined/empty, show NOTHING (Total Control)
+    if (!store || !store.allowedLayouts || store.allowedLayouts.length === 0) {
+      return [];
+    }
     
-    // If allowedLayouts is an array (even empty), filter by index
-    return layouts.filter((l, index) => store.allowedLayouts?.includes(index));
+    // Filter by index
+    return layouts
+      .map((l, i) => ({ ...l, originalIndex: i }))
+      .filter((_, index) => store.allowedLayouts?.includes(index));
   }, [layouts, userRole, currentUser, allowedStores]);
 
   // Map filtered index back to original index for setActiveLayout
-  const handleLayoutSelect = (layoutName: string) => {
-    const originalIndex = layouts.findIndex(l => l.name === layoutName);
+  const handleLayoutSelect = (originalIndex: number) => {
     if (originalIndex !== -1) {
       setActiveLayout(originalIndex);
     }
@@ -67,17 +70,13 @@ export default function App() {
   // Ensure activeLayoutIndex points to an allowed layout
   React.useEffect(() => {
     if (filteredLayouts.length > 0) {
-      const currentLayout = layouts[activeLayoutIndex];
-      const isAllowed = filteredLayouts.some(l => l.name === currentLayout?.name);
+      const isAllowed = filteredLayouts.some(l => l.originalIndex === activeLayoutIndex);
       
       if (!isAllowed) {
-        const firstAllowedIndex = layouts.findIndex(l => l.name === filteredLayouts[0].name);
-        if (firstAllowedIndex !== -1) {
-          setActiveLayout(firstAllowedIndex);
-        }
+        handleLayoutSelect(filteredLayouts[0].originalIndex);
       }
     }
-  }, [filteredLayouts, activeLayoutIndex, layouts, setActiveLayout]);
+  }, [filteredLayouts, activeLayoutIndex]);
 
   // Initialize support socket globally for background notifications
   useSupportSocket();
@@ -402,7 +401,35 @@ export default function App() {
           "flex-grow relative border-r border-zinc-200 dark:border-zinc-800 print-area overflow-hidden",
           isPrinting && "overflow-visible"
         )}>
-          <CanvasPreview />
+          {userRole === 'user' && filteredLayouts.length === 0 ? (
+            <div className="absolute inset-0 flex items-center justify-center bg-zinc-100 dark:bg-zinc-900 z-50 p-8 text-center">
+              <div className="max-w-md space-y-6 animate-in fade-in zoom-in duration-500">
+                <div className="w-20 h-20 bg-amber-100 dark:bg-amber-900/30 rounded-full flex items-center justify-center mx-auto">
+                  <AlertTriangle className="w-10 h-10 text-amber-500" />
+                </div>
+                <div className="space-y-2">
+                  <h3 className="text-2xl font-black tracking-tighter uppercase">Acesso Restrito</h3>
+                  <p className="text-zinc-500 dark:text-zinc-400 text-sm font-medium leading-relaxed">
+                    Sua conta ainda não possui modelos de etiquetas liberados pelo administrador para o CNPJ <span className="font-mono font-bold text-blue-600">{currentUser?.cnpj}</span>.
+                  </p>
+                  <div className="pt-2 flex flex-col items-center gap-1">
+                    <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Contatos Administrativos:</p>
+                    <p className="text-xs font-bold text-blue-600">(99) 9 8470-1752 • (99) 9 8199-0035</p>
+                  </div>
+                </div>
+                <div className="pt-4">
+                  <button 
+                    onClick={() => setSupportChatOpen(true)}
+                    className="px-8 py-3 bg-blue-600 text-white rounded-2xl font-black uppercase tracking-tighter shadow-xl shadow-blue-500/20 hover:bg-blue-700 transition-all active:scale-95"
+                  >
+                    Contatar Suporte
+                  </button>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <CanvasPreview />
+          )}
         </div>
 
         {/* Right: Editor Panel */}
@@ -442,14 +469,13 @@ export default function App() {
             <div className="p-3 border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-800/20">
               <div className="grid grid-cols-4 gap-1.5">
                 {filteredLayouts.map((layout) => {
-                  const originalIndex = layouts.findIndex(l => l.name === layout.name);
                   return (
                     <button
-                      key={layout.name}
-                      onClick={() => handleLayoutSelect(layout.name)}
+                      key={`${layout.name}-${layout.originalIndex}`}
+                      onClick={() => handleLayoutSelect(layout.originalIndex)}
                       className={cn(
                         "py-2 px-0.5 text-[8px] font-black uppercase tracking-tighter rounded-lg border transition-all truncate",
-                        activeLayoutIndex === originalIndex
+                        activeLayoutIndex === layout.originalIndex
                           ? "bg-blue-600 border-blue-600 text-white shadow-md shadow-blue-500/20"
                           : "bg-white dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 text-zinc-500 hover:border-zinc-400"
                       )}

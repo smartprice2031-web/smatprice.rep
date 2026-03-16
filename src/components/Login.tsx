@@ -41,8 +41,11 @@ export default function Login() {
       }
     } else {
       if (formData.cnpj && formData.bandeira && formData.username) {
+        // Normalize CNPJ for comparison
+        const normalizedInputCnpj = formData.cnpj.replace(/[^\d]/g, '');
+        
         // Check if CNPJ is allowed
-        const isAllowed = allowedStores.some(store => store.cnpj === formData.cnpj);
+        const isAllowed = allowedStores.some(store => store.cnpj.replace(/[^\d]/g, '') === normalizedInputCnpj);
         
         if (isAllowed) {
           addAccessLog({

@@ -746,20 +746,31 @@ export const useStore = create<AppState>()(
 
       allowedStores: [],
       addAllowedStore: (store) => set((state) => {
-        const normalizedCnpj = store.cnpj.trim();
-        const existing = state.allowedStores.find(s => s.cnpj === normalizedCnpj);
+        const normalizedCnpj = store.cnpj.replace(/[^\d]/g, '');
+        const existingIndex = state.allowedStores.findIndex(s => s.cnpj.replace(/[^\d]/g, '') === normalizedCnpj);
+        
         const updatedStore = {
           ...store,
-          cnpj: normalizedCnpj,
-          allowedLayouts: store.allowedLayouts !== undefined ? store.allowedLayouts : (existing?.allowedLayouts || undefined)
+          cnpj: store.cnpj.trim(),
+          allowedLayouts: store.allowedLayouts !== undefined ? store.allowedLayouts : (existingIndex !== -1 ? state.allowedStores[existingIndex].allowedLayouts : undefined)
         };
+
+        let newAllowedStores;
+        if (existingIndex !== -1) {
+          newAllowedStores = [...state.allowedStores];
+          newAllowedStores[existingIndex] = updatedStore;
+        } else {
+          newAllowedStores = [...state.allowedStores, updatedStore];
+        }
+
+        return { allowedStores: newAllowedStores };
+      }),
+      removeAllowedStore: (cnpj) => set((state) => {
+        const normalizedCnpj = cnpj.replace(/[^\d]/g, '');
         return { 
-          allowedStores: [...state.allowedStores.filter(s => s.cnpj !== normalizedCnpj), updatedStore] 
+          allowedStores: state.allowedStores.filter(s => s.cnpj.replace(/[^\d]/g, '') !== normalizedCnpj) 
         };
       }),
-      removeAllowedStore: (cnpj) => set((state) => ({ 
-        allowedStores: state.allowedStores.filter(s => s.cnpj !== cnpj) 
-      })),
 
       saveUsersAndFlags: async () => {
         if (!isSupabaseConfigured) return;

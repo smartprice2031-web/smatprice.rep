@@ -135,6 +135,11 @@ export default function SupportChat() {
               <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">
                 {isConnected ? (userRole === 'admin' ? 'Central de Atendimento' : 'Enviar mensagem para o suporte') : 'Desconectado - Tentando reconectar...'}
               </p>
+              {userRole === 'user' && (
+                <p className="text-[9px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-tighter mt-0.5">
+                  WhatsApp Adm: (99) 9 8470-1752 • (99) 9 8199-0035
+                </p>
+              )}
             </div>
           </div>
           <button 
