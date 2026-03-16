@@ -75,7 +75,7 @@ const ProductSelector: React.FC<{ onSelect?: (product: Product) => void }> = ({ 
                 )}
               </div>
               <div className="flex-grow min-w-0">
-                <h4 className="font-bold text-sm truncate uppercase">{product.name}</h4>
+                <h4 className="font-bold text-sm truncate uppercase text-zinc-900 dark:text-white">{product.name}</h4>
                 <p className="text-xs text-emerald-600 font-black">{product.price}</p>
               </div>
             </button>
@@ -194,7 +194,7 @@ const ProductSlot = ({
         </label>
         <input
           type="text"
-          className="w-full px-3 py-1.5 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg text-xs font-bold focus:ring-2 focus:ring-blue-500 outline-none"
+          className="w-full px-3 py-1.5 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg text-xs font-bold focus:ring-2 focus:ring-blue-500 outline-none text-zinc-900 dark:text-white"
           value={currentName}
           onChange={(e) => setElement(slot, 'name', { text: e.target.value })}
         />
@@ -206,7 +206,7 @@ const ProductSlot = ({
         </label>
         <textarea
           rows={2}
-          className="w-full px-3 py-1.5 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg text-xs focus:ring-2 focus:ring-blue-500 outline-none resize-none"
+          className="w-full px-3 py-1.5 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg text-xs focus:ring-2 focus:ring-blue-500 outline-none resize-none text-zinc-900 dark:text-white"
           value={currentDescription}
           onChange={(e) => setElement(slot, 'description', { text: e.target.value })}
         />
@@ -277,7 +277,7 @@ const ProductSlot = ({
                 )}
               </div>
               <div className="flex-grow min-w-0">
-                <h4 className="font-bold text-xs truncate uppercase">{product.name}</h4>
+                <h4 className="font-bold text-xs truncate uppercase text-zinc-900 dark:text-white">{product.name}</h4>
                 <p className="text-[10px] text-blue-600 font-black">{product.price}</p>
               </div>
               {isSelected && <Check className="w-3 h-3 text-blue-500 flex-shrink-0" />}

@@ -61,6 +61,8 @@ interface SelectedProduct extends Product {
   subtitle?: string;
   offsetX?: number;
   offsetY?: number;
+  textOffsetX?: number;
+  textOffsetY?: number;
 }
 
 interface EncarteSlot {
@@ -69,6 +71,7 @@ interface EncarteSlot {
   backBgUrl: string;
   frontProducts: (SelectedProduct | null)[];
   backProducts: (SelectedProduct | null)[];
+  productCount: number;
 }
 
 export default function EncarteCreator() {
@@ -80,6 +83,7 @@ export default function EncarteCreator() {
       backBgUrl: '',
       frontProducts: Array(12).fill(null),
       backProducts: Array(12).fill(null),
+      productCount: 12,
     }))
   );
   const [activeEncarteIndex, setActiveEncarteIndex] = useState(0);
@@ -87,11 +91,44 @@ export default function EncarteCreator() {
   const [isSelectorOpen, setIsSelectorOpen] = useState(false);
   const [activeSlot, setActiveSlot] = useState<number | null>(null);
   const [activeTab, setActiveTab] = useState<'products' | 'adjustments'>('products');
-  const [selectedModel, setSelectedModel] = useState<EncarteModel>(ENCARTE_MODELS[3]);
+  const [selectedModel, setSelectedModel] = useState<EncarteModel>(ENCARTE_MODELS[0]);
   const [isExporting, setIsExporting] = useState(false);
 
   const currentEncarte = encartes[activeEncarteIndex];
-  const currentProducts = currentSide === 'frente' ? currentEncarte.frontProducts : currentEncarte.backProducts;
+  const currentProducts = (currentSide === 'frente' ? currentEncarte.frontProducts : currentEncarte.backProducts).slice(0, currentEncarte.productCount);
+
+  const getAdaptiveStyles = (count: number) => {
+    switch (count) {
+      case 4: return { title: 'text-[18px]', subtitle: 'text-[12px]', price: 'text-5xl', cents: 'text-2xl', box: 'min-w-[120px] h-24', gap: 'gap-6', img: 'h-32' };
+      case 6: return { title: 'text-[16px]', subtitle: 'text-[10px]', price: 'text-4xl', cents: 'text-xl', box: 'min-w-[100px] h-20', gap: 'gap-4', img: 'h-28' };
+      case 8: return { title: 'text-[14px]', subtitle: 'text-[9px]', price: 'text-3xl', cents: 'text-lg', box: 'min-w-[90px] h-18', gap: 'gap-3', img: 'h-24' };
+      case 10: return { title: 'text-[12px]', subtitle: 'text-[8px]', price: 'text-2xl', cents: 'text-base', box: 'min-w-[80px] h-16', gap: 'gap-2', img: 'h-20' };
+      case 12: return { title: 'text-[10px]', subtitle: 'text-[7px]', price: 'text-xl', cents: 'text-sm', box: 'min-w-[70px] h-14', gap: 'gap-2', img: 'h-16' };
+      default: return { title: 'text-[10px]', subtitle: 'text-[7px]', price: 'text-xl', cents: 'text-sm', box: 'min-w-[70px] h-14', gap: 'gap-2', img: 'h-16' };
+    }
+  };
+
+  const formatPrice = (price: string) => {
+    const cleanPrice = price.replace('R$', '').replace(',', '.').trim();
+    const parts = cleanPrice.split('.');
+    return {
+      integer: parts[0] || '0',
+      cents: parts[1] ? `,${parts[1].padEnd(2, '0')}` : ',00'
+    };
+  };
+
+  const getGridClass = (count: number) => {
+    switch (count) {
+      case 4: return "grid-cols-2 grid-rows-2";
+      case 6: return "grid-cols-2 grid-rows-3";
+      case 8: return "grid-cols-2 grid-rows-4";
+      case 10: return "grid-cols-2 grid-rows-5";
+      case 12: return "grid-cols-3 grid-rows-4";
+      default: return "grid-cols-3 grid-rows-4";
+    }
+  };
+
+  const adaptive = getAdaptiveStyles(currentEncarte.productCount);
 
   const updateActiveEncarte = (updates: Partial<EncarteSlot>) => {
     const newEncartes = [...encartes];
@@ -144,21 +181,24 @@ export default function EncarteCreator() {
     }
   };
 
-  const handleMove = (index: number, direction: 'up' | 'down' | 'left' | 'right') => {
+  const handleMove = (index: number, direction: 'up' | 'down' | 'left' | 'right', target: 'card' | 'text' = 'card') => {
     const product = currentProducts[index];
     if (!product) return;
 
-    const step = 2;
-    let newX = product.offsetX || 0;
-    let newY = product.offsetY || 0;
+    const step = 5;
+    const fieldX = target === 'card' ? 'offsetX' : 'textOffsetX';
+    const fieldY = target === 'card' ? 'offsetY' : 'textOffsetY';
+    
+    let newX = (product[fieldX] as number) || 0;
+    let newY = (product[fieldY] as number) || 0;
 
     if (direction === 'up') newY -= step;
     if (direction === 'down') newY += step;
     if (direction === 'left') newX -= step;
     if (direction === 'right') newX += step;
 
-    handleUpdateProduct(index, 'offsetX', newX);
-    handleUpdateProduct(index, 'offsetY', newY);
+    handleUpdateProduct(index, fieldX, newX);
+    handleUpdateProduct(index, fieldY, newY);
   };
 
   const handleExportPNG = async () => {
@@ -227,7 +267,7 @@ export default function EncarteCreator() {
   };
 
   return (
-    <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 flex flex-col no-print">
+    <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 flex flex-col no-print">
       {/* Header */}
       <header className="h-16 border-b border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 flex items-center justify-between px-6 sticky top-0 z-40">
         <div className="flex items-center gap-4">
@@ -361,19 +401,30 @@ export default function EncarteCreator() {
 
               <div className="bg-white dark:bg-zinc-900 p-6 rounded-3xl border border-zinc-200 dark:border-zinc-800 shadow-sm flex-grow overflow-hidden flex flex-col">
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-xs font-black uppercase tracking-widest text-zinc-400">Produtos ({currentSide})</h3>
-                  <button 
-                    onClick={() => {
-                      if (currentSide === 'frente') {
-                        updateActiveEncarte({ frontProducts: Array(12).fill(null) });
-                      } else {
-                        updateActiveEncarte({ backProducts: Array(12).fill(null) });
-                      }
-                    }}
-                    className="text-[10px] font-black uppercase tracking-widest text-red-500 hover:text-red-600 transition-colors"
-                  >
-                    Limpar Lado
-                  </button>
+                  <h3 className="text-xs font-black uppercase tracking-widest text-zinc-400 mb-4">Produtos ({currentSide})</h3>
+                  <div className="flex items-center gap-2">
+                    <select 
+                      value={currentEncarte.productCount}
+                      onChange={(e) => updateActiveEncarte({ productCount: parseInt(e.target.value) })}
+                      className="text-[10px] font-black uppercase tracking-widest bg-zinc-100 dark:bg-zinc-800 px-2 py-1 rounded-lg outline-none border-none"
+                    >
+                      {[4, 6, 8, 10, 12].map(n => (
+                        <option key={n} value={n}>{n} Itens</option>
+                      ))}
+                    </select>
+                    <button 
+                      onClick={() => {
+                        if (currentSide === 'frente') {
+                          updateActiveEncarte({ frontProducts: Array(12).fill(null) });
+                        } else {
+                          updateActiveEncarte({ backProducts: Array(12).fill(null) });
+                        }
+                      }}
+                      className="text-[10px] font-black uppercase tracking-widest text-red-500 hover:text-red-600 transition-colors"
+                    >
+                      Limpar
+                    </button>
+                  </div>
                 </div>
                 
                 <div className="flex-grow overflow-y-auto space-y-4 pr-2">
@@ -406,13 +457,13 @@ export default function EncarteCreator() {
                                 type="text"
                                 value={product.name}
                                 onChange={(e) => handleUpdateProduct(index, 'name', e.target.value)}
-                                className="w-full bg-transparent text-xs font-black uppercase tracking-tighter outline-none border-b border-transparent focus:border-emerald-500"
+                                className="w-full bg-transparent text-xs font-black uppercase tracking-tighter outline-none border-b border-transparent focus:border-emerald-500 text-zinc-900 dark:text-white"
                               />
                               <input 
                                 type="text"
                                 value={product.subtitle || ''}
                                 onChange={(e) => handleUpdateProduct(index, 'subtitle', e.target.value)}
-                                className="w-full bg-transparent text-[10px] font-bold text-zinc-500 outline-none border-b border-transparent focus:border-emerald-500"
+                                className="w-full bg-transparent text-[10px] font-bold text-zinc-500 dark:text-zinc-400 outline-none border-b border-transparent focus:border-emerald-500"
                                 placeholder="Subdescrição..."
                               />
                             </div>
@@ -429,14 +480,31 @@ export default function EncarteCreator() {
                               />
                             </div>
 
-                            <div className="flex items-center gap-1 bg-zinc-100 dark:bg-zinc-900 p-1 rounded-lg">
-                              <button onClick={() => handleMove(index, 'left')} className="p-1.5 hover:bg-white dark:hover:bg-zinc-800 rounded shadow-sm transition-all"><MoveLeft className="w-3 h-3" /></button>
-                              <div className="flex flex-col gap-1">
-                                <button onClick={() => handleMove(index, 'up')} className="p-1.5 hover:bg-white dark:hover:bg-zinc-800 rounded shadow-sm transition-all"><MoveUp className="w-3 h-3" /></button>
-                                <button onClick={() => handleMove(index, 'down')} className="p-1.5 hover:bg-white dark:hover:bg-zinc-800 rounded shadow-sm transition-all"><MoveDown className="w-3 h-3" /></button>
+                          <div className="flex items-center justify-between gap-2">
+                            <div className="flex flex-col gap-1">
+                              <span className="text-[9px] font-black text-zinc-400 uppercase">Mover Card:</span>
+                              <div className="flex items-center gap-1 bg-zinc-100 dark:bg-zinc-900 p-1 rounded-lg">
+                                <button onClick={() => handleMove(index, 'left', 'card')} className="p-1 hover:bg-white dark:hover:bg-zinc-800 rounded shadow-sm transition-all"><MoveLeft className="w-3 h-3" /></button>
+                                <div className="flex flex-col gap-1">
+                                  <button onClick={() => handleMove(index, 'up', 'card')} className="p-1 hover:bg-white dark:hover:bg-zinc-800 rounded shadow-sm transition-all"><MoveUp className="w-3 h-3" /></button>
+                                  <button onClick={() => handleMove(index, 'down', 'card')} className="p-1 hover:bg-white dark:hover:bg-zinc-800 rounded shadow-sm transition-all"><MoveDown className="w-3 h-3" /></button>
+                                </div>
+                                <button onClick={() => handleMove(index, 'right', 'card')} className="p-1 hover:bg-white dark:hover:bg-zinc-800 rounded shadow-sm transition-all"><MoveRight className="w-3 h-3" /></button>
                               </div>
-                              <button onClick={() => handleMove(index, 'right')} className="p-1.5 hover:bg-white dark:hover:bg-zinc-800 rounded shadow-sm transition-all"><MoveRight className="w-3 h-3" /></button>
                             </div>
+
+                            <div className="flex flex-col gap-1">
+                              <span className="text-[9px] font-black text-zinc-400 uppercase">Mover Texto:</span>
+                              <div className="flex items-center gap-1 bg-zinc-100 dark:bg-zinc-900 p-1 rounded-lg">
+                                <button onClick={() => handleMove(index, 'left', 'text')} className="p-1 hover:bg-white dark:hover:bg-zinc-800 rounded shadow-sm transition-all text-emerald-600"><MoveLeft className="w-3 h-3" /></button>
+                                <div className="flex flex-col gap-1">
+                                  <button onClick={() => handleMove(index, 'up', 'text')} className="p-1 hover:bg-white dark:hover:bg-zinc-800 rounded shadow-sm transition-all text-emerald-600"><MoveUp className="w-3 h-3" /></button>
+                                  <button onClick={() => handleMove(index, 'down', 'text')} className="p-1 hover:bg-white dark:hover:bg-zinc-800 rounded shadow-sm transition-all text-emerald-600"><MoveDown className="w-3 h-3" /></button>
+                                </div>
+                                <button onClick={() => handleMove(index, 'right', 'text')} className="p-1 hover:bg-white dark:hover:bg-zinc-800 rounded shadow-sm transition-all text-emerald-600"><MoveRight className="w-3 h-3" /></button>
+                              </div>
+                            </div>
+                          </div>
                           </div>
                         </div>
                       ) : (
@@ -469,7 +537,7 @@ export default function EncarteCreator() {
                       type="text"
                       value={currentEncarte.name}
                       onChange={(e) => updateActiveEncarte({ name: e.target.value })}
-                      className="w-full px-4 py-2.5 bg-zinc-50 dark:bg-zinc-800 border-none rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none transition-all font-bold"
+                      className="w-full px-4 py-2.5 bg-zinc-50 dark:bg-zinc-800 border-none rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none transition-all font-bold text-zinc-900 dark:text-white"
                     />
                   </div>
                 </div>
@@ -489,7 +557,7 @@ export default function EncarteCreator() {
                       placeholder="URL da imagem..."
                       value={currentEncarte.frontBgUrl}
                       onChange={(e) => updateActiveEncarte({ frontBgUrl: e.target.value })}
-                      className="w-full px-4 py-2.5 bg-zinc-50 dark:bg-zinc-800 border-none rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none transition-all font-bold"
+                      className="w-full px-4 py-2.5 bg-zinc-50 dark:bg-zinc-800 border-none rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none transition-all font-bold text-zinc-900 dark:text-white"
                     />
                   </div>
                   <div className="space-y-1">
@@ -499,7 +567,7 @@ export default function EncarteCreator() {
                       placeholder="URL da imagem..."
                       value={currentEncarte.backBgUrl}
                       onChange={(e) => updateActiveEncarte({ backBgUrl: e.target.value })}
-                      className="w-full px-4 py-2.5 bg-zinc-50 dark:bg-zinc-800 border-none rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none transition-all font-bold"
+                      className="w-full px-4 py-2.5 bg-zinc-50 dark:bg-zinc-800 border-none rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none transition-all font-bold text-zinc-900 dark:text-white"
                     />
                   </div>
                 </div>
@@ -557,51 +625,61 @@ export default function EncarteCreator() {
               </div>
             )}
 
-            <div className={cn("border-[2px] p-4 flex-grow flex flex-col relative z-10", selectedModel.borderClass)}>
-              {/* Products Grid - 3x4 */}
-              <div className="grid grid-cols-3 grid-rows-4 gap-4 flex-grow content-start pt-8">
+            <div className="p-4 flex-grow flex flex-col relative z-10">
+              {/* Products Grid */}
+              <div className={cn("grid gap-4 flex-grow content-start pt-8", getGridClass(currentEncarte.productCount))}>
                 {currentProducts.map((product, index) => (
                   <div 
                     key={index} 
-                    className="p-2 rounded-xl flex flex-col relative overflow-hidden bg-white/95 backdrop-blur-sm min-h-0"
+                    className="p-2 rounded-xl flex flex-col relative overflow-hidden min-h-0"
                     style={{ 
                       transform: product ? `translate(${product.offsetX || 0}px, ${product.offsetY || 0}px)` : 'none'
                     }}
                   >
                     {product ? (
-                      <>
-                        <div className="mb-0.5">
-                          <h4 className="text-[10px] font-black tracking-tight leading-[1.1] uppercase text-zinc-900 line-clamp-2">
+                      <div className="flex flex-col h-full">
+                        <div 
+                          className="text-left mb-1"
+                          style={{ 
+                            transform: `translate(${product.textOffsetX || 0}px, ${product.textOffsetY || 0}px)`
+                          }}
+                        >
+                          <h4 className={cn("font-black tracking-tight leading-tight uppercase text-red-600 line-clamp-2", adaptive.title)}>
                             {product.name}
                           </h4>
-                          <p className="text-[8px] font-bold text-zinc-800 uppercase leading-none mt-0 truncate">
+                          <p className={cn("font-bold text-red-600 uppercase leading-none truncate", adaptive.subtitle)}>
                             {product.subtitle}
                           </p>
                         </div>
                         
-                        <div className="flex items-center gap-2 mt-auto">
+                        <div className={cn("flex items-center mt-0", adaptive.gap)}>
                           {/* Price Box */}
-                          <div className="bg-red-600 text-white p-1.5 flex flex-col items-center justify-center min-w-[55px] rounded-sm relative">
-                            <div className="absolute top-0.5 left-1 flex flex-col items-start leading-none">
-                              <span className="text-[5px] font-black uppercase">POR</span>
-                              <span className="text-[7px] font-black">R$</span>
+                          <div className={cn("bg-red-600 text-white rounded-lg relative flex items-center justify-center px-4", adaptive.box)}>
+                            <div className="absolute top-2 left-2 flex flex-col items-start leading-none">
+                              <span className="text-[8px] font-black uppercase">POR</span>
+                              <span className="text-[10px] font-black">R$</span>
                             </div>
-                            <span className="text-2xl font-black tracking-tighter leading-none ml-2">
-                              {product.price}
-                            </span>
-                            <span className="absolute bottom-0.5 right-1 text-[5px] font-black uppercase">UNI</span>
+                            <div className="flex items-baseline ml-4">
+                              <span className={cn("font-black tracking-tighter leading-none", adaptive.price)}>
+                                {formatPrice(product.price).integer}
+                              </span>
+                              <span className={cn("font-black tracking-tighter leading-none", adaptive.cents)}>
+                                {formatPrice(product.price).cents}
+                              </span>
+                            </div>
+                            <span className="absolute bottom-2 right-2 text-[8px] font-black uppercase">UNI</span>
                           </div>
                           
                           {/* Product Image */}
-                          <div className="flex-grow h-16 flex items-center justify-center">
+                          <div className={cn("flex-grow flex items-center justify-center", adaptive.img)}>
                             {product.image ? (
                               <img src={product.image} className="max-w-full max-h-full object-contain" referrerPolicy="no-referrer" />
                             ) : (
-                              <Package className="w-8 h-8 text-zinc-200" />
+                              <Package className="w-12 h-12 text-zinc-200 dark:text-zinc-700" />
                             )}
                           </div>
                         </div>
-                      </>
+                      </div>
                     ) : null}
                   </div>
                 ))}
@@ -609,8 +687,8 @@ export default function EncarteCreator() {
             </div>
           </div>
 
-          {/* Hidden Print Pages */}
-          <div className="hidden print:block">
+          {/* Hidden Print Pages - Positioned off-screen to allow html2canvas capture */}
+          <div className="absolute -left-[9999px] top-0 pointer-events-none print:static print:left-0 print:block">
             {/* Page 1 - Frente */}
             <div className="w-[210mm] h-[297mm] bg-white p-[10mm] flex flex-col relative overflow-hidden" id="print-frente">
                {currentEncarte.frontBgUrl && (
@@ -618,36 +696,44 @@ export default function EncarteCreator() {
                   <img src={currentEncarte.frontBgUrl} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                 </div>
               )}
-              <div className={cn("p-4 flex-grow flex flex-col relative z-10", selectedModel.borderClass)}>
-                <div className="grid grid-cols-3 grid-rows-4 gap-4 flex-grow content-start pt-8">
-                  {currentEncarte.frontProducts.map((product, index) => (
+              <div className={cn("p-4 flex-grow flex flex-col relative z-10")}>
+                <div className={cn("grid gap-4 flex-grow content-start pt-8", getGridClass(currentEncarte.productCount))}>
+                  {currentEncarte.frontProducts.slice(0, currentEncarte.productCount).map((product, index) => (
                     <div 
                       key={index} 
-                      className="p-2 rounded-xl flex flex-col relative overflow-hidden bg-white/95 backdrop-blur-sm min-h-0"
+                      className="p-2 rounded-xl flex flex-col relative overflow-hidden min-h-0"
                       style={{ 
                         transform: product ? `translate(${product.offsetX || 0}px, ${product.offsetY || 0}px)` : 'none'
                       }}
                     >
                       {product && (
-                        <>
-                          <div className="mb-0.5">
-                            <h4 className="text-[10px] font-black tracking-tight leading-[1.1] uppercase text-zinc-900 line-clamp-2">{product.name}</h4>
-                            <p className="text-[8px] font-bold text-zinc-800 uppercase leading-none mt-0 truncate">{product.subtitle}</p>
+                        <div className="flex flex-col h-full">
+                          <div 
+                            className="text-left mb-1"
+                            style={{ 
+                              transform: `translate(${product.textOffsetX || 0}px, ${product.textOffsetY || 0}px)`
+                            }}
+                          >
+                            <h4 className={cn("font-black tracking-tight leading-tight uppercase text-red-600 line-clamp-2", adaptive.title)}>{product.name}</h4>
+                            <p className={cn("font-bold text-red-600 uppercase leading-none truncate", adaptive.subtitle)}>{product.subtitle}</p>
                           </div>
-                          <div className="flex items-center gap-2 mt-auto">
-                            <div className="bg-red-600 text-white p-1.5 flex flex-col items-center justify-center min-w-[55px] rounded-sm relative">
-                              <div className="absolute top-0.5 left-1 flex flex-col items-start leading-none">
-                                <span className="text-[5px] font-black uppercase">POR</span>
-                                <span className="text-[7px] font-black">R$</span>
+                          <div className={cn("flex items-center mt-0", adaptive.gap)}>
+                            <div className={cn("bg-red-600 text-white rounded-lg relative flex items-center justify-center px-4", adaptive.box)}>
+                              <div className="absolute top-2 left-2 flex flex-col items-start leading-none">
+                                <span className="text-[8px] font-black uppercase">POR</span>
+                                <span className="text-[10px] font-black">R$</span>
                               </div>
-                              <span className="text-2xl font-black tracking-tighter leading-none ml-2">{product.price}</span>
-                              <span className="absolute bottom-0.5 right-1 text-[5px] font-black uppercase">UNI</span>
+                              <div className="flex items-baseline ml-4">
+                                <span className={cn("font-black tracking-tighter leading-none", adaptive.price)}>{formatPrice(product.price).integer}</span>
+                                <span className={cn("font-black tracking-tighter leading-none", adaptive.cents)}>{formatPrice(product.price).cents}</span>
+                              </div>
+                              <span className="absolute bottom-2 right-2 text-[8px] font-black uppercase">UNI</span>
                             </div>
-                            <div className="flex-grow h-16 flex items-center justify-center">
+                            <div className={cn("flex-grow flex items-center justify-center", adaptive.img)}>
                               {product.image && <img src={product.image} className="max-w-full max-h-full object-contain" referrerPolicy="no-referrer" />}
                             </div>
                           </div>
-                        </>
+                        </div>
                       )}
                     </div>
                   ))}
@@ -662,36 +748,44 @@ export default function EncarteCreator() {
                   <img src={currentEncarte.backBgUrl} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                 </div>
               )}
-              <div className={cn("p-4 flex-grow flex flex-col relative z-10", selectedModel.borderClass)}>
-                <div className="grid grid-cols-3 grid-rows-4 gap-4 flex-grow content-start pt-8">
-                  {currentEncarte.backProducts.map((product, index) => (
+              <div className={cn("p-4 flex-grow flex flex-col relative z-10")}>
+                <div className={cn("grid gap-4 flex-grow content-start pt-8", getGridClass(currentEncarte.productCount))}>
+                  {currentEncarte.backProducts.slice(0, currentEncarte.productCount).map((product, index) => (
                     <div 
                       key={index} 
-                      className="p-2 rounded-xl flex flex-col relative overflow-hidden bg-white/95 backdrop-blur-sm min-h-0"
+                      className="p-2 rounded-xl flex flex-col relative overflow-hidden min-h-0"
                       style={{ 
                         transform: product ? `translate(${product.offsetX || 0}px, ${product.offsetY || 0}px)` : 'none'
                       }}
                     >
                       {product && (
-                        <>
-                          <div className="mb-0.5">
-                            <h4 className="text-[10px] font-black tracking-tight leading-[1.1] uppercase text-zinc-900 line-clamp-2">{product.name}</h4>
-                            <p className="text-[8px] font-bold text-zinc-800 uppercase leading-none mt-0 truncate">{product.subtitle}</p>
+                        <div className="flex flex-col h-full">
+                          <div 
+                            className="text-left mb-1"
+                            style={{ 
+                              transform: `translate(${product.textOffsetX || 0}px, ${product.textOffsetY || 0}px)`
+                            }}
+                          >
+                            <h4 className={cn("font-black tracking-tight leading-tight uppercase text-red-600 line-clamp-2", adaptive.title)}>{product.name}</h4>
+                            <p className={cn("font-bold text-red-600 uppercase leading-none truncate", adaptive.subtitle)}>{product.subtitle}</p>
                           </div>
-                          <div className="flex items-center gap-2 mt-auto">
-                            <div className="bg-red-600 text-white p-1.5 flex flex-col items-center justify-center min-w-[55px] rounded-sm relative">
-                              <div className="absolute top-0.5 left-1 flex flex-col items-start leading-none">
-                                <span className="text-[5px] font-black uppercase">POR</span>
-                                <span className="text-[7px] font-black">R$</span>
+                          <div className={cn("flex items-center mt-0", adaptive.gap)}>
+                            <div className={cn("bg-red-600 text-white rounded-lg relative flex items-center justify-center px-4", adaptive.box)}>
+                              <div className="absolute top-2 left-2 flex flex-col items-start leading-none">
+                                <span className="text-[8px] font-black uppercase">POR</span>
+                                <span className="text-[10px] font-black">R$</span>
                               </div>
-                              <span className="text-2xl font-black tracking-tighter leading-none ml-2">{product.price}</span>
-                              <span className="absolute bottom-0.5 right-1 text-[5px] font-black uppercase">UNI</span>
+                              <div className="flex items-baseline ml-4">
+                                <span className={cn("font-black tracking-tighter leading-none", adaptive.price)}>{formatPrice(product.price).integer}</span>
+                                <span className={cn("font-black tracking-tighter leading-none", adaptive.cents)}>{formatPrice(product.price).cents}</span>
+                              </div>
+                              <span className="absolute bottom-2 right-2 text-[8px] font-black uppercase">UNI</span>
                             </div>
-                            <div className="flex-grow h-16 flex items-center justify-center">
+                            <div className={cn("flex-grow flex items-center justify-center", adaptive.img)}>
                               {product.image && <img src={product.image} className="max-w-full max-h-full object-contain" referrerPolicy="no-referrer" />}
                             </div>
                           </div>
-                        </>
+                        </div>
                       )}
                     </div>
                   ))}
