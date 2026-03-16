@@ -136,6 +136,8 @@ async function startServer() {
         timestamp: new Date().toISOString()
       };
 
+      console.log(`Message from ${messageData.from.username} (${messageData.from.role}) to ${messageData.to?.cnpj || 'All'}`);
+
       // Store in-memory
       inMemoryMessages.push(fullMessage);
       if (inMemoryMessages.length > 500) inMemoryMessages.shift();
@@ -158,7 +160,7 @@ async function startServer() {
               created_at: fullMessage.timestamp
             }]);
 
-          if (error) console.error('Supabase insert error:', error);
+          if (error) console.error('Supabase insert error:', error.message);
         } catch (err) {
           console.error('Supabase insert exception:', err);
         }
@@ -178,6 +180,46 @@ async function startServer() {
         // Send to all admins and back to the user's rooms
         io.to("admin_room").emit("message:receive", fullMessage);
         io.to(`user_${messageData.from.cnpj}`).emit("message:receive", fullMessage);
+      }
+    });
+
+    socket.on("message:clear", async (data) => {
+      const { cnpj, role } = data;
+      console.log(`Clearing messages for CNPJ: ${cnpj} (Requested by ${role})`);
+
+      // Clear in-memory
+      inMemoryMessages = inMemoryMessages.filter(m => 
+        m.from.cnpj !== cnpj && m.to?.cnpj !== cnpj
+      );
+
+      // Clear Supabase
+      if (supabase) {
+        try {
+          const { error } = await supabase
+            .from('chat_messages')
+            .delete()
+            .or(`from_cnpj.eq.${cnpj},to_cnpj.eq.${cnpj}`);
+          
+          if (error) console.error('Supabase delete error:', error.message);
+        } catch (err) {
+          console.error('Supabase delete exception:', err);
+        }
+      }
+
+      // Notify relevant rooms to refresh history
+      if (role === 'admin') {
+        io.to(`user_${cnpj}`).emit("message:history", []);
+        io.to("admin_room").emit("message:history", inMemoryMessages.filter(m => 
+          // Re-filter history for admins based on their current view if needed, 
+          // but usually they just need to know it's cleared.
+          // For simplicity, we just send empty to the specific user room.
+          false 
+        ));
+        // Admins need to refresh their own view
+        io.to("admin_room").emit("message:cleared", { cnpj });
+      } else {
+        socket.emit("message:history", []);
+        io.to("admin_room").emit("message:cleared", { cnpj });
       }
     });
 

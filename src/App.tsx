@@ -52,8 +52,8 @@ export default function App() {
     // If no store found or allowedLayouts is undefined, show all layouts
     if (!store || store.allowedLayouts === undefined) return layouts;
     
-    // If allowedLayouts is an array (even empty), filter by it
-    return layouts.filter(l => store.allowedLayouts?.includes(l.name));
+    // If allowedLayouts is an array (even empty), filter by index
+    return layouts.filter((l, index) => store.allowedLayouts?.includes(index));
   }, [layouts, userRole, currentUser, allowedStores]);
 
   // Map filtered index back to original index for setActiveLayout

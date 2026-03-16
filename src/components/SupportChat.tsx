@@ -15,9 +15,9 @@ export default function SupportChat() {
   const { 
     currentUser, userRole, isSupportChatOpen, setSupportChatOpen,
     setUnreadSupportCount, selectedUserCnpj, setSelectedUserCnpj,
-    unreadPerUser, setUnreadPerUser, messages
+    unreadPerUser, setUnreadPerUser, messages, allowedStores
   } = useStore();
-  const { sendMessage, isConnected } = useSupportSocket();
+  const { sendMessage, clearMessages, isConnected } = useSupportSocket();
   const [inputText, setInputText] = useState('');
   const [attachment, setAttachment] = useState<{ data: string, type: 'image' | 'file', name: string } | null>(null);
   const [showScrollButton, setShowScrollButton] = useState(false);
@@ -81,6 +81,13 @@ export default function SupportChat() {
     setAttachment(null);
   };
 
+  const [confirmClear, setConfirmClear] = useState(false);
+
+  const handleClearChat = () => {
+    clearMessages(userRole === 'admin' ? selectedUserCnpj! : currentUser?.cnpj!);
+    setConfirmClear(false);
+  };
+
   if (!isSupportChatOpen) return null;
 
   // Filter messages for the current view
@@ -90,12 +97,23 @@ export default function SupportChat() {
     ? (selectedUserCnpj ? messages.filter(m => m.from.cnpj === selectedUserCnpj || m.to?.cnpj === selectedUserCnpj) : [])
     : messages;
 
-  // For admin: get list of unique users who sent messages
-  const uniqueUsers = Array.from(new Set(messages.filter(m => m.from.role === 'user').map(m => m.from.cnpj)))
-    .map(cnpj => {
-      const lastMsg = [...messages].reverse().find(m => m.from.cnpj === cnpj);
-      return { cnpj, username: lastMsg?.from.username || 'Usuário' };
-    });
+  // For admin: get list of all authorized users
+  const chatUsers = userRole === 'admin' 
+    ? allowedStores.map(store => {
+        const lastMsg = [...messages].reverse().find(m => m.from.cnpj === store.cnpj || m.to?.cnpj === store.cnpj);
+        return { 
+          cnpj: store.cnpj, 
+          username: store.cnpj, // Using CNPJ as username if not found in messages
+          bandeira: store.bandeira,
+          lastMessage: lastMsg?.text,
+          lastTimestamp: lastMsg?.timestamp
+        };
+      }).sort((a, b) => {
+        if (!a.lastTimestamp) return 1;
+        if (!b.lastTimestamp) return -1;
+        return new Date(b.lastTimestamp).getTime() - new Date(a.lastTimestamp).getTime();
+      })
+    : [];
 
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[100] p-4 no-print">
@@ -128,18 +146,17 @@ export default function SupportChat() {
         </div>
 
         <div className="flex-grow flex overflow-hidden">
-          {/* Admin Sidebar: List of users */}
           {userRole === 'admin' && (
             <div className="w-64 border-r border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/50 overflow-y-auto">
               <div className="p-4 border-b border-zinc-200 dark:border-zinc-800">
-                <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Conversas Ativas</p>
+                <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Lojas Autorizadas</p>
               </div>
-              {uniqueUsers.length === 0 ? (
+              {chatUsers.length === 0 ? (
                 <div className="p-8 text-center">
-                  <p className="text-xs text-zinc-500 font-medium">Nenhuma mensagem recebida ainda.</p>
+                  <p className="text-xs text-zinc-500 font-medium">Nenhuma loja cadastrada.</p>
                 </div>
               ) : (
-                uniqueUsers.map(user => (
+                chatUsers.map(user => (
                   <button
                     key={user.cnpj}
                     onClick={() => setSelectedUserCnpj(user.cnpj)}
@@ -148,15 +165,25 @@ export default function SupportChat() {
                       selectedUserCnpj === user.cnpj && "bg-blue-50 dark:bg-blue-900/10 border-l-4 border-l-blue-600"
                     )}
                   >
-                    <div className="w-10 h-10 rounded-full bg-zinc-200 dark:bg-zinc-700 flex items-center justify-center">
+                    <div className="w-10 h-10 rounded-full bg-zinc-200 dark:bg-zinc-700 flex items-center justify-center flex-shrink-0">
                       <User className="w-5 h-5 text-zinc-500" />
                     </div>
                     <div className="overflow-hidden flex-grow">
-                      <p className="text-sm font-bold truncate">{user.username}</p>
+                      <div className="flex justify-between items-start">
+                        <p className="text-sm font-bold truncate">{user.bandeira}</p>
+                        {user.lastTimestamp && (
+                          <span className="text-[8px] text-zinc-400">
+                            {new Date(user.lastTimestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          </span>
+                        )}
+                      </div>
                       <p className="text-[10px] text-zinc-500 truncate">{user.cnpj}</p>
+                      {user.lastMessage && (
+                        <p className="text-[10px] text-zinc-400 truncate mt-1 italic">"{user.lastMessage}"</p>
+                      )}
                     </div>
                     {unreadPerUser[user.cnpj] > 0 && (
-                      <div className="bg-red-500 text-white text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center">
+                      <div className="bg-red-500 text-white text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0">
                         {unreadPerUser[user.cnpj]}
                       </div>
                     )}
@@ -186,6 +213,33 @@ export default function SupportChat() {
                   onScroll={handleScroll}
                   className="flex-grow overflow-y-auto p-6 space-y-4 bg-zinc-50/30 dark:bg-zinc-950/30 relative"
                 >
+                  <div className="absolute top-4 right-4 z-10">
+                    {confirmClear ? (
+                      <div className="flex items-center gap-2 bg-white dark:bg-zinc-800 p-1 rounded-full border border-red-200 dark:border-red-900/30 shadow-lg animate-in fade-in zoom-in duration-200">
+                        <span className="text-[8px] font-black uppercase tracking-widest text-red-500 px-2">Limpar?</span>
+                        <button 
+                          onClick={handleClearChat}
+                          className="px-3 py-1 bg-red-600 text-white rounded-full text-[9px] font-black uppercase tracking-widest hover:bg-red-700 transition-colors"
+                        >
+                          Sim
+                        </button>
+                        <button 
+                          onClick={() => setConfirmClear(false)}
+                          className="px-3 py-1 bg-zinc-100 dark:bg-zinc-700 text-zinc-600 dark:text-zinc-300 rounded-full text-[9px] font-black uppercase tracking-widest hover:bg-zinc-200 dark:hover:bg-zinc-600 transition-colors"
+                        >
+                          Não
+                        </button>
+                      </div>
+                    ) : (
+                      <button 
+                        onClick={() => setConfirmClear(true)}
+                        className="flex items-center gap-1.5 px-3 py-1.5 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-full text-[10px] font-black uppercase tracking-widest text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors shadow-sm"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                        Limpar Histórico
+                      </button>
+                    )}
+                  </div>
                   {showScrollButton && (
                     <button 
                       onClick={scrollToBottom}

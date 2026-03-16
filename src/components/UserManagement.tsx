@@ -17,7 +17,7 @@ export default function UserManagement() {
   const [newFlagName, setNewFlagName] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [isSaving, setIsSaving] = useState(false);
-  const [selectedLayouts, setSelectedLayouts] = useState<string[]>([]);
+  const [selectedLayouts, setSelectedLayouts] = useState<number[]>([]);
   const [editingStoreLayouts, setEditingStoreLayouts] = useState<string | null>(null);
 
   // Fix: Ensure newBandeira is set when flags are loaded
@@ -34,22 +34,22 @@ export default function UserManagement() {
     addAllowedStore({
       cnpj: newCnpj.trim(),
       bandeira: newBandeira,
-      allowedLayouts: selectedLayouts.length > 0 ? selectedLayouts : layouts.map(l => l.name)
+      allowedLayouts: selectedLayouts.length > 0 ? selectedLayouts : layouts.map((_, i) => i)
     });
     
     setNewCnpj('');
     setSelectedLayouts([]);
   };
 
-  const toggleLayout = (layoutName: string) => {
+  const toggleLayout = (index: number) => {
     setSelectedLayouts(prev => 
-      prev.includes(layoutName) 
-        ? prev.filter(l => l !== layoutName) 
-        : [...prev, layoutName]
+      prev.includes(index) 
+        ? prev.filter(i => i !== index) 
+        : [...prev, index]
     );
   };
 
-  const toggleStoreLayout = (cnpj: string, layoutName: string) => {
+  const toggleStoreLayout = (cnpj: string, index: number) => {
     const store = allowedStores.find(s => s.cnpj === cnpj);
     if (!store) return;
 
@@ -57,11 +57,11 @@ export default function UserManagement() {
     // To toggle one, we first need to initialize it with ALL layouts.
     const currentAllowed = store.allowedLayouts !== undefined 
       ? store.allowedLayouts 
-      : layouts.map(l => l.name);
+      : layouts.map((_, i) => i);
       
-    const newAllowed = currentAllowed.includes(layoutName)
-      ? currentAllowed.filter(l => l !== layoutName)
-      : [...currentAllowed, layoutName];
+    const newAllowed = currentAllowed.includes(index)
+      ? currentAllowed.filter(i => i !== index)
+      : [...currentAllowed, index];
 
     addAllowedStore({
       ...store,
@@ -221,7 +221,7 @@ export default function UserManagement() {
                     <div className="flex gap-2">
                       <button 
                         type="button"
-                        onClick={() => setSelectedLayouts(layouts.map(l => l.name))}
+                        onClick={() => setSelectedLayouts(layouts.map((_, i) => i))}
                         className="text-[9px] font-black text-blue-600 uppercase tracking-tighter hover:underline"
                       >
                         Selecionar Todos
@@ -236,14 +236,14 @@ export default function UserManagement() {
                     </div>
                   </div>
                   <div className="flex flex-wrap gap-2 p-3 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-xl">
-                    {layouts.map(layout => (
+                    {layouts.map((layout, index) => (
                       <button
                         key={layout.name}
                         type="button"
-                        onClick={() => toggleLayout(layout.name)}
+                        onClick={() => toggleLayout(index)}
                         className={cn(
                           "px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-tighter transition-all border",
-                          selectedLayouts.includes(layout.name)
+                          selectedLayouts.includes(index)
                             ? "bg-blue-600 border-blue-600 text-white shadow-md shadow-blue-500/20"
                             : "bg-zinc-100 dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 text-zinc-500 hover:border-zinc-400"
                         )}
@@ -350,7 +350,7 @@ export default function UserManagement() {
                             </div>
                             <div className="flex gap-2">
                               <button 
-                                onClick={() => addAllowedStore({ ...store, allowedLayouts: layouts.map(l => l.name) })}
+                                onClick={() => addAllowedStore({ ...store, allowedLayouts: layouts.map((_, i) => i) })}
                                 className="text-[8px] font-black text-blue-600 uppercase tracking-tighter hover:underline"
                               >
                                 Todos
@@ -364,12 +364,12 @@ export default function UserManagement() {
                             </div>
                           </div>
                           <div className="flex flex-wrap gap-1.5">
-                            {layouts.map(layout => {
-                              const isAllowed = store.allowedLayouts === undefined || store.allowedLayouts.includes(layout.name);
+                            {layouts.map((layout, index) => {
+                              const isAllowed = store.allowedLayouts === undefined || store.allowedLayouts.includes(index);
                               return (
                                 <button
                                   key={layout.name}
-                                  onClick={() => toggleStoreLayout(store.cnpj, layout.name)}
+                                  onClick={() => toggleStoreLayout(store.cnpj, index)}
                                   className={cn(
                                     "px-2 py-1 rounded-md text-[9px] font-black uppercase tracking-tighter transition-all border",
                                     isAllowed
@@ -398,9 +398,9 @@ export default function UserManagement() {
                             </span>
                           ) : (
                             <>
-                              {store.allowedLayouts.slice(0, 5).map(name => (
-                                <span key={name} className="text-[8px] font-bold text-zinc-400 bg-zinc-100 dark:bg-zinc-800 px-1.5 py-0.5 rounded uppercase">
-                                  {name}
+                              {store.allowedLayouts.slice(0, 5).map(idx => (
+                                <span key={idx} className="text-[8px] font-bold text-zinc-400 bg-zinc-100 dark:bg-zinc-800 px-1.5 py-0.5 rounded uppercase">
+                                  {layouts[idx]?.name || `Modelo ${idx + 1}`}
                                 </span>
                               ))}
                               {store.allowedLayouts.length > 5 && (

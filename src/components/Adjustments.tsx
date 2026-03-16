@@ -2,20 +2,27 @@ import React from 'react';
 import { useStore, TextSettings, createDefaultLayout, Layout as LayoutType, isThreeProduct } from '../store';
 import { Settings, Type, Image as ImageIcon, Layout, Eye, EyeOff, Lock, Unlock, AlignLeft, AlignCenter, AlignRight, Bold, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
+import { clsx, type ClassValue } from 'clsx';
+import { twMerge } from 'tailwind-merge';
+
+function cn(...inputs: ClassValue[]) {
+  return twMerge(clsx(inputs));
+}
 
 const Adjustments = () => {
   const { 
     textElements1, textElements2, textElements3,
     productImage1, productImage2, productImage3,
     background, setElement, setProductImage, setBackground,
-    userRole, layouts, setLayoutName, activeLayoutIndex,
+    userRole, layouts, setLayoutName, setLayoutHasThirdProduct, activeLayoutIndex,
     setSlotVisibility
   } = useStore();
 
   const [showResetConfirm, setShowResetConfirm] = React.useState(false);
 
-  const currentLayoutName = layouts[activeLayoutIndex]?.name || '';
-  const canHaveThirdProduct = isThreeProduct(currentLayoutName, activeLayoutIndex);
+  const currentLayout = layouts[activeLayoutIndex];
+  const currentLayoutName = currentLayout?.name || '';
+  const canHaveThirdProduct = currentLayout?.hasThirdProduct ?? isThreeProduct(currentLayoutName, activeLayoutIndex);
   const showThirdProduct = productImage3.visible;
 
   const handleReset = () => {
@@ -223,13 +230,25 @@ const Adjustments = () => {
           </div>
           <div className="grid grid-cols-2 gap-3">
             {layouts.map((layout, index) => (
-              <div key={index} className="space-y-1">
-                <label className="text-[10px] font-bold text-zinc-500 ml-1">Modelo {index + 1}</label>
+              <div key={index} className="space-y-1 p-2 bg-zinc-50 dark:bg-zinc-800/50 rounded-xl border border-zinc-200 dark:border-zinc-700">
+                <div className="flex justify-between items-center mb-1">
+                  <label className="text-[10px] font-black uppercase tracking-tighter text-zinc-500">Modelo {index + 1}</label>
+                  <button 
+                    onClick={() => setLayoutHasThirdProduct(index, !layout.hasThirdProduct)}
+                    className={cn(
+                      "p-1 rounded transition-colors",
+                      layout.hasThirdProduct ? "text-blue-600 bg-blue-50 dark:bg-blue-900/20" : "text-zinc-400 bg-zinc-100 dark:bg-zinc-800"
+                    )}
+                    title={layout.hasThirdProduct ? "Desativar 3º Produto" : "Ativar 3º Produto"}
+                  >
+                    <Layout className="w-3 h-3" />
+                  </button>
+                </div>
                 <input 
                   type="text"
                   value={layout.name}
                   onChange={(e) => setLayoutName(index, e.target.value)}
-                  className="w-full px-2 py-1.5 bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded text-[10px] font-bold outline-none focus:ring-1 focus:ring-blue-500"
+                  className="w-full px-2 py-1.5 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded text-[10px] font-bold outline-none focus:ring-1 focus:ring-blue-500"
                 />
               </div>
             ))}

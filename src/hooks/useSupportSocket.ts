@@ -107,8 +107,10 @@ export function useSupportSocket() {
         }
 
         // Update unread counts
-        if (userRole === 'admin' && message.from.cnpj && message.from.cnpj !== state.selectedUserCnpj) {
-          setUnreadPerUser(message.from.cnpj, prev => prev + 1);
+        if (userRole === 'admin' && message.from.cnpj && message.from.role === 'user') {
+          if (message.from.cnpj !== state.selectedUserCnpj) {
+            setUnreadPerUser(message.from.cnpj, prev => prev + 1);
+          }
         }
 
         if (shouldNotify) {
@@ -153,6 +155,20 @@ export function useSupportSocket() {
       }
     };
 
+    const onCleared = (data: { cnpj: string }) => {
+      const state = useStore.getState();
+      if (userRole === 'admin') {
+        if (state.selectedUserCnpj === data.cnpj) {
+          setMessages([]);
+        }
+      } else {
+        if (currentUser.cnpj === data.cnpj) {
+          setMessages([]);
+        }
+      }
+      toast.success('Conversa limpa com sucesso!');
+    };
+
     if (!listenersAttached) {
       socket.on('connect', onConnect);
       socket.on('connect_error', onConnectError);
@@ -160,6 +176,7 @@ export function useSupportSocket() {
       socket.on('disconnect', onDisconnect);
       socket.on('message:history', onHistory);
       socket.on('message:receive', onReceive);
+      socket.on('message:cleared', onCleared);
       listenersAttached = true;
     }
 
@@ -196,5 +213,10 @@ export function useSupportSocket() {
     socketInstance.emit('message:send', messageData);
   };
 
-  return { messages, setMessages, sendMessage, isConnected: isChatConnected };
+  const clearMessages = (cnpj: string) => {
+    if (!socketInstance || !socketInstance.connected) return;
+    socketInstance.emit('message:clear', { cnpj, role: userRole });
+  };
+
+  return { messages, setMessages, sendMessage, clearMessages, isConnected: isChatConnected };
 }

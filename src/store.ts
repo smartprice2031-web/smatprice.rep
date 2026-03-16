@@ -63,6 +63,7 @@ export interface Layout {
     subtitle: TextSettings;
     price: TextSettings;
   };
+  hasThirdProduct?: boolean;
 }
 
 interface AppState {
@@ -103,6 +104,7 @@ interface AppState {
   layouts: Layout[];
   setActiveLayout: (index: number) => void;
   setLayoutName: (index: number, name: string) => void;
+  setLayoutHasThirdProduct: (index: number, hasThirdProduct: boolean) => void;
 
   setElement: (slot: 1 | 2 | 3, key: keyof AppState['textElements1'], settings: Partial<TextSettings>) => void;
   setProductImage: (slot: 1 | 2 | 3, settings: Partial<ImageSettings>) => void;
@@ -143,8 +145,8 @@ interface AppState {
   addFlag: (flag: string) => void;
   removeFlag: (flag: string) => void;
   updateFlag: (oldFlag: string, newFlag: string) => void;
-  allowedStores: { cnpj: string; bandeira: string; allowedLayouts?: string[] }[];
-  addAllowedStore: (store: { cnpj: string; bandeira: string; allowedLayouts?: string[] }) => void;
+  allowedStores: { cnpj: string; bandeira: string; allowedLayouts?: number[] }[];
+  addAllowedStore: (store: { cnpj: string; bandeira: string; allowedLayouts?: number[] }) => void;
   removeAllowedStore: (cnpj: string) => void;
   saveUsersAndFlags: () => Promise<void>;
   loadUsersAndFlags: () => Promise<void>;
@@ -211,6 +213,7 @@ export const createDefaultLayout = (name: string, index?: number): Layout => {
 
   return {
     name,
+    hasThirdProduct: showThird,
     background: {
       url: null,
       mode: 'cover',
@@ -374,6 +377,7 @@ export const useStore = create<AppState>()(
           textElements1: state.textElements1,
           textElements2: state.textElements2,
           textElements3: state.textElements3,
+          hasThirdProduct: state.layouts[state.activeLayoutIndex]?.hasThirdProduct,
         };
 
         const newLayouts = [...state.layouts];
@@ -412,29 +416,80 @@ export const useStore = create<AppState>()(
         get().saveLayoutDebounced();
       },
 
+      setLayoutHasThirdProduct: (index, hasThirdProduct) => {
+        set((state) => {
+          const newLayouts = [...state.layouts];
+          const updatedLayout = { 
+            ...newLayouts[index], 
+            hasThirdProduct
+          };
+          
+          newLayouts[index] = updatedLayout;
+          
+          return { layouts: newLayouts };
+        });
+        get().saveLayoutDebounced();
+      },
+
       setElement: (slot, key, settings) => {
         const elementKey = slot === 1 ? 'textElements1' : slot === 2 ? 'textElements2' : 'textElements3';
-        set((state) => ({
-          [elementKey]: {
-            ...state[elementKey],
-            [key]: { ...state[elementKey][key], ...settings }
+        set((state) => {
+          const newState = {
+            [elementKey]: {
+              ...state[elementKey],
+              [key]: { ...state[elementKey][key], ...settings }
+            }
+          } as any;
+
+          const newLayouts = [...state.layouts];
+          if (newLayouts[state.activeLayoutIndex]) {
+            newLayouts[state.activeLayoutIndex] = {
+              ...newLayouts[state.activeLayoutIndex],
+              ...newState
+            };
           }
-        } as any));
+
+          return { ...newState, layouts: newLayouts };
+        });
         get().saveLayoutDebounced();
       },
 
       setProductImage: (slot, settings) => {
         const imageKey = slot === 1 ? 'productImage1' : slot === 2 ? 'productImage2' : 'productImage3';
-        set((state) => ({
-          [imageKey]: { ...state[imageKey], ...settings }
-        } as any));
+        set((state) => {
+          const newState = {
+            [imageKey]: { ...state[imageKey], ...settings }
+          } as any;
+
+          const newLayouts = [...state.layouts];
+          if (newLayouts[state.activeLayoutIndex]) {
+            newLayouts[state.activeLayoutIndex] = {
+              ...newLayouts[state.activeLayoutIndex],
+              ...newState
+            };
+          }
+
+          return { ...newState, layouts: newLayouts };
+        });
         get().saveLayoutDebounced();
       },
 
       setBackground: (settings) => {
-        set((state) => ({
-          background: { ...state.background, ...settings }
-        }));
+        set((state) => {
+          const newState = {
+            background: { ...state.background, ...settings }
+          };
+
+          const newLayouts = [...state.layouts];
+          if (newLayouts[state.activeLayoutIndex]) {
+            newLayouts[state.activeLayoutIndex] = {
+              ...newLayouts[state.activeLayoutIndex],
+              ...newState
+            };
+          }
+
+          return { ...newState, layouts: newLayouts };
+        });
         get().saveLayoutDebounced();
       },
 
@@ -518,15 +573,27 @@ export const useStore = create<AppState>()(
       selectProduct: (slot, product) => {
         const elementKey = slot === 1 ? 'textElements1' : slot === 2 ? 'textElements2' : 'textElements3';
         const imageKey = slot === 1 ? 'productImage1' : slot === 2 ? 'productImage2' : 'productImage3';
-        set((state) => ({
-          [elementKey]: {
-            ...state[elementKey],
-            name: { ...state[elementKey].name, text: product.name },
-            description: { ...state[elementKey].description, text: product.description },
-            price: { ...state[elementKey].price, text: product.price },
-          },
-          [imageKey]: { ...state[imageKey], url: product.image }
-        } as any));
+        set((state) => {
+          const newState = {
+            [elementKey]: {
+              ...state[elementKey],
+              name: { ...state[elementKey].name, text: product.name },
+              description: { ...state[elementKey].description, text: product.description },
+              price: { ...state[elementKey].price, text: product.price },
+            },
+            [imageKey]: { ...state[imageKey], url: product.image }
+          } as any;
+
+          const newLayouts = [...state.layouts];
+          if (newLayouts[state.activeLayoutIndex]) {
+            newLayouts[state.activeLayoutIndex] = {
+              ...newLayouts[state.activeLayoutIndex],
+              ...newState
+            };
+          }
+
+          return { ...newState, layouts: newLayouts };
+        });
         get().saveLayout();
       },
 

@@ -13,7 +13,8 @@ const CanvasPreview = ({ id = "placa" }: { id?: string }) => {
     background, setElement, setProductImage,
     zoom, setZoom,
     selectedId, setSelectedId,
-    isPrinting
+    isPrinting,
+    layouts, activeLayoutIndex
   } = useStore();
   const stageRef = useRef<any>(null);
   const productImg1Ref = useRef<any>(null);
@@ -172,7 +173,10 @@ const CanvasPreview = ({ id = "placa" }: { id?: string }) => {
   };
 
   const renderProduct = (slot: 1 | 2 | 3) => {
-    if (slot === 3 && !productImage3.visible) return null;
+    const currentLayout = layouts[activeLayoutIndex];
+    const hasThird = currentLayout?.hasThirdProduct ?? true;
+    
+    if (slot === 3 && (!productImage3.visible || !hasThird)) return null;
     const textElements = slot === 1 ? textElements1 : slot === 2 ? textElements2 : textElements3;
     const productImage = slot === 1 ? productImage1 : slot === 2 ? productImage2 : productImage3;
     const prodImg = slot === 1 ? prodImg1 : slot === 2 ? prodImg2 : prodImg3;
