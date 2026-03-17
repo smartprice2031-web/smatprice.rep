@@ -166,30 +166,50 @@ export default function App() {
     const canvasData = (window as any).getCanvasData?.();
     if (!canvasData) return;
 
-    const pdf = new jsPDF({
-      orientation: 'portrait',
-      unit: 'mm',
-      format: 'a4'
-    });
+    const toastId = toast.loading('Gerando PDF...');
 
-    const imgProps = pdf.getImageProperties(canvasData);
-    const pdfWidth = pdf.internal.pageSize.getWidth();
-    const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+    try {
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4'
+      });
 
-    pdf.addImage(canvasData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-    
-    const fileName = `smartprice_placa_${textElements1.name.text.toLowerCase().replace(/\s+/g, '-')}.pdf`;
-    pdf.save(fileName);
+      const imgProps = pdf.getImageProperties(canvasData);
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+
+      // Using JPEG for better performance and smaller file size
+      pdf.addImage(canvasData, 'JPEG', 0, 0, pdfWidth, pdfHeight, undefined, 'FAST');
+      
+      const fileName = `smartprice_placa_${textElements1.name.text.toLowerCase().replace(/\s+/g, '-')}.pdf`;
+      pdf.save(fileName);
+      toast.success('PDF baixado com sucesso!', { id: toastId });
+    } catch (error) {
+      console.error('Erro ao gerar PDF:', error);
+      toast.error('Erro ao gerar PDF. Tente novamente.', { id: toastId });
+    }
   };
 
   const handleAddToQueue = () => {
     setSelectedId(null);
+    const toastId = toast.loading('Adicionando à fila...');
+    
     // Small timeout to allow Konva to re-render without the transformer
     setTimeout(() => {
-      const canvasData = (window as any).getCanvasData?.();
-      if (!canvasData) return;
-      addToQueue(canvasData);
-    }, 50);
+      try {
+        const canvasData = (window as any).getCanvasData?.();
+        if (!canvasData) {
+          toast.error('Erro ao capturar imagem.', { id: toastId });
+          return;
+        }
+        addToQueue(canvasData);
+        toast.success('Adicionado à fila com sucesso!', { id: toastId });
+      } catch (error) {
+        console.error('Erro ao adicionar à fila:', error);
+        toast.error('Erro ao adicionar à fila.', { id: toastId });
+      }
+    }, 100);
   };
 
   if (!isAuthenticated) {

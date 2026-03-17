@@ -25,7 +25,8 @@ import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import ProductSelector from './ProductSelector';
 import html2canvas from 'html2canvas';
-import jsPDF from 'jspdf';
+import { jsPDF } from 'jspdf';
+import { toast } from 'sonner';
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -203,27 +204,38 @@ export default function EncarteCreator() {
 
   const handleExportPNG = async () => {
     setIsExporting(true);
+    const toastId = toast.loading('Gerando imagens...');
     try {
       const frente = document.getElementById('print-frente');
       const verso = document.getElementById('print-verso');
+      const options = { 
+        scale: 2, 
+        useCORS: true, 
+        backgroundColor: '#ffffff',
+        logging: true,
+        windowWidth: 794, // 210mm at 96dpi
+        windowHeight: 1123 // 297mm at 96dpi
+      };
 
       if (frente) {
-        const canvas = await html2canvas(frente, { scale: 2, useCORS: true });
+        const canvas = await html2canvas(frente, options);
         const link = document.createElement('a');
-        link.download = `encarte-${currentEncarte.name}-frente-${Date.now()}.png`;
+        link.download = `encarte-${currentEncarte.name.replace(/\s+/g, '-')}-frente-${Date.now()}.png`;
         link.href = canvas.toDataURL('image/png');
         link.click();
       }
 
       if (verso) {
-        const canvas = await html2canvas(verso, { scale: 2, useCORS: true });
+        const canvas = await html2canvas(verso, options);
         const link = document.createElement('a');
-        link.download = `encarte-${currentEncarte.name}-verso-${Date.now()}.png`;
+        link.download = `encarte-${currentEncarte.name.replace(/\s+/g, '-')}-verso-${Date.now()}.png`;
         link.href = canvas.toDataURL('image/png');
         link.click();
       }
+      toast.success('Imagens exportadas com sucesso!', { id: toastId });
     } catch (error) {
       console.error('Erro ao exportar PNG:', error);
+      toast.error('Erro ao exportar imagens. Verifique se as imagens de fundo são acessíveis.', { id: toastId });
     } finally {
       setIsExporting(false);
     }
@@ -231,27 +243,38 @@ export default function EncarteCreator() {
 
   const handleExportPDF = async () => {
     setIsExporting(true);
+    const toastId = toast.loading('Gerando PDF...');
     try {
       const frente = document.getElementById('print-frente');
       const verso = document.getElementById('print-verso');
+      
+      if (!frente || !verso) {
+        toast.error('Erro: Elementos de impressão não encontrados', { id: toastId });
+        return;
+      }
+
       const pdf = new jsPDF('p', 'mm', 'a4');
+      const options = { 
+        scale: 2, 
+        useCORS: true, 
+        backgroundColor: '#ffffff',
+        logging: true,
+        windowWidth: 794,
+        windowHeight: 1123
+      };
 
-      if (frente) {
-        const canvas = await html2canvas(frente, { scale: 2, useCORS: true });
-        const imgData = canvas.toDataURL('image/png');
-        pdf.addImage(imgData, 'PNG', 0, 0, 210, 297);
-      }
+      const canvasFrente = await html2canvas(frente, options);
+      pdf.addImage(canvasFrente.toDataURL('image/jpeg', 0.95), 'JPEG', 0, 0, 210, 297);
 
-      if (verso) {
-        pdf.addPage();
-        const canvas = await html2canvas(verso, { scale: 2, useCORS: true });
-        const imgData = canvas.toDataURL('image/png');
-        pdf.addImage(imgData, 'PNG', 0, 0, 210, 297);
-      }
+      pdf.addPage();
+      const canvasVerso = await html2canvas(verso, options);
+      pdf.addImage(canvasVerso.toDataURL('image/jpeg', 0.95), 'JPEG', 0, 0, 210, 297);
 
-      pdf.save(`encarte-${currentEncarte.name}-${Date.now()}.pdf`);
+      pdf.save(`encarte-${currentEncarte.name.replace(/\s+/g, '-')}-${Date.now()}.pdf`);
+      toast.success('PDF gerado com sucesso!', { id: toastId });
     } catch (error) {
       console.error('Erro ao exportar PDF:', error);
+      toast.error('Erro ao gerar PDF. Verifique se as imagens de fundo são acessíveis.', { id: toastId });
     } finally {
       setIsExporting(false);
     }
@@ -267,7 +290,7 @@ export default function EncarteCreator() {
   };
 
   return (
-    <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 flex flex-col no-print">
+    <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 flex flex-col">
       {/* Header */}
       <header className="h-16 border-b border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 flex items-center justify-between px-6 sticky top-0 z-40">
         <div className="flex items-center gap-4">
@@ -343,7 +366,7 @@ export default function EncarteCreator() {
 
       <main className="flex-grow p-8 flex gap-8 overflow-hidden">
         {/* Controls */}
-        <div className="w-96 flex flex-col gap-6 overflow-y-auto pr-2">
+        <div className="w-96 flex flex-col gap-6 overflow-y-auto pr-2 no-print">
           {/* Tabs */}
           <div className="flex p-1 bg-zinc-200 dark:bg-zinc-800 rounded-2xl">
             <button
@@ -607,7 +630,7 @@ export default function EncarteCreator() {
         </div>
 
         {/* Preview Area */}
-        <div className="flex-grow bg-zinc-200 dark:bg-zinc-900 rounded-[2.5rem] p-12 overflow-y-auto flex flex-col items-center gap-12">
+        <div className="flex-grow bg-zinc-200 dark:bg-zinc-900 rounded-[2.5rem] p-12 overflow-y-auto flex flex-col items-center gap-12 no-print">
           {/* A4 Page - Current Side */}
           <div 
             className="w-[210mm] h-[297mm] bg-white shadow-2xl p-[10mm] flex flex-col print:shadow-none print:p-0 relative overflow-hidden flex-shrink-0" 
@@ -621,6 +644,7 @@ export default function EncarteCreator() {
                   alt="Background" 
                   className="w-full h-full object-cover"
                   referrerPolicy="no-referrer"
+                  crossOrigin="anonymous"
                 />
               </div>
             )}
@@ -673,7 +697,12 @@ export default function EncarteCreator() {
                           {/* Product Image */}
                           <div className={cn("flex-grow flex items-center justify-center", adaptive.img)}>
                             {product.image ? (
-                              <img src={product.image} className="max-w-full max-h-full object-contain" referrerPolicy="no-referrer" />
+                              <img 
+                                src={product.image} 
+                                className="max-w-full max-h-full object-contain" 
+                                referrerPolicy="no-referrer" 
+                                crossOrigin="anonymous"
+                              />
                             ) : (
                               <Package className="w-12 h-12 text-zinc-200 dark:text-zinc-700" />
                             )}
@@ -686,115 +715,139 @@ export default function EncarteCreator() {
               </div>
             </div>
           </div>
+        </div>
+      </main>
 
-          {/* Hidden Print Pages - Positioned off-screen to allow html2canvas capture */}
-          <div className="absolute -left-[9999px] top-0 pointer-events-none print:static print:left-0 print:block">
-            {/* Page 1 - Frente */}
-            <div className="w-[210mm] h-[297mm] bg-white p-[10mm] flex flex-col relative overflow-hidden" id="print-frente">
-               {currentEncarte.frontBgUrl && (
-                <div className="absolute inset-0 z-0">
-                  <img src={currentEncarte.frontBgUrl} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
-                </div>
-              )}
-              <div className={cn("p-4 flex-grow flex flex-col relative z-10")}>
-                <div className={cn("grid gap-4 flex-grow content-start pt-8", getGridClass(currentEncarte.productCount))}>
-                  {currentEncarte.frontProducts.slice(0, currentEncarte.productCount).map((product, index) => (
-                    <div 
-                      key={index} 
-                      className="p-2 rounded-xl flex flex-col relative overflow-hidden min-h-0"
-                      style={{ 
-                        transform: product ? `translate(${product.offsetX || 0}px, ${product.offsetY || 0}px)` : 'none'
-                      }}
-                    >
-                      {product && (
-                        <div className="flex flex-col h-full">
-                          <div 
-                            className="text-left mb-1"
-                            style={{ 
-                              transform: `translate(${product.textOffsetX || 0}px, ${product.textOffsetY || 0}px)`
-                            }}
-                          >
-                            <h4 className={cn("font-black tracking-tight leading-tight uppercase text-red-600 line-clamp-2", adaptive.title)}>{product.name}</h4>
-                            <p className={cn("font-bold text-red-600 uppercase leading-none truncate", adaptive.subtitle)}>{product.subtitle}</p>
-                          </div>
-                          <div className={cn("flex items-center mt-0", adaptive.gap)}>
-                            <div className={cn("bg-red-600 text-white rounded-lg relative flex items-center justify-center px-4", adaptive.box)}>
-                              <div className="absolute top-2 left-2 flex flex-col items-start leading-none">
-                                <span className="text-[8px] font-black uppercase">POR</span>
-                                <span className="text-[10px] font-black">R$</span>
-                              </div>
-                              <div className="flex items-baseline ml-4">
-                                <span className={cn("font-black tracking-tighter leading-none", adaptive.price)}>{formatPrice(product.price).integer}</span>
-                                <span className={cn("font-black tracking-tighter leading-none", adaptive.cents)}>{formatPrice(product.price).cents}</span>
-                              </div>
-                              <span className="absolute bottom-2 right-2 text-[8px] font-black uppercase">UNI</span>
-                            </div>
-                            <div className={cn("flex-grow flex items-center justify-center", adaptive.img)}>
-                              {product.image && <img src={product.image} className="max-w-full max-h-full object-contain" referrerPolicy="no-referrer" />}
-                            </div>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
+      {/* Hidden Print Pages - Positioned to allow html2canvas capture but hidden from view */}
+      <div className="fixed top-0 left-0 opacity-0 pointer-events-none z-[-10] print:static print:opacity-100 print:z-0 print:pointer-events-auto">
+        {/* Page 1 - Frente */}
+        <div className="w-[210mm] h-[297mm] bg-white p-[10mm] flex flex-col relative overflow-hidden print:m-0 print:p-0" id="print-frente">
+           {currentEncarte.frontBgUrl && (
+            <div className="absolute inset-0 z-0">
+              <img 
+                src={currentEncarte.frontBgUrl} 
+                className="w-full h-full object-cover" 
+                referrerPolicy="no-referrer" 
+                crossOrigin="anonymous"
+              />
             </div>
-
-            {/* Page 2 - Verso */}
-            <div className="w-[210mm] h-[297mm] bg-white p-[10mm] flex flex-col relative overflow-hidden break-before-page" id="print-verso">
-               {currentEncarte.backBgUrl && (
-                <div className="absolute inset-0 z-0">
-                  <img src={currentEncarte.backBgUrl} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
-                </div>
-              )}
-              <div className={cn("p-4 flex-grow flex flex-col relative z-10")}>
-                <div className={cn("grid gap-4 flex-grow content-start pt-8", getGridClass(currentEncarte.productCount))}>
-                  {currentEncarte.backProducts.slice(0, currentEncarte.productCount).map((product, index) => (
-                    <div 
-                      key={index} 
-                      className="p-2 rounded-xl flex flex-col relative overflow-hidden min-h-0"
-                      style={{ 
-                        transform: product ? `translate(${product.offsetX || 0}px, ${product.offsetY || 0}px)` : 'none'
-                      }}
-                    >
-                      {product && (
-                        <div className="flex flex-col h-full">
-                          <div 
-                            className="text-left mb-1"
-                            style={{ 
-                              transform: `translate(${product.textOffsetX || 0}px, ${product.textOffsetY || 0}px)`
-                            }}
-                          >
-                            <h4 className={cn("font-black tracking-tight leading-tight uppercase text-red-600 line-clamp-2", adaptive.title)}>{product.name}</h4>
-                            <p className={cn("font-bold text-red-600 uppercase leading-none truncate", adaptive.subtitle)}>{product.subtitle}</p>
+          )}
+          <div className={cn("p-4 flex-grow flex flex-col relative z-10")}>
+            <div className={cn("grid gap-4 flex-grow content-start pt-8", getGridClass(currentEncarte.productCount))}>
+              {currentEncarte.frontProducts.slice(0, currentEncarte.productCount).map((product, index) => (
+                <div 
+                  key={index} 
+                  className="p-2 rounded-xl flex flex-col relative overflow-hidden min-h-0"
+                  style={{ 
+                    transform: product ? `translate(${product.offsetX || 0}px, ${product.offsetY || 0}px)` : 'none'
+                  }}
+                >
+                  {product && (
+                    <div className="flex flex-col h-full">
+                      <div 
+                        className="text-left mb-1"
+                        style={{ 
+                          transform: `translate(${product.textOffsetX || 0}px, ${product.textOffsetY || 0}px)`
+                        }}
+                      >
+                        <h4 className={cn("font-black tracking-tight leading-tight uppercase text-red-600 line-clamp-2", adaptive.title)}>{product.name}</h4>
+                        <p className={cn("font-bold text-red-600 uppercase leading-none truncate", adaptive.subtitle)}>{product.subtitle}</p>
+                      </div>
+                      <div className={cn("flex items-center mt-0", adaptive.gap)}>
+                        <div className={cn("bg-red-600 text-white rounded-lg relative flex items-center justify-center px-4", adaptive.box)}>
+                          <div className="absolute top-2 left-2 flex flex-col items-start leading-none">
+                            <span className="text-[8px] font-black uppercase">POR</span>
+                            <span className="text-[10px] font-black">R$</span>
                           </div>
-                          <div className={cn("flex items-center mt-0", adaptive.gap)}>
-                            <div className={cn("bg-red-600 text-white rounded-lg relative flex items-center justify-center px-4", adaptive.box)}>
-                              <div className="absolute top-2 left-2 flex flex-col items-start leading-none">
-                                <span className="text-[8px] font-black uppercase">POR</span>
-                                <span className="text-[10px] font-black">R$</span>
-                              </div>
-                              <div className="flex items-baseline ml-4">
-                                <span className={cn("font-black tracking-tighter leading-none", adaptive.price)}>{formatPrice(product.price).integer}</span>
-                                <span className={cn("font-black tracking-tighter leading-none", adaptive.cents)}>{formatPrice(product.price).cents}</span>
-                              </div>
-                              <span className="absolute bottom-2 right-2 text-[8px] font-black uppercase">UNI</span>
-                            </div>
-                            <div className={cn("flex-grow flex items-center justify-center", adaptive.img)}>
-                              {product.image && <img src={product.image} className="max-w-full max-h-full object-contain" referrerPolicy="no-referrer" />}
-                            </div>
+                          <div className="flex items-baseline ml-4">
+                            <span className={cn("font-black tracking-tighter leading-none", adaptive.price)}>{formatPrice(product.price).integer}</span>
+                            <span className={cn("font-black tracking-tighter leading-none", adaptive.cents)}>{formatPrice(product.price).cents}</span>
                           </div>
+                          <span className="absolute bottom-2 right-2 text-[8px] font-black uppercase">UNI</span>
                         </div>
-                      )}
+                        <div className={cn("flex-grow flex items-center justify-center", adaptive.img)}>
+                          {product.image && (
+                            <img 
+                              src={product.image} 
+                              className="max-w-full max-h-full object-contain" 
+                              referrerPolicy="no-referrer" 
+                              crossOrigin="anonymous"
+                            />
+                          )}
+                        </div>
+                      </div>
                     </div>
-                  ))}
+                  )}
                 </div>
-              </div>
+              ))}
             </div>
           </div>
         </div>
-      </main>
+
+        {/* Page 2 - Verso */}
+        <div className="w-[210mm] h-[297mm] bg-white p-[10mm] flex flex-col relative overflow-hidden print:m-0 print:p-0 page-break-before" id="print-verso">
+           {currentEncarte.backBgUrl && (
+            <div className="absolute inset-0 z-0">
+              <img 
+                src={currentEncarte.backBgUrl} 
+                className="w-full h-full object-cover" 
+                referrerPolicy="no-referrer" 
+                crossOrigin="anonymous"
+              />
+            </div>
+          )}
+          <div className={cn("p-4 flex-grow flex flex-col relative z-10")}>
+            <div className={cn("grid gap-4 flex-grow content-start pt-8", getGridClass(currentEncarte.productCount))}>
+              {currentEncarte.backProducts.slice(0, currentEncarte.productCount).map((product, index) => (
+                <div 
+                  key={index} 
+                  className="p-2 rounded-xl flex flex-col relative overflow-hidden min-h-0"
+                  style={{ 
+                    transform: product ? `translate(${product.offsetX || 0}px, ${product.offsetY || 0}px)` : 'none'
+                  }}
+                >
+                  {product && (
+                    <div className="flex flex-col h-full">
+                      <div 
+                        className="text-left mb-1"
+                        style={{ 
+                          transform: `translate(${product.textOffsetX || 0}px, ${product.textOffsetY || 0}px)`
+                        }}
+                      >
+                        <h4 className={cn("font-black tracking-tight leading-tight uppercase text-red-600 line-clamp-2", adaptive.title)}>{product.name}</h4>
+                        <p className={cn("font-bold text-red-600 uppercase leading-none truncate", adaptive.subtitle)}>{product.subtitle}</p>
+                      </div>
+                      <div className={cn("flex items-center mt-0", adaptive.gap)}>
+                        <div className={cn("bg-red-600 text-white rounded-lg relative flex items-center justify-center px-4", adaptive.box)}>
+                          <div className="absolute top-2 left-2 flex flex-col items-start leading-none">
+                            <span className="text-[8px] font-black uppercase">POR</span>
+                            <span className="text-[10px] font-black">R$</span>
+                          </div>
+                          <div className="flex items-baseline ml-4">
+                            <span className={cn("font-black tracking-tighter leading-none", adaptive.price)}>{formatPrice(product.price).integer}</span>
+                            <span className={cn("font-black tracking-tighter leading-none", adaptive.cents)}>{formatPrice(product.price).cents}</span>
+                          </div>
+                          <span className="absolute bottom-2 right-2 text-[8px] font-black uppercase">UNI</span>
+                        </div>
+                        <div className={cn("flex-grow flex items-center justify-center", adaptive.img)}>
+                          {product.image && (
+                            <img 
+                              src={product.image} 
+                              className="max-w-full max-h-full object-contain" 
+                              referrerPolicy="no-referrer" 
+                              crossOrigin="anonymous"
+                            />
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
 
       {/* Product Selector Modal */}
       {isSelectorOpen && (
@@ -832,28 +885,21 @@ export default function EncarteCreator() {
             visibility: visible;
           }
           #print-frente {
-            position: absolute;
-            left: 0;
-            top: 0;
+            position: relative;
             width: 210mm;
             height: 297mm;
-            margin: 0;
-            padding: 0;
+            page-break-after: always;
           }
           #print-verso {
-            position: absolute;
-            left: 0;
-            top: 297mm;
+            position: relative;
             width: 210mm;
             height: 297mm;
-            margin: 0;
-            padding: 0;
           }
           @page {
             size: A4;
             margin: 0;
           }
-          .break-before-page {
+          .page-break-before {
             page-break-before: always;
           }
         }

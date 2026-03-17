@@ -2,6 +2,7 @@ import React from 'react';
 import { useStore } from '../store';
 import { Printer, FileDown, Trash2, ArrowLeft, LayoutGrid } from 'lucide-react';
 import { jsPDF } from 'jspdf';
+import { toast } from 'sonner';
 
 const PrintQueue = () => {
   const { printQueue, removeFromQueue, clearQueue, setView, setPrinting, isPrinting } = useStore();
@@ -20,24 +21,33 @@ const PrintQueue = () => {
   const handleExportPDFAll = async () => {
     if (printQueue.length === 0) return;
 
-    const pdf = new jsPDF({
-      orientation: 'portrait',
-      unit: 'mm',
-      format: 'a4'
-    });
+    const toastId = toast.loading('Gerando PDF da fila...');
 
-    for (let i = 0; i < printQueue.length; i++) {
-      if (i > 0) pdf.addPage();
-      
-      const imgData = printQueue[i];
-      const imgProps = pdf.getImageProperties(imgData);
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
-      
-      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+    try {
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4'
+      });
+
+      for (let i = 0; i < printQueue.length; i++) {
+        if (i > 0) pdf.addPage();
+        
+        const imgData = printQueue[i];
+        const imgProps = pdf.getImageProperties(imgData);
+        const pdfWidth = pdf.internal.pageSize.getWidth();
+        const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+        
+        // Using JPEG for better performance and smaller file size
+        pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight, undefined, 'FAST');
+      }
+
+      pdf.save(`smartprice_fila_${new Date().getTime()}.pdf`);
+      toast.success('PDF da fila baixado com sucesso!', { id: toastId });
+    } catch (error) {
+      console.error('Erro ao gerar PDF da fila:', error);
+      toast.error('Erro ao gerar PDF da fila.', { id: toastId });
     }
-
-    pdf.save(`smartprice_fila_${new Date().getTime()}.pdf`);
   };
 
   const confirmPrint = () => {
@@ -47,18 +57,26 @@ const PrintQueue = () => {
   };
 
   const handleExportSinglePDF = (imgData: string, index: number) => {
-    const pdf = new jsPDF({
-      orientation: 'portrait',
-      unit: 'mm',
-      format: 'a4'
-    });
-
-    const imgProps = pdf.getImageProperties(imgData);
-    const pdfWidth = pdf.internal.pageSize.getWidth();
-    const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+    const toastId = toast.loading(`Gerando PDF da plaquinha #${index + 1}...`);
     
-    pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-    pdf.save(`smartprice_tag_${index + 1}_${new Date().getTime()}.pdf`);
+    try {
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4'
+      });
+
+      const imgProps = pdf.getImageProperties(imgData);
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+      
+      pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight, undefined, 'FAST');
+      pdf.save(`smartprice_tag_${index + 1}_${new Date().getTime()}.pdf`);
+      toast.success('PDF baixado com sucesso!', { id: toastId });
+    } catch (error) {
+      console.error('Erro ao gerar PDF individual:', error);
+      toast.error('Erro ao gerar PDF.', { id: toastId });
+    }
   };
 
   if (isPrinting) {

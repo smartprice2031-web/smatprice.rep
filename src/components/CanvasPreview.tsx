@@ -79,7 +79,7 @@ const CanvasPreview = ({ id = "placa" }: { id?: string }) => {
 
   const handleExport = () => {
     if (!stageRef.current) return '';
-    return stageRef.current.toDataURL({ pixelRatio: 4 });
+    return stageRef.current.toDataURL({ pixelRatio: 2 });
   };
 
   useEffect(() => {
@@ -334,7 +334,7 @@ const CanvasPreview = ({ id = "placa" }: { id?: string }) => {
           width={A4_WIDTH}
           height={A4_HEIGHT}
           ref={stageRef}
-          pixelRatio={4}
+          pixelRatio={2}
           onMouseDown={(e) => {
             if (e.target === e.target.getStage()) {
               setSelectedId(null);
