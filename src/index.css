@@ -80,12 +80,23 @@
     visibility: visible !important;
   }
 
-  /* Ensure the Konva stage fills the 210mm container */
+  body.landscape-mode #placa {
+    width: 297mm !important;
+    height: 210mm !important;
+  }
+
+  /* Ensure the Konva stage fills the container */
   #placa .konvajs-content,
   #placa .konvajs-content canvas {
     width: 210mm !important;
     height: 297mm !important;
     display: block !important;
+  }
+
+  body.landscape-mode #placa .konvajs-content,
+  body.landscape-mode #placa .konvajs-content canvas {
+    width: 297mm !important;
+    height: 210mm !important;
   }
 
   /* Print Queue Area handling */
@@ -115,12 +126,22 @@
     visibility: visible !important;
   }
 
+  .print-page.landscape {
+    width: 297mm !important;
+    height: 210mm !important;
+  }
+
   .print-page img {
     width: 210mm !important;
     height: 297mm !important;
-    object-fit: fill !important; /* Force fill to ensure it takes the whole A4 if ratio is slightly off */
+    object-fit: contain !important; /* Changed from fill to contain to prevent stretching */
     visibility: visible !important;
     display: block !important;
+  }
+
+  .print-page.landscape img {
+    width: 297mm !important;
+    height: 210mm !important;
   }
 
   .print-page:last-child {

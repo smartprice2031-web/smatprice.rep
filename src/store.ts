@@ -134,8 +134,8 @@ interface AppState {
   isPrinting: boolean;
   setPrinting: (isPrinting: boolean) => void;
 
-  printQueue: string[];
-  addToQueue: (imageData: string) => void;
+  printQueue: { imageData: string; isLandscape: boolean }[];
+  addToQueue: (imageData: string, isLandscape: boolean) => void;
   removeFromQueue: (index: number) => void;
   clearQueue: () => void;
   currentView: View;
@@ -725,8 +725,8 @@ export const useStore = create<AppState>()(
       setPrinting: (isPrinting) => set({ isPrinting }),
 
       printQueue: [],
-      addToQueue: (imageData) => set((state) => ({ 
-        printQueue: [...state.printQueue, imageData]
+      addToQueue: (imageData, isLandscape) => set((state) => ({ 
+        printQueue: [...state.printQueue, { imageData, isLandscape }]
       })),
       removeFromQueue: (index) => set((state) => ({
         printQueue: state.printQueue.filter((_, i) => i !== index)

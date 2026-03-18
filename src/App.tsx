@@ -220,7 +220,7 @@ export default function App() {
           toast.error('Erro ao capturar imagem.', { id: toastId });
           return;
         }
-        addToQueue(canvasData);
+        addToQueue(canvasData, activeLayoutIndex === 10);
         toast.success('Adicionado à fila com sucesso!', { id: toastId });
       } catch (error) {
         console.error('Erro ao adicionar à fila:', error);
