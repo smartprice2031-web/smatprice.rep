@@ -14,7 +14,8 @@ const CanvasPreview = ({ id = "placa" }: { id?: string }) => {
     zoom, setZoom,
     selectedId, setSelectedId,
     isPrinting,
-    layouts, activeLayoutIndex
+    layouts, activeLayoutIndex,
+    optionalText1, optionalText2, optionalText3, setOptionalText
   } = useStore();
   const stageRef = useRef<any>(null);
   const productImg1Ref = useRef<any>(null);
@@ -361,11 +362,113 @@ const CanvasPreview = ({ id = "placa" }: { id?: string }) => {
             {renderProduct(2)}
             {renderProduct(3)}
 
+            {/* Optional Text for Modelo 12 and 13 */}
+            {(activeLayoutIndex === 11 || activeLayoutIndex === 12) && (
+              <>
+                {optionalText1.active && (
+                  <Group
+                    id="optional-text-1"
+                    x={optionalText1.x}
+                    y={optionalText1.y}
+                    draggable
+                    onClick={() => setSelectedId('optional-text-1')}
+                    onTap={() => setSelectedId('optional-text-1')}
+                    onDragEnd={(e) => setOptionalText(1, { x: e.target.x(), y: e.target.y() })}
+                    onTransformEnd={(e) => {
+                      const node = e.target;
+                      const scaleX = node.scaleX();
+                      node.scaleX(1);
+                      node.scaleY(1);
+                      setOptionalText(1, {
+                        x: node.x(),
+                        y: node.y(),
+                        fontSize: Math.max(10, optionalText1.fontSize * scaleX),
+                      });
+                    }}
+                  >
+                    <Text
+                      text={optionalText1.text || 'Texto Opcional 1'}
+                      fontSize={optionalText1.fontSize}
+                      fill={optionalText1.color}
+                      fontStyle="bold"
+                      fontFamily="Inter"
+                      align="center"
+                      width={300}
+                    />
+                  </Group>
+                )}
+                {optionalText2.active && (
+                  <Group
+                    id="optional-text-2"
+                    x={optionalText2.x}
+                    y={optionalText2.y}
+                    draggable
+                    onClick={() => setSelectedId('optional-text-2')}
+                    onTap={() => setSelectedId('optional-text-2')}
+                    onDragEnd={(e) => setOptionalText(2, { x: e.target.x(), y: e.target.y() })}
+                    onTransformEnd={(e) => {
+                      const node = e.target;
+                      const scaleX = node.scaleX();
+                      node.scaleX(1);
+                      node.scaleY(1);
+                      setOptionalText(2, {
+                        x: node.x(),
+                        y: node.y(),
+                        fontSize: Math.max(10, optionalText2.fontSize * scaleX),
+                      });
+                    }}
+                  >
+                    <Text
+                      text={optionalText2.text || 'Texto Opcional 2'}
+                      fontSize={optionalText2.fontSize}
+                      fill={optionalText2.color}
+                      fontStyle="bold"
+                      fontFamily="Inter"
+                      align="center"
+                      width={300}
+                    />
+                  </Group>
+                )}
+                {activeLayoutIndex === 12 && optionalText3.active && (
+                  <Group
+                    id="optional-text-3"
+                    x={optionalText3.x}
+                    y={optionalText3.y}
+                    draggable
+                    onClick={() => setSelectedId('optional-text-3')}
+                    onTap={() => setSelectedId('optional-text-3')}
+                    onDragEnd={(e) => setOptionalText(3, { x: e.target.x(), y: e.target.y() })}
+                    onTransformEnd={(e) => {
+                      const node = e.target;
+                      const scaleX = node.scaleX();
+                      node.scaleX(1);
+                      node.scaleY(1);
+                      setOptionalText(3, {
+                        x: node.x(),
+                        y: node.y(),
+                        fontSize: Math.max(10, optionalText3.fontSize * scaleX),
+                      });
+                    }}
+                  >
+                    <Text
+                      text={optionalText3.text || 'Texto Opcional 3'}
+                      fontSize={optionalText3.fontSize}
+                      fill={optionalText3.color}
+                      fontStyle="bold"
+                      fontFamily="Inter"
+                      align="center"
+                      width={300}
+                    />
+                  </Group>
+                )}
+              </>
+            )}
+
             {selectedId && !isPrinting && (
               <Transformer
                 ref={trRef}
                 enabledAnchors={
-                  selectedId.includes('price') || selectedId.startsWith('product')
+                  selectedId.includes('price') || selectedId.startsWith('product') || selectedId.startsWith('optional-text')
                     ? ['top-left', 'top-right', 'bottom-left', 'bottom-right']
                     : ['middle-left', 'middle-right']
                 }

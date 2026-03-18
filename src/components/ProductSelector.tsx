@@ -7,7 +7,8 @@ const ProductSelector: React.FC<{ onSelect?: (product: Product) => void }> = ({ 
     products, fetchProducts, selectProduct, 
     textElements1, textElements2, textElements3, 
     productImage3, setElement,
-    layouts, activeLayoutIndex
+    layouts, activeLayoutIndex,
+    optionalText1, optionalText2, optionalText3, setOptionalText
   } = useStore();
 
   const showThirdProduct = productImage3.visible;
@@ -104,6 +105,9 @@ const ProductSelector: React.FC<{ onSelect?: (product: Product) => void }> = ({ 
         selectProduct={selectProduct}
         isSyncing={isSyncing}
         handleSync={handleSync}
+        optionalText={optionalText1}
+        setOptionalText={(updates) => setOptionalText(1, updates)}
+        showOptionalText={activeLayoutIndex === 11 || activeLayoutIndex === 12}
       />
       
       <div className="h-px bg-zinc-200 dark:bg-zinc-800" />
@@ -120,6 +124,9 @@ const ProductSelector: React.FC<{ onSelect?: (product: Product) => void }> = ({ 
         selectProduct={selectProduct}
         isSyncing={isSyncing}
         handleSync={handleSync}
+        optionalText={optionalText2}
+        setOptionalText={(updates) => setOptionalText(2, updates)}
+        showOptionalText={activeLayoutIndex === 11 || activeLayoutIndex === 12}
       />
 
       {showThirdProduct && (
@@ -138,6 +145,9 @@ const ProductSelector: React.FC<{ onSelect?: (product: Product) => void }> = ({ 
             selectProduct={selectProduct}
             isSyncing={isSyncing}
             handleSync={handleSync}
+            optionalText={optionalText3}
+            setOptionalText={(updates) => setOptionalText(3, updates)}
+            showOptionalText={activeLayoutIndex === 12}
           />
         </>
       )}
@@ -156,7 +166,10 @@ const ProductSlot = ({
   setElement,
   selectProduct,
   isSyncing,
-  handleSync
+  handleSync,
+  optionalText,
+  setOptionalText,
+  showOptionalText
 }: { 
   slot: 1 | 2 | 3, 
   searchTerm: string, 
@@ -168,7 +181,10 @@ const ProductSlot = ({
   setElement: any,
   selectProduct: any,
   isSyncing: boolean,
-  handleSync: () => void
+  handleSync: () => void,
+  optionalText?: any,
+  setOptionalText?: (updates: any) => void,
+  showOptionalText?: boolean
 }) => (
   <div className="space-y-4 p-4 bg-zinc-50 dark:bg-zinc-800/30 rounded-2xl border border-zinc-200 dark:border-zinc-800">
     <div className="flex items-center justify-between">
@@ -185,6 +201,37 @@ const ProductSlot = ({
         {isSyncing ? 'Sincronizando...' : 'Atualizar'}
       </button>
     </div>
+
+    {/* Optional Text for Modelo 12 and 13 */}
+    {showOptionalText && optionalText && setOptionalText && (
+      <div className="p-3 bg-amber-50 dark:bg-amber-900/10 rounded-xl border border-amber-200 dark:border-amber-900/30 space-y-2">
+        <div className="flex items-center justify-between">
+          <h4 className="text-[10px] font-black text-amber-600 uppercase tracking-widest flex items-center gap-1.5">
+            <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+            Texto Opcional
+          </h4>
+          <label className="relative inline-flex items-center cursor-pointer">
+            <input 
+              type="checkbox" 
+              className="sr-only peer"
+              checked={optionalText.active}
+              onChange={(e) => setOptionalText({ active: e.target.checked })}
+            />
+            <div className="w-7 h-3.5 bg-zinc-200 peer-focus:outline-none rounded-full peer dark:bg-zinc-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-2.5 after:w-2.5 after:transition-all dark:border-gray-600 peer-checked:bg-amber-500"></div>
+          </label>
+        </div>
+        
+        {optionalText.active && (
+          <input
+            type="text"
+            placeholder="Digite o texto opcional..."
+            className="w-full px-3 py-1.5 bg-white dark:bg-zinc-800 border border-amber-200 dark:border-amber-900/30 rounded-lg text-[11px] font-bold focus:ring-2 focus:ring-amber-500 outline-none"
+            value={optionalText.text}
+            onChange={(e) => setOptionalText({ text: e.target.value })}
+          />
+        )}
+      </div>
+    )}
 
     {/* Manual Info Editing */}
     <div className="grid grid-cols-1 gap-3">

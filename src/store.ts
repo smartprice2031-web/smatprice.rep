@@ -64,6 +64,30 @@ export interface Layout {
     price: TextSettings;
   };
   hasThirdProduct?: boolean;
+  optionalText1?: {
+    text: string;
+    active: boolean;
+    x: number;
+    y: number;
+    fontSize: number;
+    color: string;
+  };
+  optionalText2?: {
+    text: string;
+    active: boolean;
+    x: number;
+    y: number;
+    fontSize: number;
+    color: string;
+  };
+  optionalText3?: {
+    text: string;
+    active: boolean;
+    x: number;
+    y: number;
+    fontSize: number;
+    color: string;
+  };
 }
 
 export type View = 'editor' | 'queue' | 'encarte';
@@ -101,6 +125,31 @@ interface AppState {
     subtitle: TextSettings;
     price: TextSettings;
   };
+  
+  optionalText1: {
+    text: string;
+    active: boolean;
+    x: number;
+    y: number;
+    fontSize: number;
+    color: string;
+  };
+  optionalText2: {
+    text: string;
+    active: boolean;
+    x: number;
+    y: number;
+    fontSize: number;
+    color: string;
+  };
+  optionalText3: {
+    text: string;
+    active: boolean;
+    x: number;
+    y: number;
+    fontSize: number;
+    color: string;
+  };
 
   activeLayoutIndex: number;
   layouts: Layout[];
@@ -131,6 +180,7 @@ interface AppState {
 
   selectedId: string | null;
   setSelectedId: (id: string | null) => void;
+  setOptionalText: (slot: 1 | 2 | 3, updates: Partial<AppState['optionalText1']>) => void;
   isPrinting: boolean;
   setPrinting: (isPrinting: boolean) => void;
 
@@ -273,6 +323,30 @@ export const createDefaultLayout = (name: string, index?: number): Layout => {
       subtitle: { ...DEFAULT_TEXT, text: 'OFERTA', y: 410, fontSize: 15, visible: showThird },
       price: { ...DEFAULT_TEXT, text: 'R$ 0,00', y: 630, fontSize: 80, color: '#e11d48', visible: showThird },
     },
+    optionalText1: {
+      text: '',
+      active: false,
+      x: 50,
+      y: 50,
+      fontSize: 30,
+      color: '#000000'
+    },
+    optionalText2: {
+      text: '',
+      active: false,
+      x: 50,
+      y: 350,
+      fontSize: 30,
+      color: '#000000'
+    },
+    optionalText3: {
+      text: '',
+      active: false,
+      x: 50,
+      y: 650,
+      fontSize: 30,
+      color: '#000000'
+    }
   };
 };
 
@@ -283,6 +357,30 @@ export const useStore = create<AppState>()(
       toggleTheme: () => set((state) => ({ theme: state.theme === 'light' ? 'dark' : 'light' })),
 
       activeLayoutIndex: 0,
+      optionalText1: {
+        text: '',
+        active: false,
+        x: 50,
+        y: 50,
+        fontSize: 30,
+        color: '#000000'
+      },
+      optionalText2: {
+        text: '',
+        active: false,
+        x: 50,
+        y: 350,
+        fontSize: 30,
+        color: '#000000'
+      },
+      optionalText3: {
+        text: '',
+        active: false,
+        x: 50,
+        y: 650,
+        fontSize: 30,
+        color: '#000000'
+      },
       layouts: [
         createDefaultLayout('QUARTA FRALDA PL', 0),
         createDefaultLayout('SABADÃO PL', 1),
@@ -381,6 +479,9 @@ export const useStore = create<AppState>()(
           textElements2: state.textElements2,
           textElements3: state.textElements3,
           hasThirdProduct: state.layouts[state.activeLayoutIndex]?.hasThirdProduct,
+          optionalText1: state.optionalText1,
+          optionalText2: state.optionalText2,
+          optionalText3: state.optionalText3,
         };
 
         const newLayouts = [...state.layouts];
@@ -400,6 +501,30 @@ export const useStore = create<AppState>()(
           textElements1: nextLayout.textElements1 || defaultNext.textElements1,
           textElements2: nextLayout.textElements2 || defaultNext.textElements2,
           textElements3: nextLayout.textElements3 || defaultNext.textElements3,
+          optionalText1: nextLayout.optionalText1 || defaultNext.optionalText1 || {
+            text: '',
+            active: false,
+            x: 50,
+            y: 50,
+            fontSize: 30,
+            color: '#000000'
+          },
+          optionalText2: nextLayout.optionalText2 || defaultNext.optionalText2 || {
+            text: '',
+            active: false,
+            x: 50,
+            y: 350,
+            fontSize: 30,
+            color: '#000000'
+          },
+          optionalText3: nextLayout.optionalText3 || defaultNext.optionalText3 || {
+            text: '',
+            active: false,
+            x: 50,
+            y: 650,
+            fontSize: 30,
+            color: '#000000'
+          }
         });
         get().saveLayout();
       },
@@ -453,6 +578,22 @@ export const useStore = create<AppState>()(
           }
 
           return { ...newState, layouts: newLayouts };
+        });
+        get().saveLayoutDebounced();
+      },
+
+      setOptionalText: (slot, updates) => {
+        const key = slot === 1 ? 'optionalText1' : slot === 2 ? 'optionalText2' : 'optionalText3';
+        set((state) => {
+          const newOptionalText = { ...state[key], ...updates };
+          const newLayouts = [...state.layouts];
+          if (newLayouts[state.activeLayoutIndex]) {
+            newLayouts[state.activeLayoutIndex] = {
+              ...newLayouts[state.activeLayoutIndex],
+              [key]: newOptionalText
+            };
+          }
+          return { [key]: newOptionalText, layouts: newLayouts };
         });
         get().saveLayoutDebounced();
       },
