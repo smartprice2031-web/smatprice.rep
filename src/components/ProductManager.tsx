@@ -27,6 +27,20 @@ const ProductManager = () => {
   const [connectionError, setConnectionError] = useState<string | null>(null);
 
   const [confirmDelete, setConfirmDelete] = useState<{ id: string | number } | null>(null);
+  const [productCount, setProductCount] = useState<number | null>(null);
+
+  const fetchProductCount = async () => {
+    try {
+      const { count, error } = await supabase
+        .from('products')
+        .select('*', { count: 'exact', head: true });
+      
+      if (error) throw error;
+      setProductCount(count);
+    } catch (error) {
+      console.error("Error fetching product count:", error);
+    }
+  };
 
   const checkConnection = async () => {
     const url = import.meta.env.VITE_SUPABASE_URL;
@@ -45,6 +59,7 @@ const ProductManager = () => {
     setConnectionError(null);
     try {
       await fetchProducts();
+      await fetchProductCount();
     } catch (err) {
       setConnectionError("Erro ao conectar com o Supabase.");
     } finally {
@@ -73,6 +88,7 @@ const ProductManager = () => {
       setIsBulkModalOpen(false);
       setBulkData('');
       await fetchProducts();
+      await fetchProductCount();
       toast.success('Produtos adicionados com sucesso!');
     } catch (error: any) {
       console.error("Error bulk inserting products:", error);
@@ -85,6 +101,7 @@ const ProductManager = () => {
       setIsLoading(true);
       try {
         await fetchProducts();
+        await fetchProductCount();
         // If fetch succeeds and products is empty, but we have no error, it might just be empty.
         // But let's check if the connection is actually valid.
         const url = import.meta.env.VITE_SUPABASE_URL;
@@ -124,7 +141,8 @@ const ProductManager = () => {
       setIsModalOpen(false);
       setEditingProduct(null);
       setFormData({ name: '', description: '', price: '', image: null, category: '' });
-      fetchProducts();
+      await fetchProducts();
+      await fetchProductCount();
     } catch (error) {
       console.error("Error saving product to Supabase:", error);
       toast.error("Erro ao salvar produto no Supabase.");
@@ -140,7 +158,8 @@ const ProductManager = () => {
       
       if (error) throw error;
       toast.success('Produto excluído com sucesso!');
-      fetchProducts();
+      await fetchProducts();
+      await fetchProductCount();
     } catch (error) {
       console.error("Error deleting product from Supabase:", error);
       toast.error("Erro ao excluir produto.");
@@ -162,7 +181,7 @@ const ProductManager = () => {
             <Package className="w-6 h-6 text-blue-600" />
             Gerenciar Produtos
             <span className="text-sm font-normal text-zinc-500 ml-2 bg-zinc-100 dark:bg-zinc-800 px-2 py-0.5 rounded-full">
-              {products.length} {products.length === 1 ? 'produto' : 'produtos'}
+              {productCount !== null ? productCount : products.length} { (productCount !== null ? productCount : products.length) === 1 ? 'produto' : 'produtos'}
             </span>
           </h2>
           {connectionError && (
