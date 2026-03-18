@@ -24,19 +24,29 @@ const PrintQueue = () => {
     const toastId = toast.loading('Gerando PDF da fila...');
 
     try {
+      // Create a temporary instance to check the first image's dimensions
+      const tempPdf = new jsPDF();
+      const firstImgData = printQueue[0];
+      const firstImgProps = tempPdf.getImageProperties(firstImgData);
+      const firstIsLandscape = firstImgProps.width > firstImgProps.height;
+
       const pdf = new jsPDF({
-        orientation: 'portrait',
+        orientation: firstIsLandscape ? 'landscape' : 'portrait',
         unit: 'mm',
         format: 'a4'
       });
 
       for (let i = 0; i < printQueue.length; i++) {
-        if (i > 0) pdf.addPage();
-        
         const imgData = printQueue[i];
         const imgProps = pdf.getImageProperties(imgData);
+        const isLandscape = imgProps.width > imgProps.height;
+
+        if (i > 0) {
+          pdf.addPage('a4', isLandscape ? 'landscape' : 'portrait');
+        }
+        
         const pdfWidth = pdf.internal.pageSize.getWidth();
-        const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+        const pdfHeight = pdf.internal.pageSize.getHeight();
         
         // Using JPEG for better performance and smaller file size
         pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight, undefined, 'FAST');
@@ -60,16 +70,20 @@ const PrintQueue = () => {
     const toastId = toast.loading(`Gerando PDF da plaquinha #${index + 1}...`);
     
     try {
+      const tempPdf = new jsPDF();
+      const imgProps = tempPdf.getImageProperties(imgData);
+      const isLandscape = imgProps.width > imgProps.height;
+
       const pdf = new jsPDF({
-        orientation: 'portrait',
+        orientation: isLandscape ? 'landscape' : 'portrait',
         unit: 'mm',
         format: 'a4'
       });
 
-      const imgProps = pdf.getImageProperties(imgData);
       const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+      const pdfHeight = pdf.internal.pageSize.getHeight();
       
+      // Using JPEG for better performance and smaller file size
       pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight, undefined, 'FAST');
       pdf.save(`smartprice_tag_${index + 1}_${new Date().getTime()}.pdf`);
       toast.success('PDF baixado com sucesso!', { id: toastId });

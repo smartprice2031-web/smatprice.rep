@@ -29,6 +29,10 @@ const CanvasPreview = ({ id = "placa" }: { id?: string }) => {
   const [prodImg3] = useImage(productImage3.url || '', 'anonymous');
   const [autoScale, setAutoScale] = useState(1);
 
+  const isLandscape = activeLayoutIndex === 10;
+  const currentWidth = isLandscape ? A4_HEIGHT : A4_WIDTH;
+  const currentHeight = isLandscape ? A4_WIDTH : A4_HEIGHT;
+
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
@@ -41,8 +45,8 @@ const CanvasPreview = ({ id = "placa" }: { id?: string }) => {
       
       if (containerWidth <= 0 || containerHeight <= 0) return;
 
-      const scaleW = containerWidth / A4_WIDTH;
-      const scaleH = containerHeight / A4_HEIGHT;
+      const scaleW = containerWidth / currentWidth;
+      const scaleH = containerHeight / currentHeight;
       
       const newScale = Math.min(scaleW, scaleH);
       setAutoScale(newScale);
@@ -324,15 +328,15 @@ const CanvasPreview = ({ id = "placa" }: { id?: string }) => {
           id={id}
           className={`bg-white ${isPrinting ? 'shadow-none' : 'shadow-2xl transition-transform duration-300 ease-out'}`}
           style={{ 
-            width: A4_WIDTH, 
-            height: A4_HEIGHT,
+            width: currentWidth, 
+            height: currentHeight,
             transform: isPrinting ? 'none' : `scale(${autoScale * zoom})`,
             transformOrigin: 'center center'
           }}
         >
         <Stage
-          width={A4_WIDTH}
-          height={A4_HEIGHT}
+          width={currentWidth}
+          height={currentHeight}
           ref={stageRef}
           pixelRatio={2}
           onMouseDown={(e) => {
@@ -347,8 +351,8 @@ const CanvasPreview = ({ id = "placa" }: { id?: string }) => {
             {bgImg && (
               <KonvaImage
                 image={bgImg}
-                width={A4_WIDTH}
-                height={A4_HEIGHT}
+                width={currentWidth}
+                height={currentHeight}
                 onMouseDown={() => setSelectedId(null)}
               />
             )}

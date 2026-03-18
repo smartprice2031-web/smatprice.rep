@@ -140,6 +140,23 @@ export default function App() {
   }, [theme]);
 
   useEffect(() => {
+    const styleId = 'landscape-print-style';
+    if (activeLayoutIndex === 10) {
+      document.body.classList.add('landscape-mode');
+      if (!document.getElementById(styleId)) {
+        const style = document.createElement('style');
+        style.id = styleId;
+        style.innerHTML = `@media print { @page { size: A4 landscape !important; margin: 0 !important; } }`;
+        document.head.appendChild(style);
+      }
+    } else {
+      document.body.classList.remove('landscape-mode');
+      const style = document.getElementById(styleId);
+      if (style) style.remove();
+    }
+  }, [activeLayoutIndex]);
+
+  useEffect(() => {
     if (isPrinting) {
       document.body.classList.add('is-printing');
     } else {
@@ -170,7 +187,7 @@ export default function App() {
 
     try {
       const pdf = new jsPDF({
-        orientation: 'portrait',
+        orientation: activeLayoutIndex === 10 ? 'landscape' : 'portrait',
         unit: 'mm',
         format: 'a4'
       });

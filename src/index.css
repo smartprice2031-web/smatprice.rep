@@ -53,6 +53,11 @@
     padding: 0 !important;
   }
 
+  body.landscape-mode #placa {
+    width: 297mm !important;
+    height: 210mm !important;
+  }
+
   #placa *, 
   #print-queue-area *,
   #print-frente *,
