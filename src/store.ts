@@ -494,37 +494,16 @@ export const useStore = create<AppState>()(
         set({
           activeLayoutIndex: index,
           layouts: newLayouts,
-          background: nextLayout.background || defaultNext.background,
-          productImage1: nextLayout.productImage1 || defaultNext.productImage1,
-          productImage2: nextLayout.productImage2 || defaultNext.productImage2,
-          productImage3: nextLayout.productImage3 || defaultNext.productImage3,
-          textElements1: nextLayout.textElements1 || defaultNext.textElements1,
-          textElements2: nextLayout.textElements2 || defaultNext.textElements2,
-          textElements3: nextLayout.textElements3 || defaultNext.textElements3,
-          optionalText1: nextLayout.optionalText1 || defaultNext.optionalText1 || {
-            text: '',
-            active: false,
-            x: 50,
-            y: 50,
-            fontSize: 30,
-            color: '#000000'
-          },
-          optionalText2: nextLayout.optionalText2 || defaultNext.optionalText2 || {
-            text: '',
-            active: false,
-            x: 50,
-            y: 350,
-            fontSize: 30,
-            color: '#000000'
-          },
-          optionalText3: nextLayout.optionalText3 || defaultNext.optionalText3 || {
-            text: '',
-            active: false,
-            x: 50,
-            y: 650,
-            fontSize: 30,
-            color: '#000000'
-          }
+          background: nextLayout.background ? { ...defaultNext.background, ...nextLayout.background } : defaultNext.background,
+          productImage1: nextLayout.productImage1 ? { ...defaultNext.productImage1, ...nextLayout.productImage1 } : defaultNext.productImage1,
+          productImage2: nextLayout.productImage2 ? { ...defaultNext.productImage2, ...nextLayout.productImage2 } : defaultNext.productImage2,
+          productImage3: nextLayout.productImage3 ? { ...defaultNext.productImage3, ...nextLayout.productImage3 } : defaultNext.productImage3,
+          textElements1: nextLayout.textElements1 ? { ...defaultNext.textElements1, ...nextLayout.textElements1 } : defaultNext.textElements1,
+          textElements2: nextLayout.textElements2 ? { ...defaultNext.textElements2, ...nextLayout.textElements2 } : defaultNext.textElements2,
+          textElements3: nextLayout.textElements3 ? { ...defaultNext.textElements3, ...nextLayout.textElements3 } : defaultNext.textElements3,
+          optionalText1: nextLayout.optionalText1 ? { ...defaultNext.optionalText1, ...nextLayout.optionalText1 } : defaultNext.optionalText1,
+          optionalText2: nextLayout.optionalText2 ? { ...defaultNext.optionalText2, ...nextLayout.optionalText2 } : defaultNext.optionalText2,
+          optionalText3: nextLayout.optionalText3 ? { ...defaultNext.optionalText3, ...nextLayout.optionalText3 } : defaultNext.optionalText3,
         });
         get().saveLayout();
       },
@@ -761,6 +740,9 @@ export const useStore = create<AppState>()(
           textElements3: state.textElements3,
           activeLayoutIndex: state.activeLayoutIndex,
           layouts: state.layouts,
+          optionalText1: state.optionalText1,
+          optionalText2: state.optionalText2,
+          optionalText3: state.optionalText3,
           updated_at: new Date().toISOString()
         };
         try {
@@ -792,17 +774,10 @@ export const useStore = create<AppState>()(
             const layout = data.value;
             const currentState = get();
             
-            // Deduplicate by name and ensure we have the correct set
-            const defaultNames = [
-              'QUARTA FRALDA PL', 'SABADÃO PL', 'QUI KIDS PL', 'DERMO PL', 'MARONBA',
-              'Modelo 6', 'Modelo 7', 'Modelo 8', 'Modelo 9', 'Modelo 10',
-              'Modelo 11', 'Modelo 12', 'Modelo 13', 'Modelo 14', 'Modelo 15',
-              'Modelo 16', 'Modelo 17', 'Modelo 18', 'Modelo 19', 'Modelo 20',
-              'Padrão Ultra'
-            ];
-
+            // Trust the layouts from the database, but ensure they have all properties
             let loadedLayouts = (layout.layouts || currentState.layouts).map((l: any, idx: number) => {
-              const defaultL = createDefaultLayout(l.name || `Modelo ${idx + 1}`, idx);
+              const name = l.name || `Modelo ${idx + 1}`;
+              const defaultL = createDefaultLayout(name, idx);
               
               const merged = {
                 ...defaultL,
@@ -815,29 +790,6 @@ export const useStore = create<AppState>()(
               return merged;
             });
 
-            // Filter out duplicates and ensure all defaults exist
-            const uniqueLayouts: any[] = [];
-            const seenNames = new Set<string>();
-
-            loadedLayouts.forEach((l: any) => {
-              const upperName = l.name.toUpperCase();
-              if (!seenNames.has(upperName)) {
-                uniqueLayouts.push(l);
-                seenNames.add(upperName);
-              }
-            });
-
-            // Add missing defaults
-            defaultNames.forEach(name => {
-              if (!seenNames.has(name.toUpperCase())) {
-                uniqueLayouts.push(createDefaultLayout(name));
-                seenNames.add(name.toUpperCase());
-              }
-            });
-
-            // Final sort/order check if needed, but for now just use uniqueLayouts
-            loadedLayouts = uniqueLayouts;
-
             const activeLayout = loadedLayouts[layout.activeLayoutIndex || 0] || loadedLayouts[0];
 
             set({
@@ -848,6 +800,9 @@ export const useStore = create<AppState>()(
               textElements1: layout.textElements1 || currentState.textElements1,
               textElements2: layout.textElements2 || currentState.textElements2,
               textElements3: layout.textElements3 || currentState.textElements3 || activeLayout.textElements3,
+              optionalText1: layout.optionalText1 || currentState.optionalText1 || activeLayout.optionalText1,
+              optionalText2: layout.optionalText2 || currentState.optionalText2 || activeLayout.optionalText2,
+              optionalText3: layout.optionalText3 || currentState.optionalText3 || activeLayout.optionalText3,
               activeLayoutIndex: layout.activeLayoutIndex !== undefined ? layout.activeLayoutIndex : currentState.activeLayoutIndex,
               layouts: loadedLayouts,
             } as any);
