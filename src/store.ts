@@ -90,7 +90,43 @@ export interface Layout {
   };
 }
 
+export interface UserGroup {
+  id: string;
+  name: string;
+}
+
 export type View = 'editor' | 'queue' | 'encarte';
+
+export interface SelectedProduct extends Product {
+  id: string;
+  subtitle?: string;
+  offsetX?: number;
+  offsetY?: number;
+  textOffsetX?: number;
+  textOffsetY?: number;
+}
+
+export interface EncarteSlot {
+  name: string;
+  date?: string;
+  frontBgUrl: string;
+  backBgUrl: string;
+  frontProducts: (SelectedProduct | null)[];
+  backProducts: (SelectedProduct | null)[];
+  productCount: number;
+}
+
+export interface EncarteModel {
+  id: string;
+  name: string;
+  primaryColor: string;
+  secondaryColor: string;
+  accentColor: string;
+  textColor: string;
+  bgClass: string;
+  borderClass: string;
+  fontFamily?: string;
+}
 
 interface AppState {
   theme: 'light' | 'dark';
@@ -191,19 +227,27 @@ interface AppState {
   currentView: View;
   setView: (view: View) => void;
   realtimeInitialized: boolean;
+  settingsRealtimeInitialized: boolean;
+  lastUpdateTimestamp: string | null;
   
   // Auth
   flags: string[];
   addFlag: (flag: string) => void;
   removeFlag: (flag: string) => void;
   updateFlag: (oldFlag: string, newFlag: string) => void;
-  allowedStores: { cnpj: string; bandeira: string; allowedLayouts?: number[]; hasEncarteAccess?: boolean }[];
-  addAllowedStore: (store: { cnpj: string; bandeira: string; allowedLayouts?: number[]; hasEncarteAccess?: boolean }) => void;
+  
+  // User Groups
+  userGroups: UserGroup[];
+  addUserGroup: (name: string) => void;
+  removeUserGroup: (id: string) => void;
+  updateUserGroup: (id: string, name: string) => void;
+  setUserGroup: (cnpj: string, groupId: string | undefined) => void;
+
+  allowedStores: { cnpj: string; bandeira: string; allowedLayouts?: number[]; hasEncarteAccess?: boolean; groupId?: string }[];
+  addAllowedStore: (store: { cnpj: string; bandeira: string; allowedLayouts?: number[]; hasEncarteAccess?: boolean; groupId?: string }) => void;
   removeAllowedStore: (cnpj: string) => void;
   saveUsersAndFlags: () => Promise<void>;
   loadUsersAndFlags: () => Promise<void>;
-  accessLogs: { cnpj: string; username: string; bandeira: string; timestamp: string }[];
-  addAccessLog: (log: { cnpj: string; username: string; bandeira: string }) => void;
   isAuthenticated: boolean;
   lastLoginTimestamp: number | null;
   userRole: 'user' | 'admin' | null;
@@ -221,6 +265,12 @@ interface AppState {
   messages: any[];
   setMessages: (messages: any[] | ((prev: any[]) => any[])) => void;
   
+  // Encarte Online
+  encartes: EncarteSlot[];
+  setEncartes: (encartes: EncarteSlot[]) => void;
+  selectedEncarteModel: EncarteModel | null;
+  setSelectedEncarteModel: (model: EncarteModel) => void;
+
   login: (role: 'user' | 'admin', user: { username: string; cnpj: string; bandeira: string }) => void;
   logout: () => void;
   setSlotVisibility: (slot: 1 | 2 | 3, visible: boolean) => void;
@@ -730,6 +780,7 @@ export const useStore = create<AppState>()(
       saveLayout: async () => {
         if (!isSupabaseConfigured) return;
         const state = get();
+        const timestamp = new Date().toISOString();
         const layout = {
           background: state.background,
           productImage1: state.productImage1,
@@ -743,8 +794,12 @@ export const useStore = create<AppState>()(
           optionalText1: state.optionalText1,
           optionalText2: state.optionalText2,
           optionalText3: state.optionalText3,
-          updated_at: new Date().toISOString()
+          updated_at: timestamp
         };
+        
+        // Update local timestamp before saving to avoid reacting to our own change
+        set({ lastUpdateTimestamp: timestamp });
+
         try {
           const { error } = await supabase
             .from('settings')
@@ -774,6 +829,11 @@ export const useStore = create<AppState>()(
             const layout = data.value;
             const currentState = get();
             
+            // If we have a newer local update, don't overwrite with older DB data
+            if (currentState.lastUpdateTimestamp && layout.updated_at && layout.updated_at <= currentState.lastUpdateTimestamp) {
+              return;
+            }
+
             // Trust the layouts from the database, but ensure they have all properties
             let loadedLayouts = (layout.layouts || currentState.layouts).map((l: any, idx: number) => {
               const name = l.name || `Modelo ${idx + 1}`;
@@ -805,7 +865,33 @@ export const useStore = create<AppState>()(
               optionalText3: layout.optionalText3 || currentState.optionalText3 || activeLayout.optionalText3,
               activeLayoutIndex: layout.activeLayoutIndex !== undefined ? layout.activeLayoutIndex : currentState.activeLayoutIndex,
               layouts: loadedLayouts,
+              lastUpdateTimestamp: layout.updated_at || null
             } as any);
+          }
+
+          // Set up realtime subscription for settings if not already active
+          if (!get().settingsRealtimeInitialized) {
+            const channel = supabase.channel('settings-realtime');
+            channel
+              .on(
+                'postgres_changes' as any,
+                { event: '*', table: 'settings', schema: 'public', filter: 'id=eq.current_layout' },
+                async (payload) => {
+                  const newValue = (payload.new as any)?.value;
+                  if (newValue) {
+                    const currentState = get();
+                    // Only update if the new timestamp is newer than our last update
+                    if (!currentState.lastUpdateTimestamp || (newValue.updated_at && newValue.updated_at > currentState.lastUpdateTimestamp)) {
+                      await get().loadLayout();
+                    }
+                  }
+                }
+              )
+              .subscribe((status) => {
+                if (status === 'SUBSCRIBED') {
+                  set({ settingsRealtimeInitialized: true });
+                }
+              });
           }
         } catch (error) {
           console.error("Error loading layout from Supabase:", error);
@@ -831,6 +917,8 @@ export const useStore = create<AppState>()(
       currentView: 'editor',
       setView: (view) => set({ currentView: view }),
       realtimeInitialized: false,
+      settingsRealtimeInitialized: false,
+      lastUpdateTimestamp: null,
       
       flags: ['Ultra Popular', 'Maxi Popular', 'Entrefarma', 'Farmanorte', 'Outra'],
       addFlag: (flag) => set((state) => ({ 
@@ -842,6 +930,27 @@ export const useStore = create<AppState>()(
       updateFlag: (oldFlag, newFlag) => set((state) => ({
         flags: state.flags.map(f => f === oldFlag ? newFlag : f)
       })),
+
+      userGroups: [],
+      addUserGroup: (name) => set((state) => ({
+        userGroups: [...state.userGroups, { id: crypto.randomUUID(), name }]
+      })),
+      removeUserGroup: (id) => set((state) => ({
+        userGroups: state.userGroups.filter(g => g.id !== id),
+        allowedStores: state.allowedStores.map(s => s.groupId === id ? { ...s, groupId: undefined } : s)
+      })),
+      updateUserGroup: (id, name) => set((state) => ({
+        userGroups: state.userGroups.map(g => g.id === id ? { ...g, name } : g)
+      })),
+      setUserGroup: (cnpj, groupId) => set((state) => {
+        const normalizedCnpj = cnpj.replace(/[^\d]/g, '');
+        const newAllowedStores = state.allowedStores.map(s => 
+          s.cnpj.replace(/[^\d]/g, '') === normalizedCnpj 
+            ? { ...s, groupId }
+            : s
+        );
+        return { allowedStores: newAllowedStores };
+      }),
 
       allowedStores: [],
       addAllowedStore: (store) => set((state) => {
@@ -893,7 +1002,8 @@ export const useStore = create<AppState>()(
               id: 'users_and_flags', 
               value: { 
                 allowedStores: state.allowedStores, 
-                flags: state.flags 
+                flags: state.flags,
+                userGroups: state.userGroups
               } 
             });
           if (error) throw error;
@@ -917,18 +1027,14 @@ export const useStore = create<AppState>()(
           if (data?.value) {
             set({
               allowedStores: data.value.allowedStores || [],
-              flags: data.value.flags || get().flags
+              flags: data.value.flags || get().flags,
+              userGroups: data.value.userGroups || []
             });
           }
         } catch (error) {
           console.error("Error loading users and flags from Supabase:", error);
         }
       },
-
-      accessLogs: [],
-      addAccessLog: (log) => set((state) => ({
-        accessLogs: [{ ...log, timestamp: new Date().toISOString() }, ...state.accessLogs].slice(0, 100)
-      })),
 
       isAuthenticated: false,
       lastLoginTimestamp: null,
@@ -956,6 +1062,18 @@ export const useStore = create<AppState>()(
       setMessages: (messages) => set((state) => ({ 
         messages: typeof messages === 'function' ? messages(state.messages) : messages 
       })),
+
+      encartes: Array(10).fill(null).map((_, i) => ({
+        name: `Modelo ${i + 1}`,
+        frontBgUrl: '',
+        backBgUrl: '',
+        frontProducts: Array(12).fill(null),
+        backProducts: Array(12).fill(null),
+        productCount: 12,
+      })),
+      setEncartes: (encartes) => set({ encartes }),
+      selectedEncarteModel: null,
+      setSelectedEncarteModel: (model) => set({ selectedEncarteModel: model }),
 
       login: (role, user) => set({ 
         isAuthenticated: true, 
@@ -985,13 +1103,15 @@ export const useStore = create<AppState>()(
         layouts: state.layouts,
         zoom: state.zoom,
         allowedStores: state.allowedStores,
-        accessLogs: state.accessLogs,
         flags: state.flags,
+        userGroups: state.userGroups,
         isAuthenticated: state.isAuthenticated,
         lastLoginTimestamp: state.lastLoginTimestamp,
         userRole: state.userRole,
         currentUser: state.currentUser,
         currentView: state.currentView,
+        encartes: state.encartes,
+        selectedEncarteModel: state.selectedEncarteModel,
       }),
     }
   )

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useStore } from '../store';
-import { Plus, Trash2, Shield, Store, Search, X, History, User, Calendar, Clock, Flag, Pencil, Save, Loader2, Settings as SettingsIcon, Layout as LayoutGrid, Layout } from 'lucide-react';
+import { Plus, Trash2, Shield, Store, Search, X, User, Flag, Pencil, Save, Loader2, Settings as SettingsIcon, Layout as LayoutGrid, Layout, Users } from 'lucide-react';
 import { toast } from 'sonner';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
@@ -10,15 +10,19 @@ function cn(...inputs: ClassValue[]) {
 }
 
 export default function UserManagement() {
-  const { allowedStores, addAllowedStore, removeAllowedStore, accessLogs, flags, addFlag, removeFlag, updateFlag, saveUsersAndFlags, layouts, toggleEncarteAccess } = useStore();
-  const [activeTab, setActiveTab] = useState<'stores' | 'history' | 'flags'>('stores');
+  const { allowedStores, addAllowedStore, removeAllowedStore, flags, addFlag, removeFlag, updateFlag, saveUsersAndFlags, layouts, toggleEncarteAccess, userGroups, addUserGroup, removeUserGroup, updateUserGroup, setUserGroup } = useStore();
+  const [activeTab, setActiveTab] = useState<'stores' | 'flags' | 'groups'>('stores');
   const [newCnpj, setNewCnpj] = useState('');
   const [newBandeira, setNewBandeira] = useState('');
+  const [newGroupName, setNewGroupName] = useState('');
+  const [newStoreGroupId, setNewStoreGroupId] = useState<string>('');
   const [newFlagName, setNewFlagName] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [selectedLayouts, setSelectedLayouts] = useState<number[]>([]);
   const [editingStoreLayouts, setEditingStoreLayouts] = useState<string | null>(null);
+  const [editingGroup, setEditingGroup] = useState<string | null>(null);
+  const [editGroupName, setEditGroupName] = useState('');
 
   // Fix: Ensure newBandeira is set when flags are loaded
   React.useEffect(() => {
@@ -34,11 +38,13 @@ export default function UserManagement() {
     addAllowedStore({
       cnpj: newCnpj.trim(),
       bandeira: newBandeira,
-      allowedLayouts: selectedLayouts
+      allowedLayouts: selectedLayouts,
+      groupId: newStoreGroupId || undefined
     });
     
     setNewCnpj('');
     setSelectedLayouts([]);
+    setNewStoreGroupId('');
   };
 
   const toggleLayout = (index: number) => {
@@ -80,6 +86,21 @@ export default function UserManagement() {
     setNewFlagName('');
   };
 
+  const handleAddGroup = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newGroupName.trim()) return;
+    addUserGroup(newGroupName.trim());
+    setNewGroupName('');
+  };
+
+  const handleUpdateGroup = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingGroup || !editGroupName.trim()) return;
+    updateUserGroup(editingGroup, editGroupName.trim());
+    setEditingGroup(null);
+    setEditGroupName('');
+  };
+
   const handleUpdateFlag = (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingFlag || !editFlagName.trim()) return;
@@ -105,6 +126,11 @@ export default function UserManagement() {
     setEditFlagName(flag);
   };
 
+  const startEditingGroup = (group: { id: string; name: string }) => {
+    setEditingGroup(group.id);
+    setEditGroupName(group.name);
+  };
+
   const filteredStores = allowedStores.filter(store => {
     const normalizedSearch = searchTerm.replace(/[^\d]/g, '');
     const normalizedCnpj = store.cnpj.replace(/[^\d]/g, '');
@@ -113,14 +139,12 @@ export default function UserManagement() {
            store.bandeira.toLowerCase().includes(searchTerm.toLowerCase());
   });
 
-  const filteredLogs = accessLogs.filter(log =>
-    log.cnpj.includes(searchTerm) ||
-    log.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    log.bandeira.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
   const filteredFlags = flags.filter(flag => 
     flag.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const filteredGroups = userGroups.filter(group =>
+    group.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
@@ -153,16 +177,16 @@ export default function UserManagement() {
             Bandeiras
           </button>
           <button 
-            onClick={() => setActiveTab('history')}
+            onClick={() => setActiveTab('groups')}
             className={cn(
               "py-4 px-6 text-xs font-black uppercase tracking-widest flex items-center gap-2 border-b-2 transition-all whitespace-nowrap",
-              activeTab === 'history' 
+              activeTab === 'groups' 
                 ? "border-blue-600 text-blue-600" 
                 : "border-transparent text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300"
             )}
           >
-            <History className="w-4 h-4" />
-            Histórico de Acesso
+            <Users className="w-4 h-4" />
+            Grupos
           </button>
         </div>
 
@@ -203,18 +227,32 @@ export default function UserManagement() {
                   />
                 </div>
                 
-                <div className="space-y-1">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 ml-1">Bandeira</label>
-                  <select
-                    value={newBandeira}
-                    onChange={(e) => setNewBandeira(e.target.value)}
-                    className="w-full px-4 py-2.5 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all font-bold"
-                  >
-                    {flags.map(flag => (
-                      <option key={flag} value={flag}>{flag}</option>
-                    ))}
-                  </select>
-                </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 ml-1">Bandeira</label>
+                    <select
+                      value={newBandeira}
+                      onChange={(e) => setNewBandeira(e.target.value)}
+                      className="w-full px-4 py-2.5 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all font-bold"
+                    >
+                      {flags.map(flag => (
+                        <option key={flag} value={flag}>{flag}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 ml-1">Grupo (Empresa)</label>
+                    <select
+                      value={newStoreGroupId}
+                      onChange={(e) => setNewStoreGroupId(e.target.value)}
+                      className="w-full px-4 py-2.5 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all font-bold"
+                    >
+                      <option value="">Sem Grupo</option>
+                      {userGroups.map(group => (
+                        <option key={group.id} value={group.id}>{group.name}</option>
+                      ))}
+                    </select>
+                  </div>
 
                 <div className="space-y-1 md:col-span-2">
                   <div className="flex items-center justify-between mb-1">
@@ -311,11 +349,28 @@ export default function UserManagement() {
                           </div>
                           <div>
                             <p className="font-mono font-bold text-zinc-900 dark:text-zinc-100">{store.cnpj}</p>
-                            <p className="text-xs font-black uppercase tracking-tighter text-blue-600">{store.bandeira}</p>
+                            <div className="flex items-center gap-2">
+                              <p className="text-xs font-black uppercase tracking-tighter text-blue-600">{store.bandeira}</p>
+                              {store.groupId && (
+                                <span className="text-[9px] font-black uppercase tracking-widest bg-zinc-100 dark:bg-zinc-800 text-zinc-500 px-1.5 py-0.5 rounded">
+                                  {userGroups.find(g => g.id === store.groupId)?.name || 'Grupo Removido'}
+                                </span>
+                              )}
+                            </div>
                           </div>
                         </div>
                         
                         <div className="flex items-center gap-2">
+                          <select
+                            value={store.groupId || ''}
+                            onChange={(e) => setUserGroup(store.cnpj, e.target.value || undefined)}
+                            className="px-3 py-1.5 bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg text-[10px] font-black uppercase tracking-widest outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+                          >
+                            <option value="">Sem Grupo</option>
+                            {userGroups.map(group => (
+                              <option key={group.id} value={group.id}>{group.name}</option>
+                            ))}
+                          </select>
                           <button
                             onClick={() => setEditingStoreLayouts(editingStoreLayouts === store.cnpj ? null : store.cnpj)}
                             className={cn(
@@ -561,83 +616,130 @@ export default function UserManagement() {
               </div>
             </div>
           </div>
-        ) : (
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <History className="w-5 h-5 text-zinc-400" />
-                <h3 className="font-bold text-lg">Histórico de Acessos</h3>
-                <span className="bg-zinc-100 dark:bg-zinc-800 text-zinc-500 text-[10px] px-2 py-0.5 rounded-full font-black">
-                  {accessLogs.length}
-                </span>
+        ) : activeTab === 'groups' ? (
+          <div className="space-y-8">
+            {/* Add New Group Form */}
+            <div className="bg-zinc-50 dark:bg-zinc-800/50 p-6 rounded-2xl border border-zinc-200 dark:border-zinc-800">
+              <div className="flex items-center gap-2 mb-4">
+                <Users className="w-5 h-5 text-blue-600" />
+                <h3 className="font-bold text-lg">Adicionar Novo Grupo (Empresa)</h3>
               </div>
               
-              <div className="relative w-64">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
-                <input
-                  type="text"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  placeholder="Filtrar histórico..."
-                  className="w-full pl-10 pr-4 py-2 bg-zinc-100 dark:bg-zinc-800 border-transparent rounded-xl text-sm focus:bg-white dark:focus:bg-zinc-900 focus:ring-2 focus:ring-blue-500 outline-none transition-all"
-                />
-              </div>
+              <form onSubmit={handleAddGroup} className="flex gap-4">
+                <div className="flex-1 space-y-1">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 ml-1">Nome do Grupo</label>
+                  <input
+                    type="text"
+                    value={newGroupName}
+                    onChange={(e) => setNewGroupName(e.target.value)}
+                    placeholder="Ex: Grupo Pão de Açúcar"
+                    className="w-full px-4 py-2.5 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all font-bold"
+                    required
+                  />
+                </div>
+                
+                <div className="flex items-end">
+                  <button
+                    type="submit"
+                    className="h-[46px] px-8 bg-blue-600 hover:bg-blue-700 text-white font-black uppercase tracking-tighter rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-blue-500/20 transition-all active:scale-95"
+                  >
+                    <Plus className="w-5 h-5" />
+                    Adicionar
+                  </button>
+                </div>
+              </form>
             </div>
 
-            <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl overflow-x-auto shadow-sm">
-              <table className="w-full text-left border-collapse min-w-[600px]">
-                <thead>
-                  <tr className="bg-zinc-50 dark:bg-zinc-800/50 border-b border-zinc-200 dark:border-zinc-800">
-                    <th className="px-4 py-3 text-[10px] font-black uppercase tracking-widest text-zinc-500">Data/Hora</th>
-                    <th className="px-4 py-3 text-[10px] font-black uppercase tracking-widest text-zinc-500">CNPJ</th>
-                    <th className="px-4 py-3 text-[10px] font-black uppercase tracking-widest text-zinc-500">Usuário</th>
-                    <th className="px-4 py-3 text-[10px] font-black uppercase tracking-widest text-zinc-500">Bandeira</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800">
-                  {filteredLogs.length === 0 ? (
-                    <tr>
-                      <td colSpan={4} className="px-4 py-12 text-center text-zinc-400 font-bold uppercase tracking-widest text-xs">
-                        Nenhum registro de acesso
-                      </td>
-                    </tr>
-                  ) : (
-                    filteredLogs.map((log, index) => (
-                      <tr key={index} className="hover:bg-zinc-50 dark:hover:bg-zinc-800/30 transition-colors">
-                        <td className="px-4 py-3 whitespace-nowrap">
-                          <div className="flex flex-col">
-                            <span className="text-xs font-bold text-zinc-900 dark:text-zinc-100">
-                              {new Date(log.timestamp).toLocaleDateString('pt-BR')}
-                            </span>
-                            <span className="text-[10px] text-zinc-500">
-                              {new Date(log.timestamp).toLocaleTimeString('pt-BR')}
-                            </span>
+            {/* Groups List */}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Users className="w-5 h-5 text-zinc-400" />
+                  <h3 className="font-bold text-lg">Grupos Disponíveis</h3>
+                  <span className="bg-zinc-100 dark:bg-zinc-800 text-zinc-500 text-[10px] px-2 py-0.5 rounded-full font-black">
+                    {userGroups.length}
+                  </span>
+                </div>
+                
+                <div className="relative w-64">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
+                  <input
+                    type="text"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    placeholder="Buscar grupo..."
+                    className="w-full pl-10 pr-4 py-2 bg-zinc-100 dark:bg-zinc-800 border-transparent rounded-xl text-sm focus:bg-white dark:focus:bg-zinc-900 focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {filteredGroups.length === 0 ? (
+                   <div className="col-span-full text-center py-12 bg-zinc-50 dark:bg-zinc-800/30 rounded-3xl border-2 border-dashed border-zinc-200 dark:border-zinc-800">
+                    <p className="text-zinc-400 font-bold uppercase tracking-widest text-xs">Nenhum grupo encontrado</p>
+                  </div>
+                ) : (
+                  filteredGroups.map((group) => (
+                    <div 
+                      key={group.id}
+                      className="group flex items-center justify-between p-4 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl hover:border-blue-500/50 transition-all shadow-sm"
+                    >
+                      <div className="flex items-center gap-4 flex-1">
+                        <div className="w-10 h-10 bg-zinc-100 dark:bg-zinc-800 rounded-xl flex items-center justify-center text-zinc-400 group-hover:bg-blue-50 dark:group-hover:bg-blue-900/20 group-hover:text-blue-600 transition-colors">
+                          <Users className="w-5 h-5" />
+                        </div>
+                        
+                        {editingGroup === group.id ? (
+                          <form onSubmit={handleUpdateGroup} className="flex-1 flex gap-2">
+                            <input
+                              type="text"
+                              value={editGroupName}
+                              onChange={(e) => setEditGroupName(e.target.value)}
+                              className="flex-1 px-3 py-1.5 bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg text-sm font-bold focus:ring-2 focus:ring-blue-500 outline-none"
+                              autoFocus
+                            />
+                            <button type="submit" className="p-2 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 rounded-lg">
+                              <Plus className="w-4 h-4" />
+                            </button>
+                            <button type="button" onClick={() => setEditingGroup(null)} className="p-2 text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800 rounded-lg">
+                              <X className="w-4 h-4" />
+                            </button>
+                          </form>
+                        ) : (
+                          <div>
+                            <p className="font-bold text-zinc-900 dark:text-zinc-100">{group.name}</p>
+                            <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">
+                              {allowedStores.filter(s => s.groupId === group.id).length} Lojas vinculadas
+                            </p>
                           </div>
-                        </td>
-                        <td className="px-4 py-3 whitespace-nowrap">
-                          <span className="text-xs font-mono font-bold text-zinc-600 dark:text-zinc-400">{log.cnpj}</span>
-                        </td>
-                        <td className="px-4 py-3 whitespace-nowrap">
-                          <div className="flex items-center gap-2">
-                            <div className="w-6 h-6 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center text-blue-600">
-                              <User className="w-3 h-3" />
-                            </div>
-                            <span className="text-xs font-bold">{log.username}</span>
-                          </div>
-                        </td>
-                        <td className="px-4 py-3 whitespace-nowrap">
-                          <span className="px-2 py-1 bg-zinc-100 dark:bg-zinc-800 rounded text-[10px] font-black uppercase tracking-tighter text-zinc-600 dark:text-zinc-400">
-                            {log.bandeira}
-                          </span>
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
+                        )}
+                      </div>
+                      
+                      {editingGroup !== group.id && (
+                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all">
+                          <button
+                            onClick={() => startEditingGroup(group)}
+                            className="p-2 text-zinc-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/10 rounded-lg transition-all"
+                            title="Editar Grupo"
+                          >
+                            <Pencil className="w-5 h-5" />
+                          </button>
+                          <button
+                            onClick={() => removeUserGroup(group.id)}
+                            className="p-2 text-zinc-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/10 rounded-lg transition-all"
+                            title="Remover Grupo"
+                          >
+                            <Trash2 className="w-5 h-5" />
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  ))
+                )}
+              </div>
             </div>
           </div>
-        )}
+        ) : null}
       </div>
     </div>
   );

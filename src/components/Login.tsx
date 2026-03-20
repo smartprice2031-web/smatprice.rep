@@ -9,7 +9,7 @@ function cn(...inputs: ClassValue[]) {
 }
 
 export default function Login() {
-  const { login, allowedStores, addAccessLog, flags } = useStore();
+  const { login, allowedStores, flags } = useStore();
   const [formData, setFormData] = useState({
     cnpj: '',
     bandeira: '',
@@ -26,11 +26,6 @@ export default function Login() {
 
     if (isAdmin) {
       if (formData.password === '8814') {
-        addAccessLog({
-          cnpj: 'Administrativo',
-          username: formData.username,
-          bandeira: 'Master'
-        });
         login('admin', {
           username: formData.username,
           cnpj: 'Administrativo',
@@ -48,11 +43,6 @@ export default function Login() {
         const isAllowed = allowedStores.some(store => store.cnpj.replace(/[^\d]/g, '') === normalizedInputCnpj);
         
         if (isAllowed) {
-          addAccessLog({
-            cnpj: formData.cnpj,
-            username: formData.username,
-            bandeira: formData.bandeira
-          });
           login('user', {
             username: formData.username,
             cnpj: formData.cnpj,

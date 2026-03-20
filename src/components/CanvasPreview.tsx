@@ -187,6 +187,27 @@ const CanvasPreview = ({ id = "placa" }: { id?: string }) => {
     const prodImg = slot === 1 ? prodImg1 : slot === 2 ? prodImg2 : prodImg3;
     const imgRef = slot === 1 ? productImg1Ref : slot === 2 ? productImg2Ref : productImg3Ref;
 
+    // Calculate aspect ratio maintained dimensions to prevent stretching
+    let displayWidth = productImage.width;
+    let displayHeight = productImage.height;
+    let displayX = productImage.x;
+    let displayY = productImage.y;
+
+    if (prodImg && prodImg.width > 0 && prodImg.height > 0) {
+      const imageAspect = prodImg.width / prodImg.height;
+      const targetAspect = productImage.width / productImage.height;
+
+      if (imageAspect > targetAspect) {
+        // Image is wider than target box - fit to width
+        displayHeight = productImage.width / imageAspect;
+        displayY += (productImage.height - displayHeight) / 2;
+      } else {
+        // Image is taller than target box - fit to height
+        displayWidth = productImage.height * imageAspect;
+        displayX += (productImage.width - displayWidth) / 2;
+      }
+    }
+
     return (
       <Group key={`product-slot-${slot}`}>
         {/* Product Image */}
@@ -196,17 +217,24 @@ const CanvasPreview = ({ id = "placa" }: { id?: string }) => {
             id={`product${slot}`}
             ref={imgRef}
             image={prodImg}
-            x={productImage.x}
-            y={productImage.y}
-            width={productImage.width}
-            height={productImage.height}
+            x={displayX}
+            y={displayY}
+            width={displayWidth}
+            height={displayHeight}
             rotation={productImage.rotation}
             opacity={productImage.opacity}
             draggable={!productImage.locked}
             onClick={() => setSelectedId(`product${slot}`)}
             onTap={() => setSelectedId(`product${slot}`)}
             onDragEnd={(e) => {
-              setProductImage(slot, { x: e.target.x(), y: e.target.y() });
+              const node = e.target;
+              // Compensate for centering offset when saving position
+              const xOffset = (productImage.width - displayWidth) / 2;
+              const yOffset = (productImage.height - displayHeight) / 2;
+              setProductImage(slot, { 
+                x: node.x() - xOffset, 
+                y: node.y() - yOffset 
+              });
             }}
             onTransformEnd={(e) => {
               const node = imgRef.current;
@@ -214,6 +242,8 @@ const CanvasPreview = ({ id = "placa" }: { id?: string }) => {
               const scaleY = node.scaleY();
               node.scaleX(1);
               node.scaleY(1);
+              
+              // Save the new dimensions (which will now have the correct aspect ratio)
               setProductImage(slot, {
                 x: node.x(),
                 y: node.y(),
