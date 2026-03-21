@@ -1003,7 +1003,10 @@ export const useStore = create<AppState>()(
               value: { 
                 allowedStores: state.allowedStores, 
                 flags: state.flags,
-                userGroups: state.userGroups
+                userGroups: state.userGroups,
+                encartes: state.encartes,
+                selectedEncarteModel: state.selectedEncarteModel,
+                layouts: state.layouts
               } 
             });
           if (error) throw error;
@@ -1028,7 +1031,10 @@ export const useStore = create<AppState>()(
             set({
               allowedStores: data.value.allowedStores || [],
               flags: data.value.flags || get().flags,
-              userGroups: data.value.userGroups || []
+              userGroups: data.value.userGroups || [],
+              encartes: data.value.encartes || get().encartes,
+              selectedEncarteModel: data.value.selectedEncarteModel || get().selectedEncarteModel,
+              layouts: data.value.layouts || get().layouts
             });
           }
         } catch (error) {

@@ -38,7 +38,8 @@ export default function App() {
     isAuthenticated, logout, userRole, isUserModalOpen, setUserModalOpen,
     isSupportChatOpen, setSupportChatOpen, unreadSupportCount,
     activeLayoutIndex, layouts, setActiveLayout,
-    currentUser, allowedStores, lastLoginTimestamp
+    currentUser, allowedStores, lastLoginTimestamp,
+    saveUsersAndFlags, loadUsersAndFlags
   } = useStore();
   const [activeTab, setActiveTab] = useState<'select' | 'adjustments'>('select');
 
@@ -117,6 +118,7 @@ export default function App() {
 
   useEffect(() => {
     loadLayout();
+    loadUsersAndFlags();
 
     const handleBeforePrint = () => setPrinting(true);
     const handleAfterPrint = () => setPrinting(false);
@@ -429,14 +431,34 @@ export default function App() {
               <Database className="w-5 h-5" />
             </button>
 
-            <button 
-              onClick={() => window.location.reload()}
-              className="flex items-center gap-2 px-3 py-1.5 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-all text-zinc-600 dark:text-zinc-400 text-xs font-black uppercase tracking-tighter"
-              title="Atualizar Página (F5)"
-            >
-              <RefreshCw className="w-4 h-4" />
-              Atualizar
-            </button>
+            <div className="flex flex-col items-center gap-1">
+              <button 
+                onClick={() => window.location.reload()}
+                className="flex items-center gap-2 px-3 py-1.5 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-all text-zinc-600 dark:text-zinc-400 text-xs font-black uppercase tracking-tighter"
+                title="Atualizar Página (F5)"
+              >
+                <RefreshCw className="w-4 h-4" />
+                Atualizar
+              </button>
+              
+              {userRole === 'admin' && (
+                <button 
+                  onClick={async () => {
+                    try {
+                      await saveUsersAndFlags();
+                      toast.success('Modificações enviadas com sucesso!');
+                    } catch (error) {
+                      toast.error('Erro ao enviar modificações.');
+                    }
+                  }}
+                  className="flex items-center gap-1 px-2 py-0.5 bg-emerald-600 text-white rounded-md hover:bg-emerald-700 transition-all text-[9px] font-black uppercase tracking-tighter shadow-sm"
+                  title="Enviar modificações para a base de dados"
+                >
+                  <Database className="w-3 h-3" />
+                  ENVIAR MOD
+                </button>
+              )}
+            </div>
 
             <div className="h-6 w-px bg-zinc-200 dark:border-zinc-800 mx-2" />
 
