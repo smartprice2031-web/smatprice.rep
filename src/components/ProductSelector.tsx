@@ -35,11 +35,13 @@ const ProductSelector: React.FC<{ onSelect?: (product: Product) => void }> = ({ 
   const filterProducts = (term: string) => {
     if (!term.trim()) return products; // Show all products by default when not searching
     const lowerTerm = term.toLowerCase().trim();
-    return products.filter(p => 
-      p.name.toLowerCase().includes(lowerTerm) ||
-      (p.category && p.category.toLowerCase().includes(lowerTerm)) ||
-      (p.description && p.description.toLowerCase().includes(lowerTerm))
-    );
+    return products.filter(p => {
+      const nameMatch = (p.name || '').toLowerCase().includes(lowerTerm);
+      const categoryMatch = (p.category || '').toLowerCase().includes(lowerTerm);
+      const descriptionMatch = (p.description || '').toLowerCase().includes(lowerTerm);
+      
+      return nameMatch || categoryMatch || descriptionMatch;
+    });
   };
 
   const filteredProducts1 = useMemo(() => filterProducts(searchTerm1), [searchTerm1, products]);

@@ -168,10 +168,16 @@ const ProductManager = () => {
     }
   };
 
-  const filteredProducts = products.filter(p => 
-    p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    p.category.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredProducts = products.filter(p => {
+    const term = searchTerm.toLowerCase().trim();
+    if (!term) return true;
+    
+    const nameMatch = (p.name || '').toLowerCase().includes(term);
+    const categoryMatch = (p.category || '').toLowerCase().includes(term);
+    const descriptionMatch = (p.description || '').toLowerCase().includes(term);
+    
+    return nameMatch || categoryMatch || descriptionMatch;
+  });
 
   return (
     <div className="p-6 space-y-6">

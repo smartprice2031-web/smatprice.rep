@@ -704,16 +704,32 @@ export const useStore = create<AppState>()(
           return;
         }
         try {
-          // Fetching with a high limit to ensure "all" products are loaded
-          // We only select the necessary fields to avoid timeout if images are large
-          const { data, error } = await supabase
-            .from('products')
-            .select('id, name, description, price, image, category')
-            .order('name', { ascending: true })
-            .limit(10000);
+          // Fetching all products using pagination to ensure we get everything
+          let allProducts: Product[] = [];
+          let from = 0;
+          const step = 1000;
+          let hasMore = true;
+
+          while (hasMore) {
+            const { data, error } = await supabase
+              .from('products')
+              .select('id, name, description, price, image, category')
+              .order('name', { ascending: true })
+              .range(from, from + step - 1);
+            
+            if (error) throw error;
+            if (data && data.length > 0) {
+              allProducts = [...allProducts, ...(data as Product[])];
+              from += step;
+              if (data.length < step) {
+                hasMore = false;
+              }
+            } else {
+              hasMore = false;
+            }
+          }
           
-          if (error) throw error;
-          set({ products: data as Product[] });
+          set({ products: allProducts });
 
           // Set up realtime subscription if not already active
           if (!get().realtimeInitialized) {
@@ -723,12 +739,8 @@ export const useStore = create<AppState>()(
                 'postgres_changes' as any, 
                 { event: '*', table: 'products', schema: 'public' }, 
                 async () => {
-                  const { data: updatedData } = await supabase
-                    .from('products')
-                    .select('id, name, description, price, image, category')
-                    .order('name', { ascending: true })
-                    .limit(10000);
-                  if (updatedData) set({ products: updatedData as Product[] });
+                  // Re-fetch everything on change to keep in sync
+                  get().fetchProducts();
                 }
               )
               .subscribe((status) => {

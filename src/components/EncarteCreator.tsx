@@ -61,6 +61,8 @@ export default function EncarteCreator() {
   const [activeSlot, setActiveSlot] = useState<number | null>(null);
   const [activeTab, setActiveTab] = useState<'products' | 'adjustments'>('products');
   const [isExporting, setIsExporting] = useState(false);
+  const [showRuler, setShowRuler] = useState(false);
+  const [rulerY, setRulerY] = useState(150);
 
   const selectedModel = selectedEncarteModel || ENCARTE_MODELS[0];
   const setSelectedModel = setSelectedEncarteModel;
@@ -108,10 +110,23 @@ export default function EncarteCreator() {
   };
 
   const handleAddProduct = (product: Product) => {
-    if (activeSlot === null) return;
+    let targetSlot = activeSlot;
+    
+    if (targetSlot === null) {
+      // Find first empty slot in the current side
+      const fullProducts = currentSide === 'frente' ? currentEncarte.frontProducts : currentEncarte.backProducts;
+      const firstEmpty = fullProducts.findIndex((p, i) => p === null && i < currentEncarte.productCount);
+      
+      if (firstEmpty !== -1) {
+        targetSlot = firstEmpty;
+      } else {
+        toast.error('Não há mais espaço disponível neste lado do encarte.');
+        return;
+      }
+    }
     
     const fullProducts = currentSide === 'frente' ? [...currentEncarte.frontProducts] : [...currentEncarte.backProducts];
-    fullProducts[activeSlot] = { 
+    fullProducts[targetSlot] = { 
       ...product, 
       id: Math.random().toString(36).substr(2, 9),
       subtitle: product.description || '',
@@ -368,24 +383,40 @@ export default function EncarteCreator() {
           {activeTab === 'products' ? (
             <>
               <div className="bg-white dark:bg-zinc-900 p-6 rounded-3xl border border-zinc-200 dark:border-zinc-800 shadow-sm">
-                <h3 className="text-xs font-black uppercase tracking-widest text-zinc-400 mb-4">Modelos de Encarte</h3>
+                <h3 className="text-xs font-black uppercase tracking-widest text-zinc-400 mb-4">Configuração Geral</h3>
                 
-                <div className="grid grid-cols-2 gap-2">
-                  {encartes.map((encarte, index) => (
-                    <button
-                      key={index}
-                      onClick={() => setActiveEncarteIndex(index)}
-                      className={cn(
-                        "py-2 px-3 rounded-xl text-[10px] font-black uppercase transition-all border-2 truncate",
-                        activeEncarteIndex === index
-                          ? "bg-emerald-600 border-emerald-600 text-white shadow-lg scale-105"
-                          : "bg-zinc-100 dark:bg-zinc-800 border-transparent text-zinc-500 hover:bg-zinc-200 dark:hover:bg-zinc-700"
-                      )}
-                      title={encarte.name}
-                    >
-                      {encarte.name}
-                    </button>
-                  ))}
+                <div className="space-y-4">
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 ml-1">Data do Encarte</label>
+                    <input 
+                      type="text"
+                      placeholder="Ex: Ofertas válidas até 25/03"
+                      value={currentEncarte.date || ''}
+                      onChange={(e) => updateActiveEncarte({ date: e.target.value })}
+                      className="w-full px-4 py-2.5 bg-zinc-50 dark:bg-zinc-800 border-none rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none transition-all font-bold text-zinc-900 dark:text-white"
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <h4 className="text-[10px] font-black uppercase tracking-widest text-zinc-400 mb-2">Modelos de Encarte</h4>
+                    <div className="grid grid-cols-2 gap-2">
+                      {encartes.map((encarte, index) => (
+                        <button
+                          key={index}
+                          onClick={() => setActiveEncarteIndex(index)}
+                          className={cn(
+                            "py-2 px-3 rounded-xl text-[10px] font-black uppercase transition-all border-2 truncate",
+                            activeEncarteIndex === index
+                              ? "bg-emerald-600 border-emerald-600 text-white shadow-lg scale-105"
+                              : "bg-zinc-100 dark:bg-zinc-800 border-transparent text-zinc-500 hover:bg-zinc-200 dark:hover:bg-zinc-700"
+                          )}
+                          title={encarte.name}
+                        >
+                          {encarte.name}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
                 </div>
                 <p className="mt-3 text-[10px] font-bold text-zinc-400 uppercase text-center">
                   Editando: <span className="text-zinc-900 dark:text-white">{currentEncarte.name}</span>
@@ -396,6 +427,16 @@ export default function EncarteCreator() {
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-xs font-black uppercase tracking-widest text-zinc-400 mb-4">Produtos ({currentSide})</h3>
                   <div className="flex items-center gap-2">
+                    <button 
+                      onClick={() => {
+                        setActiveSlot(null);
+                        setIsSelectorOpen(true);
+                      }}
+                      className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-all text-[10px] font-black uppercase tracking-widest shadow-sm"
+                    >
+                      <Plus className="w-3 h-3" />
+                      Adicionar
+                    </button>
                     <select 
                       value={currentEncarte.productCount}
                       onChange={(e) => updateActiveEncarte({ productCount: parseInt(e.target.value) })}
@@ -533,15 +574,48 @@ export default function EncarteCreator() {
                       className="w-full px-4 py-2.5 bg-zinc-50 dark:bg-zinc-800 border-none rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none transition-all font-bold text-zinc-900 dark:text-white"
                     />
                   </div>
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 ml-1">Data do Encarte</label>
-                    <input 
-                      type="text"
-                      placeholder="Ex: Ofertas válidas até 25/03"
-                      value={currentEncarte.date || ''}
-                      onChange={(e) => updateActiveEncarte({ date: e.target.value })}
-                      className="w-full px-4 py-2.5 bg-zinc-50 dark:bg-zinc-800 border-none rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none transition-all font-bold text-zinc-900 dark:text-white"
-                    />
+
+                  <div className="pt-4 border-t border-zinc-100 dark:border-zinc-800">
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center gap-2">
+                        <div className="p-1.5 bg-emerald-100 dark:bg-emerald-900/30 rounded-lg">
+                          <LayoutIcon className="w-4 h-4 text-emerald-600" />
+                        </div>
+                        <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Régua de Alinhamento</label>
+                      </div>
+                      <button
+                        onClick={() => setShowRuler(!showRuler)}
+                        className={cn(
+                          "w-10 h-5 rounded-full transition-all relative",
+                          showRuler ? "bg-emerald-600" : "bg-zinc-300 dark:bg-zinc-700"
+                        )}
+                      >
+                        <div className={cn(
+                          "absolute top-1 w-3 h-3 rounded-full bg-white transition-all",
+                          showRuler ? "right-1" : "left-1"
+                        )} />
+                      </button>
+                    </div>
+                    
+                    {showRuler && (
+                      <div className="space-y-2">
+                        <div className="flex justify-between text-[8px] font-black uppercase text-zinc-400">
+                          <span>Posição Vertical</span>
+                          <span>{rulerY}px</span>
+                        </div>
+                        <input 
+                          type="range"
+                          min="0"
+                          max="1000"
+                          value={rulerY}
+                          onChange={(e) => setRulerY(parseInt(e.target.value))}
+                          className="w-full accent-emerald-600"
+                        />
+                        <p className="text-[9px] text-zinc-400 font-medium leading-tight">
+                          Dica: Arraste a linha verde no encarte para ajustar manualmente.
+                        </p>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -610,7 +684,7 @@ export default function EncarteCreator() {
         </div>
 
         {/* Preview Area */}
-        <div className="flex-grow bg-zinc-200 dark:bg-zinc-900 rounded-[2.5rem] p-12 overflow-y-auto flex flex-col items-center gap-12 no-print">
+        <div className="flex-grow bg-transparent rounded-[2.5rem] p-12 overflow-y-auto flex flex-col items-center gap-12 no-print">
           {/* A4 Page - Current Side */}
           <div 
             className="w-[210mm] h-[297mm] bg-white shadow-2xl p-[10mm] flex flex-col print:shadow-none print:p-0 relative overflow-hidden flex-shrink-0" 
@@ -640,87 +714,129 @@ export default function EncarteCreator() {
               )}
 
               {/* Products Grid */}
-              <div className={cn("grid gap-4 flex-grow content-start pt-8", getGridClass(currentEncarte.productCount))}>
-                {currentProducts.map((product, index) => (
-                  <motion.div 
-                    key={index} 
-                    drag
-                    dragMomentum={false}
-                    onDragEnd={(_, info) => {
-                      if (product) {
-                        const snap = 10; // Snap to 10px grid for auto-alignment
-                        let newX = (product.offsetX || 0) + info.offset.x;
-                        let newY = (product.offsetY || 0) + info.offset.y;
-
-                        // Auto-alignment: snap to grid
-                        newX = Math.round(newX / snap) * snap;
-                        newY = Math.round(newY / snap) * snap;
-
-                        // Snap to zero if close
-                        if (Math.abs(newX) < snap) newX = 0;
-                        if (Math.abs(newY) < snap) newY = 0;
-
-                        handleUpdateProduct(index, 'offsetX', newX);
-                        handleUpdateProduct(index, 'offsetY', newY);
-                      }
-                    }}
-                    className="p-2 rounded-xl flex flex-col relative overflow-hidden min-h-0 cursor-move"
-                    style={{ 
-                      x: product?.offsetX || 0,
-                      y: product?.offsetY || 0
+              <div className={cn("grid gap-6 flex-grow content-start pt-56 px-4 relative", getGridClass(currentEncarte.productCount))}>
+                {/* Horizontal Ruler */}
+                {showRuler && (
+                  <div 
+                    className="absolute left-0 right-0 h-0.5 bg-emerald-500/20 z-50 cursor-ns-resize flex items-center justify-center pointer-events-auto"
+                    style={{ top: `${rulerY}px` }}
+                    onMouseDown={(e) => {
+                      const startY = e.clientY;
+                      const startRulerY = rulerY;
+                      const onMouseMove = (moveEvent: MouseEvent) => {
+                        const deltaY = moveEvent.clientY - startY;
+                        setRulerY(Math.max(0, Math.min(1000, startRulerY + deltaY)));
+                      };
+                      const onMouseUp = () => {
+                        window.removeEventListener('mousemove', onMouseMove);
+                        window.removeEventListener('mouseup', onMouseUp);
+                      };
+                      window.addEventListener('mousemove', onMouseMove);
+                      window.addEventListener('mouseup', onMouseUp);
                     }}
                   >
+                    <div className="px-2 py-0.5 bg-emerald-500/30 backdrop-blur-sm text-white text-[8px] font-black uppercase rounded-full shadow-lg">
+                      Régua Guia
+                    </div>
+                  </div>
+                )}
+
+                {currentProducts.map((product, index) => (
+                  <div key={index} className="relative min-h-[180px] border border-dashed border-transparent rounded-2xl flex items-center justify-center group bg-transparent">
                     {product ? (
-                      <div className="flex flex-col h-full">
-                        <div 
-                          className="text-left mb-1"
-                          style={{ 
-                            transform: `translate(${product.textOffsetX || 0}px, ${product.textOffsetY || 0}px)`
-                          }}
-                        >
-                          <h4 className={cn("font-black tracking-tight leading-tight uppercase text-red-600 line-clamp-2", adaptive.title)}>
-                            {product.name}
-                          </h4>
-                          <p className={cn("font-bold text-red-600 uppercase leading-none truncate", adaptive.subtitle)}>
-                            {product.subtitle}
-                          </p>
+                      <motion.div 
+                        key={index} 
+                        drag
+                        dragMomentum={false}
+                        onDragEnd={(_, info) => {
+                          if (product) {
+                            const snap = 10; // Snap to 10px grid for auto-alignment
+                            let newX = (product.offsetX || 0) + info.offset.x;
+                            let newY = (product.offsetY || 0) + info.offset.y;
+
+                            // Auto-alignment: snap to grid
+                            newX = Math.round(newX / snap) * snap;
+                            newY = Math.round(newY / snap) * snap;
+
+                            // Snap to zero if close
+                            if (Math.abs(newX) < snap) newX = 0;
+                            if (Math.abs(newY) < snap) newY = 0;
+
+                            handleUpdateProduct(index, 'offsetX', newX);
+                            handleUpdateProduct(index, 'offsetY', newY);
+                          }
+                        }}
+                        className="p-3 bg-transparent rounded-2xl flex flex-col relative border border-transparent cursor-move z-20 w-full h-full"
+                        style={{ 
+                          x: product?.offsetX || 0,
+                          y: product?.offsetY || 0
+                        }}
+                      >
+                        <div className="absolute -top-2 -right-2 flex gap-1 z-30 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button 
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleRemoveProduct(index);
+                            }}
+                            className="p-1.5 bg-red-500 text-white rounded-full shadow-lg hover:bg-red-600 transition-colors"
+                          >
+                            <Trash2 className="w-3 h-3" />
+                          </button>
                         </div>
-                        
-                        <div className={cn("flex items-center mt-0", adaptive.gap)}>
-                          {/* Price Box */}
-                          <div className={cn("bg-red-600 text-white rounded-lg relative flex items-center justify-center px-2", adaptive.box)}>
-                            <div className="absolute top-2 left-2 flex flex-col items-start leading-none">
-                              <span className="text-[8px] font-black uppercase">POR</span>
-                              <span className="text-[10px] font-black">R$</span>
-                            </div>
-                            <div className="flex items-baseline ml-4">
-                              <span className={cn("font-black tracking-tighter leading-none", adaptive.price)}>
-                                {formatPrice(product.price).integer}
-                              </span>
-                              <span className={cn("font-black tracking-tighter leading-none", adaptive.cents)}>
-                                {formatPrice(product.price).cents}
-                              </span>
-                            </div>
-                            <span className="absolute bottom-2 right-2 text-[8px] font-black uppercase">UNI</span>
+
+                        <div className="flex flex-col h-full pointer-events-none bg-transparent">
+                          <div className="text-left mb-2 min-h-[3rem] flex flex-col justify-end bg-transparent">
+                            <h4 className={cn("font-black tracking-tight leading-tight uppercase text-red-600 line-clamp-2", adaptive.title)}>
+                              {product.name}
+                            </h4>
+                            <p className={cn("font-bold text-red-600 uppercase leading-none truncate", adaptive.subtitle)}>
+                              {product.subtitle}
+                            </p>
                           </div>
                           
-                          {/* Product Image */}
-                          <div className={cn("flex-grow flex items-center justify-center", adaptive.img)}>
-                            {product.image ? (
-                              <img 
-                                src={product.image} 
-                                className="max-w-full max-h-full object-contain" 
-                                referrerPolicy="no-referrer" 
-                                crossOrigin="anonymous"
-                              />
-                            ) : (
-                              <Package className="w-12 h-12 text-zinc-200 dark:text-zinc-700" />
-                            )}
+                          <div className={cn("flex items-center mt-auto bg-transparent", adaptive.gap)}>
+                            {/* Price Box */}
+                            <div className={cn("bg-red-600 text-white rounded-xl relative flex items-center justify-center px-3 shadow-lg", adaptive.box)}>
+                              <div className="absolute top-2 left-2.5 flex flex-col items-start leading-none">
+                                <span className="text-[8px] font-black uppercase opacity-80">POR</span>
+                                <span className="text-[10px] font-black">R$</span>
+                              </div>
+                              <div className="flex items-baseline ml-5">
+                                <span className={cn("font-black tracking-tighter leading-none", adaptive.price)}>
+                                  {formatPrice(product.price).integer}
+                                </span>
+                              <span className={cn("font-black tracking-tighter leading-none", adaptive.cents)}>
+                                  {formatPrice(product.price).cents}
+                                </span>
+                              </div>
+                              <span className="absolute bottom-0.5 right-1 text-[7px] font-black uppercase opacity-80">UNI</span>
+                            </div>
+                            
+                            {/* Product Image */}
+                            <div className={cn("flex-grow flex items-center justify-center bg-transparent", adaptive.img)}>
+                              {product.image ? (
+                                <img 
+                                  src={product.image} 
+                                  className="max-w-full max-h-full object-contain drop-shadow-md bg-transparent" 
+                                  referrerPolicy="no-referrer" 
+                                  crossOrigin="anonymous"
+                                />
+                              ) : (
+                                <Package className="w-12 h-12 text-zinc-200 dark:text-zinc-700" />
+                              )}
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    ) : null}
-                  </motion.div>
+                      </motion.div>
+                    ) : (
+                      <button 
+                        onClick={() => openSelector(index)}
+                        className="w-full h-full bg-transparent flex items-center justify-center transition-all"
+                      >
+                        {/* Plus icon removed as requested */}
+                      </button>
+                    )}
+                  </div>
                 ))}
               </div>
             </div>
@@ -750,19 +866,19 @@ export default function EncarteCreator() {
                 </span>
               </div>
             )}
-            <div className={cn("grid gap-4 flex-grow content-start pt-8", getGridClass(currentEncarte.productCount))}>
+            <div className={cn("grid gap-4 flex-grow content-start pt-48", getGridClass(currentEncarte.productCount))}>
               {currentEncarte.frontProducts.slice(0, currentEncarte.productCount).map((product, index) => (
                 <div 
                   key={index} 
-                  className="p-2 rounded-xl flex flex-col relative overflow-hidden min-h-0"
+                  className="p-2 rounded-xl flex flex-col relative min-h-0 bg-transparent"
                   style={{ 
                     transform: product ? `translate(${product.offsetX || 0}px, ${product.offsetY || 0}px)` : 'none'
                   }}
                 >
                   {product && (
-                    <div className="flex flex-col h-full">
+                    <div className="flex flex-col h-full bg-transparent">
                       <div 
-                        className="text-left mb-1"
+                        className="text-left mb-1 min-h-[3rem] flex flex-col justify-end bg-transparent"
                         style={{ 
                           transform: `translate(${product.textOffsetX || 0}px, ${product.textOffsetY || 0}px)`
                         }}
@@ -770,7 +886,7 @@ export default function EncarteCreator() {
                         <h4 className={cn("font-black tracking-tight leading-tight uppercase text-red-600 line-clamp-2", adaptive.title)}>{product.name}</h4>
                         <p className={cn("font-bold text-red-600 uppercase leading-none truncate", adaptive.subtitle)}>{product.subtitle}</p>
                       </div>
-                      <div className={cn("flex items-center mt-0", adaptive.gap)}>
+                      <div className={cn("flex items-center mt-auto bg-transparent", adaptive.gap)}>
                         <div className={cn("bg-red-600 text-white rounded-lg relative flex items-center justify-center px-2", adaptive.box)}>
                           <div className="absolute top-2 left-2 flex flex-col items-start leading-none">
                             <span className="text-[8px] font-black uppercase">POR</span>
@@ -780,13 +896,13 @@ export default function EncarteCreator() {
                             <span className={cn("font-black tracking-tighter leading-none", adaptive.price)}>{formatPrice(product.price).integer}</span>
                             <span className={cn("font-black tracking-tighter leading-none", adaptive.cents)}>{formatPrice(product.price).cents}</span>
                           </div>
-                          <span className="absolute bottom-2 right-2 text-[8px] font-black uppercase">UNI</span>
+                          <span className="absolute bottom-0.5 right-1 text-[7px] font-black uppercase opacity-80">UNI</span>
                         </div>
-                        <div className={cn("flex-grow flex items-center justify-center", adaptive.img)}>
+                        <div className={cn("flex-grow flex items-center justify-center bg-transparent", adaptive.img)}>
                           {product.image && (
                             <img 
                               src={product.image} 
-                              className="max-w-full max-h-full object-contain" 
+                              className="max-w-full max-h-full object-contain bg-transparent" 
                               referrerPolicy="no-referrer" 
                               crossOrigin="anonymous"
                             />
@@ -821,19 +937,19 @@ export default function EncarteCreator() {
                 </span>
               </div>
             )}
-            <div className={cn("grid gap-4 flex-grow content-start pt-8", getGridClass(currentEncarte.productCount))}>
+            <div className={cn("grid gap-4 flex-grow content-start pt-48", getGridClass(currentEncarte.productCount))}>
               {currentEncarte.backProducts.slice(0, currentEncarte.productCount).map((product, index) => (
                 <div 
                   key={index} 
-                  className="p-2 rounded-xl flex flex-col relative overflow-hidden min-h-0"
+                  className="p-2 rounded-xl flex flex-col relative min-h-0 bg-transparent"
                   style={{ 
                     transform: product ? `translate(${product.offsetX || 0}px, ${product.offsetY || 0}px)` : 'none'
                   }}
                 >
                   {product && (
-                    <div className="flex flex-col h-full">
+                    <div className="flex flex-col h-full bg-transparent">
                       <div 
-                        className="text-left mb-1"
+                        className="text-left mb-1 min-h-[3rem] flex flex-col justify-end bg-transparent"
                         style={{ 
                           transform: `translate(${product.textOffsetX || 0}px, ${product.textOffsetY || 0}px)`
                         }}
@@ -841,7 +957,7 @@ export default function EncarteCreator() {
                         <h4 className={cn("font-black tracking-tight leading-tight uppercase text-red-600 line-clamp-2", adaptive.title)}>{product.name}</h4>
                         <p className={cn("font-bold text-red-600 uppercase leading-none truncate", adaptive.subtitle)}>{product.subtitle}</p>
                       </div>
-                      <div className={cn("flex items-center mt-0", adaptive.gap)}>
+                      <div className={cn("flex items-center mt-auto bg-transparent", adaptive.gap)}>
                         <div className={cn("bg-red-600 text-white rounded-lg relative flex items-center justify-center px-2", adaptive.box)}>
                           <div className="absolute top-2 left-2 flex flex-col items-start leading-none">
                             <span className="text-[8px] font-black uppercase">POR</span>
@@ -851,13 +967,13 @@ export default function EncarteCreator() {
                             <span className={cn("font-black tracking-tighter leading-none", adaptive.price)}>{formatPrice(product.price).integer}</span>
                             <span className={cn("font-black tracking-tighter leading-none", adaptive.cents)}>{formatPrice(product.price).cents}</span>
                           </div>
-                          <span className="absolute bottom-2 right-2 text-[8px] font-black uppercase">UNI</span>
+                          <span className="absolute bottom-0.5 right-1 text-[7px] font-black uppercase opacity-80">UNI</span>
                         </div>
-                        <div className={cn("flex-grow flex items-center justify-center", adaptive.img)}>
+                        <div className={cn("flex-grow flex items-center justify-center bg-transparent", adaptive.img)}>
                           {product.image && (
                             <img 
                               src={product.image} 
-                              className="max-w-full max-h-full object-contain" 
+                              className="max-w-full max-h-full object-contain bg-transparent" 
                               referrerPolicy="no-referrer" 
                               crossOrigin="anonymous"
                             />
