@@ -149,16 +149,12 @@ export default function SupportChat() {
                   userRole === 'admin' ? "text-base" : "text-xl"
                 )}>Suporte SmartPrice</h3>
                 <div className={cn(
-                  "w-2 h-2 rounded-full",
-                  isConnected ? "bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)] animate-pulse" : "bg-amber-500 shadow-[0_0_10px_rgba(245,158,11,0.5)]"
+                  "w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]",
+                  isConnected && "animate-pulse"
                 )} />
               </div>
               <p className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest">
-                {isConnected ? (userRole === 'admin' ? 'Central de Atendimento' : 'Suporte Online') : (
-                  <span className="text-amber-600 flex items-center gap-1 animate-pulse">
-                    Sincronizando...
-                  </span>
-                )}
+                {userRole === 'admin' ? 'Central de Atendimento' : 'Suporte Online'}
               </p>
               {userRole === 'user' && (
                 <p className="text-[9px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-tighter mt-0.5">

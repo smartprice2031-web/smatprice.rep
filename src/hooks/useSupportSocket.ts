@@ -32,7 +32,9 @@ export function useSupportSocket() {
     if (!currentUser) return;
 
     // Connect to Socket.io
-    const socket = io({
+    const socket = io(window.location.origin, {
+      path: '/socket.io/',
+      transports: ['polling', 'websocket'],
       reconnection: true,
       reconnectionAttempts: Infinity,
       reconnectionDelay: 1000,
