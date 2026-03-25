@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useStore } from '../store';
 import { useSupportSocket, Message } from '../hooks/useSupportSocket';
-import { MessageCircle, Send, X, User, Shield, Clock, AlertCircle, Paperclip, Trash2, FileText, Image as ImageIcon } from 'lucide-react';
+import { MessageCircle, Send, X, User, Trash2, AlertCircle } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
@@ -19,9 +19,7 @@ export default function SupportChat() {
   } = useStore();
   const { sendMessage, clearMessages, isConnected } = useSupportSocket();
   const [inputText, setInputText] = useState('');
-  const [attachment, setAttachment] = useState<{ data: string, type: 'image' | 'file', name: string } | null>(null);
   const [showScrollButton, setShowScrollButton] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const handleScroll = () => {
@@ -38,20 +36,12 @@ export default function SupportChat() {
     }
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        const data = event.target?.result as string;
-        setAttachment({ 
-          data, 
-          type: file.type.startsWith('image/') ? 'image' : 'file',
-          name: file.name
-        });
-      };
-      reader.readAsDataURL(file);
-    }
+  const handleSendMessage = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!inputText.trim()) return;
+
+    sendMessage(inputText, selectedUserCnpj || undefined);
+    setInputText('');
   };
 
   useEffect(() => {
@@ -71,15 +61,6 @@ export default function SupportChat() {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [messages, isSupportChatOpen]);
-
-  const handleSendMessage = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!inputText.trim() && !attachment) return;
-
-    sendMessage(inputText, selectedUserCnpj || undefined, attachment ? { data: attachment.data, type: attachment.type } : undefined);
-    setInputText('');
-    setAttachment(null);
-  };
 
   const [confirmClear, setConfirmClear] = useState(false);
 
@@ -294,30 +275,6 @@ export default function SupportChat() {
                             ? "bg-blue-600 text-white rounded-tr-none" 
                             : "bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 border border-zinc-100 dark:border-zinc-700 rounded-tl-none"
                         )}>
-                          {msg.attachment && (
-                            <div className="mb-2">
-                              {msg.attachmentType === 'image' ? (
-                                <img 
-                                  src={msg.attachment} 
-                                  alt="Anexo" 
-                                  className="max-w-full rounded-lg border border-white/20 cursor-pointer hover:scale-[1.02] transition-transform"
-                                  onClick={() => window.open(msg.attachment, '_blank')}
-                                />
-                              ) : (
-                                <a 
-                                  href={msg.attachment} 
-                                  download="anexo"
-                                  className={cn(
-                                    "flex items-center gap-2 p-2 rounded-lg border",
-                                    isMe ? "bg-white/10 border-white/20 text-white" : "bg-zinc-100 dark:bg-zinc-700 border-zinc-200 dark:border-zinc-600"
-                                  )}
-                                >
-                                  <FileText className="w-4 h-4" />
-                                  <span className="text-xs font-bold truncate max-w-[150px]">Arquivo Anexo</span>
-                                </a>
-                              )}
-                            </div>
-                          )}
                           {msg.text}
                         </div>
                       </div>
@@ -327,51 +284,7 @@ export default function SupportChat() {
 
                 {/* Input Area */}
                 <div className="p-6 border-t border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900">
-                  {/* Attachment Preview */}
-                  {attachment && (
-                    <div className="mb-4 p-3 bg-zinc-50 dark:bg-zinc-800 rounded-2xl flex items-center justify-between animate-in fade-in slide-in-from-bottom-2">
-                      <div className="flex items-center gap-3">
-                        {attachment.type === 'image' ? (
-                          <div className="w-12 h-12 rounded-lg overflow-hidden border border-zinc-200 dark:border-zinc-700">
-                            <img src={attachment.data} alt="Preview" className="w-full h-full object-cover" />
-                          </div>
-                        ) : (
-                          <div className="w-12 h-12 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
-                            <FileText className="w-6 h-6 text-blue-600" />
-                          </div>
-                        )}
-                        <div className="overflow-hidden">
-                          <p className="text-xs font-bold truncate max-w-[200px]">{attachment.name}</p>
-                          <p className="text-[10px] text-zinc-500 uppercase font-black tracking-widest">{attachment.type === 'image' ? 'Imagem' : 'Arquivo'}</p>
-                        </div>
-                      </div>
-                      <button 
-                        onClick={() => setAttachment(null)}
-                        className="p-2 hover:bg-red-50 dark:hover:bg-red-900/20 text-red-500 rounded-full transition-colors"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                  )}
-
-
                   <form onSubmit={handleSendMessage} className="flex gap-3">
-                    <div className="flex gap-2">
-                      <input 
-                        type="file" 
-                        ref={fileInputRef} 
-                        className="hidden" 
-                        onChange={handleFileChange}
-                      />
-                      <button
-                        type="button"
-                        onClick={() => fileInputRef.current?.click()}
-                        className="bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-600 dark:text-zinc-400 p-4 rounded-2xl transition-all active:scale-95"
-                        title="Anexar Arquivo"
-                      >
-                        <Paperclip className="w-5 h-5" />
-                      </button>
-                    </div>
                     <input
                       type="text"
                       placeholder="Digite sua mensagem..."
@@ -381,7 +294,7 @@ export default function SupportChat() {
                     />
                     <button
                       type="submit"
-                      disabled={!inputText.trim() && !attachment}
+                      disabled={!inputText.trim()}
                       className="bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:hover:bg-blue-600 text-white p-4 rounded-2xl shadow-lg shadow-blue-500/20 transition-all active:scale-95"
                     >
                       <Send className="w-5 h-5" />

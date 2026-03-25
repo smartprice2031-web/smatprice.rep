@@ -1,7 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useStore } from '../store';
 import { toast } from 'sonner';
-import { supabase, isSupabaseConfigured } from '../lib/supabase';
+import { io, Socket } from 'socket.io-client';
 
 export interface Message {
   id: string;
@@ -12,10 +12,9 @@ export interface Message {
   };
   to?: {
     cnpj: string;
+    username?: string;
   };
   text: string;
-  attachment?: string; // base64 or URL
-  attachmentType?: 'image' | 'file';
   timestamp: string;
 }
 
@@ -27,251 +26,133 @@ export function useSupportSocket() {
     setIsChatConnected, isChatConnected
   } = useStore();
 
+  const socketRef = useRef<Socket | null>(null);
+
   useEffect(() => {
-    if (!currentUser || !isSupabaseConfigured) return;
+    if (!currentUser) return;
 
-    // Initial fetch of messages
-    const fetchMessages = async () => {
-      const sixHoursAgo = new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString();
-      
-      let { data, error } = await supabase
-        .from('chat_messages')
-        .select('*')
-        .gt('created_at', sixHoursAgo)
-        .order('created_at', { ascending: true });
+    // Connect to Socket.io
+    const socket = io(window.location.origin, {
+      path: '/socket.io/',
+      transports: ['websocket', 'polling']
+    });
 
-      // Fallback to 'chat_messagens' if 'chat_messages' doesn't exist
-      if (error && (error.code === '42P01' || error.message?.includes('not found'))) {
-        const { data: retryData, error: retryError } = await supabase
-          .from('chat_messagens')
-          .select('*')
-          .gt('created_at', sixHoursAgo)
-          .order('created_at', { ascending: true });
-        data = retryData;
-        error = retryError;
-      }
+    socketRef.current = socket;
 
-      if (error) {
-        console.error('Error fetching messages:', error);
-        return;
-      }
-
-      if (!data) return;
-
-      const formattedMessages: Message[] = data.map(m => ({
-        id: m.id,
-        text: m.text,
-        timestamp: m.created_at,
-        from: {
-          cnpj: m.from_cnpj,
-          username: m.from_username,
-          role: m.from_role
-        },
-        to: m.to_cnpj ? { cnpj: m.to_cnpj } : undefined,
-        attachment: m.attachment,
-        attachmentType: m.attachment_type
-      }));
-
-      // Filter messages for the user
-      const filtered = formattedMessages.filter(m => 
-        userRole === 'admin' || m.from.cnpj === currentUser.cnpj || m.to?.cnpj === currentUser.cnpj
-      );
-
-      setMessages(filtered);
+    socket.on('connect', () => {
+      console.log('Chat connected');
       setIsChatConnected(true);
-    };
+      
+      // Join relevant rooms
+      socket.emit('user:join', {
+        username: currentUser.username,
+        cnpj: currentUser.cnpj,
+        role: userRole
+      });
+    });
 
-    fetchMessages();
+    socket.on('disconnect', () => {
+      console.log('Chat disconnected');
+      setIsChatConnected(false);
+    });
 
-    // Subscribe to new messages
-    const channel = supabase
-      .channel('chat_messages_realtime')
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'chat_messages' }, (payload) => {
-        handleNewMessage(payload.new);
-      })
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'chat_messagens' }, (payload) => {
-        handleNewMessage(payload.new);
-      })
-      .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'chat_messages' }, (payload) => {
-        setMessages(prev => prev.filter(m => m.id !== payload.old.id));
-      })
-      .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'chat_messagens' }, (payload) => {
-        setMessages(prev => prev.filter(m => m.id !== payload.old.id));
-      })
-      .subscribe();
+    socket.on('message:history', (history: Message[]) => {
+      // Filter for last 6 hours just in case server sends more
+      const sixHoursAgo = Date.now() - 6 * 60 * 60 * 1000;
+      const filtered = history.filter(m => new Date(m.timestamp).getTime() > sixHoursAgo);
+      setMessages(filtered);
+    });
 
-    function handleNewMessage(m: any) {
-      const newMessage: Message = {
-        id: m.id,
-        text: m.text,
-        timestamp: m.created_at,
-        from: {
-          cnpj: m.from_cnpj,
-          username: m.from_username,
-          role: m.from_role
-        },
-        to: m.to_cnpj ? { cnpj: m.to_cnpj } : undefined,
-        attachment: m.attachment,
-        attachmentType: m.attachment_type
-      };
+    socket.on('message:receive', (newMessage: Message) => {
+      setMessages(prev => {
+        if (prev.some(existing => existing.id === newMessage.id)) return prev;
+        return [...prev, newMessage];
+      });
 
-      // Check if message is relevant to this user
-      const isRelevant = userRole === 'admin' || 
-                         newMessage.from.cnpj === currentUser.cnpj || 
-                         newMessage.to?.cnpj === currentUser.cnpj;
+      // Handle notifications
+      const state = useStore.getState();
+      const isFromMe = newMessage.from.cnpj === currentUser.cnpj && newMessage.from.username === currentUser.username;
+      
+      if (!isFromMe) {
+        // Play sound
+        const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3');
+        audio.play().catch(e => console.log('Audio play blocked'));
 
-      if (isRelevant) {
-        setMessages(prev => {
-          if (prev.some(existing => existing.id === newMessage.id)) return prev;
-          return [...prev, newMessage];
-        });
-
-        // Handle notifications
-        const state = useStore.getState();
-        const isFromMe = newMessage.from.cnpj === currentUser.cnpj && newMessage.from.username === currentUser.username;
-        
-        if (!isFromMe) {
-          // Play sound
-          const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3');
-          audio.play().catch(e => console.log('Audio play blocked'));
-
-          let shouldNotify = false;
-          if (!state.isSupportChatOpen) {
-            shouldNotify = true;
-          } else if (userRole === 'admin') {
-            if (newMessage.from.cnpj !== state.selectedUserCnpj) {
-              shouldNotify = true;
-            }
-          } else if (document.hidden) {
+        let shouldNotify = false;
+        if (!state.isSupportChatOpen) {
+          shouldNotify = true;
+        } else if (userRole === 'admin') {
+          if (newMessage.from.cnpj !== state.selectedUserCnpj) {
             shouldNotify = true;
           }
+        } else if (document.hidden) {
+          shouldNotify = true;
+        }
 
-          if (userRole === 'admin' && newMessage.from.role === 'user') {
-            if (newMessage.from.cnpj !== state.selectedUserCnpj) {
-              setUnreadPerUser(newMessage.from.cnpj, prev => (typeof prev === 'number' ? prev + 1 : 1));
-            }
-          }
-
-          if (shouldNotify) {
-            setUnreadSupportCount(prev => (typeof prev === 'number' ? prev + 1 : 1));
-            const senderName = newMessage.from.role === 'admin' ? 'Suporte SmartPrice' : newMessage.from.username;
-            
-            if ("Notification" in window && Notification.permission === "granted") {
-              new Notification(`Nova mensagem de ${senderName}`, { body: newMessage.text });
-            }
-
-            toast.info(`Nova mensagem de ${senderName}`, {
-              description: newMessage.text,
-              action: {
-                label: 'Ver',
-                onClick: () => {
-                  useStore.getState().setSupportChatOpen(true);
-                  if (userRole === 'admin' && newMessage.from.cnpj) {
-                    useStore.getState().setSelectedUserCnpj(newMessage.from.cnpj);
-                  }
-                }
-              }
-            });
+        if (userRole === 'admin' && newMessage.from.role === 'user') {
+          if (newMessage.from.cnpj !== state.selectedUserCnpj) {
+            setUnreadPerUser(newMessage.from.cnpj, prev => (typeof prev === 'number' ? prev + 1 : 1));
           }
         }
+
+        if (shouldNotify) {
+          setUnreadSupportCount(prev => (typeof prev === 'number' ? prev + 1 : 1));
+          const senderName = newMessage.from.role === 'admin' ? 'Suporte SmartPrice' : newMessage.from.username;
+          
+          if ("Notification" in window && Notification.permission === "granted") {
+            new Notification(`Nova mensagem de ${senderName}`, { body: newMessage.text });
+          }
+
+          toast.info(`Nova mensagem de ${senderName}`, {
+            description: newMessage.text,
+            action: {
+              label: 'Ver',
+              onClick: () => {
+                useStore.getState().setSupportChatOpen(true);
+                if (userRole === 'admin' && newMessage.from.cnpj) {
+                  useStore.getState().setSelectedUserCnpj(newMessage.from.cnpj);
+                }
+              }
+            }
+          });
+        }
       }
-    }
+    });
 
-    // Cleanup old messages every 6 hours (client-side trigger for admin)
-    const cleanupOldMessages = async () => {
-      if (userRole !== 'admin') return;
-      
-      const sixHoursAgo = new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString();
-      let { error } = await supabase
-        .from('chat_messages')
-        .delete()
-        .lt('created_at', sixHoursAgo);
-      
-      if (error && (error.code === '42P01' || error.message?.includes('not found'))) {
-        const { error: retryError } = await supabase
-          .from('chat_messagens')
-          .delete()
-          .lt('created_at', sixHoursAgo);
-        error = retryError;
-      }
-
-      if (error) console.error('Cleanup error:', error);
-    };
-
-    const cleanupInterval = setInterval(cleanupOldMessages, 30 * 60 * 1000); // Check every 30 mins
-    cleanupOldMessages(); // Run once on mount
+    socket.on('message:cleared', ({ cnpj }: { cnpj: string }) => {
+      setMessages(prev => prev.filter(m => m.from.cnpj !== cnpj && m.to?.cnpj !== cnpj));
+    });
 
     return () => {
-      supabase.removeChannel(channel);
-      clearInterval(cleanupInterval);
+      socket.disconnect();
     };
   }, [currentUser, userRole, setMessages, setUnreadPerUser, setUnreadSupportCount, setIsChatConnected]);
 
-  const sendMessage = async (text: string, toCnpj?: string, attachment?: { data: string, type: 'image' | 'file' }) => {
-    if (!currentUser || !isSupabaseConfigured) return;
+  const sendMessage = (text: string, toCnpj?: string) => {
+    if (!socketRef.current || !currentUser) return;
 
     const targetStore = toCnpj ? useStore.getState().allowedStores.find(s => s.cnpj === toCnpj) : null;
 
-    // Construct message data with generated ID and timestamp
-    const messageData: any = {
-      id: `msg_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`,
-      from_cnpj: currentUser.cnpj,
-      from_username: currentUser.username,
-      from_role: userRole,
-      to_cnpj: userRole === 'admin' ? (toCnpj || null) : null,
-      to_username: null,
+    const messageData = {
+      from: {
+        username: currentUser.username,
+        cnpj: currentUser.cnpj,
+        role: userRole
+      },
+      to: toCnpj ? {
+        cnpj: toCnpj,
+        username: targetStore?.bandeira || null
+      } : null,
       text,
-      attachment: attachment?.data || null,
-      attachment_type: attachment?.type || null,
-      created_at: new Date().toISOString()
+      timestamp: new Date().toISOString()
     };
 
-    if (userRole === 'admin' && targetStore?.bandeira) {
-      messageData.to_username = targetStore.bandeira;
-    }
-
-    // Try 'chat_messages' first (standard)
-    let { error } = await supabase
-      .from('chat_messages')
-      .insert([messageData]);
-
-    // If 'chat_messages' fails with "relation does not exist", try 'chat_messagens' (user's likely name)
-    if (error && (error.code === '42P01' || error.message?.includes('not found'))) {
-      const { error: retryError } = await supabase
-        .from('chat_messagens')
-        .insert([messageData]);
-      error = retryError;
-    }
-
-    if (error) {
-      console.error('Supabase Insert Error:', error);
-      toast.error(`Erro ao enviar: ${error.message}`);
-    }
+    socketRef.current.emit('message:send', messageData);
   };
 
-  const clearMessages = async (cnpj: string) => {
-    if (!isSupabaseConfigured) return;
-
-    let { error } = await supabase
-      .from('chat_messages')
-      .delete()
-      .or(`from_cnpj.eq.${cnpj},to_cnpj.eq.${cnpj}`);
-
-    if (error && (error.code === '42P01' || error.message?.includes('not found'))) {
-      const { error: retryError } = await supabase
-        .from('chat_messagens')
-        .delete()
-        .or(`from_cnpj.eq.${cnpj},to_cnpj.eq.${cnpj}`);
-      error = retryError;
-    }
-
-    if (error) {
-      console.error('Error clearing messages:', error);
-      toast.error('Erro ao limpar conversa');
-    } else {
-      setMessages(prev => prev.filter(m => m.from.cnpj !== cnpj && m.to?.cnpj !== cnpj));
-      toast.success('Conversa limpa com sucesso!');
-    }
+  const clearMessages = (cnpj: string) => {
+    if (!socketRef.current) return;
+    socketRef.current.emit('message:clear', { cnpj, role: userRole });
   };
 
   return { messages, setMessages, sendMessage, clearMessages, isConnected: isChatConnected };
