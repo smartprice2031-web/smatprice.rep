@@ -22,6 +22,30 @@ export default function SupportChat() {
   const [showScrollButton, setShowScrollButton] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
+  const handleReconnect = () => {
+    toast.promise(
+      new Promise((resolve) => {
+        // Re-trigger socket connection logic if needed, but io() handles it.
+        // We can just wait for isConnected to become true.
+        const check = setInterval(() => {
+          if (useStore.getState().isChatConnected) {
+            clearInterval(check);
+            resolve(true);
+          }
+        }, 500);
+        setTimeout(() => {
+          clearInterval(check);
+          resolve(false);
+        }, 5000);
+      }),
+      {
+        loading: 'Tentando reconectar...',
+        success: 'Conectado!',
+        error: 'Não foi possível conectar. Tente novamente mais tarde.'
+      }
+    );
+  };
+
   const handleScroll = () => {
     if (scrollRef.current) {
       const { scrollTop, scrollHeight, clientHeight } = scrollRef.current;
@@ -45,16 +69,20 @@ export default function SupportChat() {
   };
 
   useEffect(() => {
-    if (isSupportChatOpen) {
+    if (isSupportChatOpen && userRole === 'user') {
       setUnreadSupportCount(0);
     }
-  }, [isSupportChatOpen, setUnreadSupportCount]);
+  }, [isSupportChatOpen, userRole, setUnreadSupportCount]);
 
   useEffect(() => {
-    if (selectedUserCnpj) {
-      setUnreadPerUser(selectedUserCnpj, 0);
+    if (selectedUserCnpj && userRole === 'admin') {
+      const currentUnread = useStore.getState().unreadPerUser[selectedUserCnpj] || 0;
+      if (currentUnread > 0) {
+        setUnreadSupportCount(prev => Math.max(0, (typeof prev === 'number' ? prev : 0) - currentUnread));
+        setUnreadPerUser(selectedUserCnpj, 0);
+      }
     }
-  }, [selectedUserCnpj, setUnreadPerUser]);
+  }, [selectedUserCnpj, userRole, setUnreadSupportCount, setUnreadPerUser]);
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -109,12 +137,16 @@ export default function SupportChat() {
               <div className="flex items-center gap-2">
                 <h3 className="text-xl font-black tracking-tighter uppercase">Suporte SmartPrice</h3>
                 <div className={cn(
-                  "w-2 h-2 rounded-full animate-pulse",
-                  isConnected ? "bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]" : "bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.5)]"
+                  "w-2 h-2 rounded-full",
+                  isConnected ? "bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)] animate-pulse" : "bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.5)]"
                 )} />
               </div>
               <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">
-                {isConnected ? (userRole === 'admin' ? 'Central de Atendimento' : 'Enviar mensagem para o suporte') : 'Desconectado - Tentando reconectar...'}
+                {isConnected ? (userRole === 'admin' ? 'Central de Atendimento' : 'Enviar mensagem para o suporte') : (
+                  <button onClick={handleReconnect} className="text-red-500 hover:underline flex items-center gap-1">
+                    Desconectado - Clique para reconectar
+                  </button>
+                )}
               </p>
               {userRole === 'user' && (
                 <p className="text-[9px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-tighter mt-0.5">
@@ -180,7 +212,20 @@ export default function SupportChat() {
           )}
 
           {/* Chat Area */}
-          <div className="flex-grow flex flex-col bg-white dark:bg-zinc-900">
+          <div className="flex-grow flex flex-col bg-white dark:bg-zinc-900 relative">
+            {!isConnected && (
+              <div className="absolute top-0 left-0 right-0 bg-red-500/10 backdrop-blur-sm p-2 z-20 flex items-center justify-center gap-2 border-b border-red-500/20">
+                <AlertCircle className="w-4 h-4 text-red-500" />
+                <span className="text-[10px] font-bold text-red-600 uppercase tracking-widest">Conexão perdida. Tentando reconectar...</span>
+                <button 
+                  onClick={handleReconnect}
+                  className="px-2 py-0.5 bg-red-600 text-white text-[8px] font-black uppercase tracking-widest rounded hover:bg-red-700 transition-colors"
+                >
+                  Reconectar Agora
+                </button>
+              </div>
+            )}
+            
             {userRole === 'admin' && !selectedUserCnpj ? (
               <div className="flex-grow flex flex-col items-center justify-center p-12 text-center">
                 <div className="w-20 h-20 bg-zinc-100 dark:bg-zinc-800 rounded-full flex items-center justify-center mb-4">
@@ -284,17 +329,35 @@ export default function SupportChat() {
 
                 {/* Input Area */}
                 <div className="p-6 border-t border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900">
+                  {!isConnected && (
+                    <div className="mb-3 p-2 bg-red-50 dark:bg-red-900/10 rounded-xl border border-red-100 dark:border-red-900/20 flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <AlertCircle className="w-4 h-4 text-red-500" />
+                        <span className="text-[10px] font-bold text-red-600 uppercase tracking-widest">Você está offline</span>
+                      </div>
+                      <button 
+                        onClick={handleReconnect}
+                        className="text-[9px] font-black text-blue-600 uppercase tracking-widest hover:underline"
+                      >
+                        Reconectar
+                      </button>
+                    </div>
+                  )}
                   <form onSubmit={handleSendMessage} className="flex gap-3">
                     <input
                       type="text"
-                      placeholder="Digite sua mensagem..."
-                      className="flex-grow bg-zinc-100 dark:bg-zinc-800 border-none rounded-2xl px-6 py-4 text-sm focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+                      placeholder={isConnected ? "Digite sua mensagem..." : "Aguardando conexão..."}
+                      className={cn(
+                        "flex-grow bg-zinc-100 dark:bg-zinc-800 border-none rounded-2xl px-6 py-4 text-sm focus:ring-2 focus:ring-blue-500 outline-none transition-all",
+                        !isConnected && "opacity-50 cursor-not-allowed"
+                      )}
                       value={inputText}
                       onChange={(e) => setInputText(e.target.value)}
+                      disabled={!isConnected}
                     />
                     <button
                       type="submit"
-                      disabled={!inputText.trim()}
+                      disabled={!inputText.trim() || !isConnected}
                       className="bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:hover:bg-blue-600 text-white p-4 rounded-2xl shadow-lg shadow-blue-500/20 transition-all active:scale-95"
                     >
                       <Send className="w-5 h-5" />

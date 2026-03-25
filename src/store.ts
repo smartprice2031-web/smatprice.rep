@@ -95,6 +95,15 @@ export interface UserGroup {
   name: string;
 }
 
+export interface Announcement {
+  id: string;
+  title: string;
+  message: string;
+  targetType: 'all' | 'group' | 'cnpj';
+  targetValue?: string;
+  createdAt: string;
+}
+
 export type View = 'editor' | 'queue' | 'encarte';
 
 export interface SelectedProduct extends Product {
@@ -268,6 +277,16 @@ interface AppState {
   messages: any[];
   setMessages: (messages: any[] | ((prev: any[]) => any[])) => void;
   
+  // Announcements
+  announcements: Announcement[];
+  setAnnouncements: (announcements: Announcement[]) => void;
+  addAnnouncement: (announcement: Announcement) => void;
+  deleteAnnouncement: (id: string) => void;
+  isAnnouncementModalOpen: boolean;
+  setAnnouncementModalOpen: (open: boolean) => void;
+  seenAnnouncements: string[];
+  setSeenAnnouncements: (ids: string[]) => void;
+
   // Encarte Online
   encartes: EncarteSlot[];
   setEncartes: (encartes: EncarteSlot[]) => void;
@@ -701,6 +720,22 @@ export const useStore = create<AppState>()(
       setProductModalOpen: (open) => set({ isProductModalOpen: open }),
       isUserModalOpen: false,
       setUserModalOpen: (open) => set({ isUserModalOpen: open }),
+      isAnnouncementModalOpen: false,
+      setAnnouncementModalOpen: (open) => set({ isAnnouncementModalOpen: open }),
+      announcements: [],
+      setAnnouncements: (announcements) => set({ announcements }),
+      addAnnouncement: (announcement) => set((state) => {
+        const newAnnouncements = [...state.announcements, announcement];
+        state.saveUsersAndFlags();
+        return { announcements: newAnnouncements };
+      }),
+      deleteAnnouncement: (id) => set((state) => {
+        const newAnnouncements = state.announcements.filter(a => a.id !== id);
+        state.saveUsersAndFlags();
+        return { announcements: newAnnouncements };
+      }),
+      seenAnnouncements: [],
+      setSeenAnnouncements: (ids) => set({ seenAnnouncements: ids }),
       fetchProducts: async () => {
         if (!isSupabaseConfigured) {
           console.warn("Supabase not configured. Skipping fetch.");
@@ -1021,7 +1056,8 @@ export const useStore = create<AppState>()(
                 userGroups: state.userGroups,
                 encartes: state.encartes,
                 selectedEncarteModel: state.selectedEncarteModel,
-                layouts: state.layouts
+                layouts: state.layouts,
+                announcements: state.announcements
               } 
             });
           if (error) throw error;
@@ -1049,7 +1085,8 @@ export const useStore = create<AppState>()(
               userGroups: data.value.userGroups || [],
               encartes: data.value.encartes || get().encartes,
               selectedEncarteModel: data.value.selectedEncarteModel || get().selectedEncarteModel,
-              layouts: data.value.layouts || get().layouts
+              layouts: data.value.layouts || get().layouts,
+              announcements: data.value.announcements || []
             });
           }
         } catch (error) {
@@ -1134,6 +1171,7 @@ export const useStore = create<AppState>()(
         currentView: state.currentView,
         encartes: state.encartes,
         selectedEncarteModel: state.selectedEncarteModel,
+        announcements: state.announcements,
       }),
     }
   )

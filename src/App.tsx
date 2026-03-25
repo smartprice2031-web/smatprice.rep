@@ -6,6 +6,7 @@ import ProductSelector from './components/ProductSelector';
 import Adjustments from './components/Adjustments';
 import PrintQueue from './components/PrintQueue';
 import UserManagement from './components/UserManagement';
+import AnnouncementManager from './components/AnnouncementManager';
 import SupportChat from './components/SupportChat';
 import Login from './components/Login';
 import EncarteCreator from './components/EncarteCreator';
@@ -14,7 +15,7 @@ import {
   LayoutDashboard, Package, Settings as SettingsIcon,
   ShoppingBag, Search, Database, X, ListPlus, LayoutGrid,
   ArrowLeft, LogOut, Users, MessageCircle, AlertTriangle,
-  RefreshCw, Layout
+  RefreshCw, Layout, Megaphone
 } from 'lucide-react';
 import { jsPDF } from 'jspdf';
 import { clsx, type ClassValue } from 'clsx';
@@ -39,7 +40,9 @@ export default function App() {
     isSupportChatOpen, setSupportChatOpen, unreadSupportCount,
     activeLayoutIndex, layouts, setActiveLayout,
     currentUser, allowedStores, lastLoginTimestamp,
-    saveUsersAndFlags, loadUsersAndFlags
+    saveUsersAndFlags, loadUsersAndFlags,
+    announcements, seenAnnouncements, setSeenAnnouncements,
+    isAnnouncementModalOpen, setAnnouncementModalOpen
   } = useStore();
   const [activeTab, setActiveTab] = useState<'select' | 'adjustments'>('select');
 
@@ -88,6 +91,35 @@ export default function App() {
       setActiveTab('select');
     }
   }, [userRole, activeTab]);
+
+  useEffect(() => {
+    if (isAuthenticated && announcements.length > 0 && currentUser) {
+      const userCnpj = currentUser.cnpj.replace(/[^\d]/g, '');
+      const store = allowedStores.find(s => s.cnpj.replace(/[^\d]/g, '') === userCnpj);
+      const userGroupId = store?.groupId;
+
+      const relevantAnnouncements = announcements.filter(ann => {
+        if (seenAnnouncements.includes(ann.id)) return false;
+
+        if (ann.targetType === 'all') return true;
+        if (ann.targetType === 'group' && ann.targetValue === userGroupId) return true;
+        if (ann.targetType === 'cnpj' && ann.targetValue?.replace(/[^\d]/g, '') === userCnpj) return true;
+
+        return false;
+      });
+
+      if (relevantAnnouncements.length > 0) {
+        relevantAnnouncements.forEach(ann => {
+          toast.info(ann.title, {
+            description: ann.message,
+            duration: 10000,
+            icon: <Megaphone className="w-5 h-5 text-blue-600" />
+          });
+        });
+        setSeenAnnouncements([...seenAnnouncements, ...relevantAnnouncements.map(a => a.id)]);
+      }
+    }
+  }, [isAuthenticated, announcements, currentUser, allowedStores, seenAnnouncements, setSeenAnnouncements]);
 
   useEffect(() => {
     // Force logout on fresh access (new tab/window)
@@ -394,6 +426,16 @@ export default function App() {
 
             {userRole === 'admin' && (
               <button 
+                onClick={() => setAnnouncementModalOpen(true)}
+                className="flex items-center gap-2 px-4 py-2 bg-amber-500 text-white rounded-xl transition-all text-xs font-black uppercase tracking-tighter shadow-lg hover:bg-amber-600 hover:scale-105 active:scale-95"
+              >
+                <Megaphone className="w-4 h-4" />
+                Comunicados
+              </button>
+            )}
+
+            {userRole === 'admin' && (
+              <button 
                 onClick={() => setUserModalOpen(true)}
                 className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl transition-all text-xs font-black uppercase tracking-tighter shadow-lg hover:bg-blue-700 hover:scale-105 active:scale-95"
               >
@@ -637,6 +679,34 @@ export default function App() {
       )}
       <SupportChat />
       
+      {/* Announcement Management Modal */}
+      {isAnnouncementModalOpen && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 no-print">
+          <div className="bg-white dark:bg-zinc-900 w-full max-w-4xl max-h-[90vh] rounded-3xl shadow-2xl overflow-hidden flex flex-col">
+            <div className="p-6 border-b border-zinc-200 dark:border-zinc-800 flex justify-between items-center bg-zinc-50 dark:bg-zinc-800/50">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-amber-500 rounded-lg text-white">
+                  <Megaphone className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold">Gerenciar Comunicados</h3>
+                  <p className="text-xs text-zinc-500">Envie avisos importantes para os usuários</p>
+                </div>
+              </div>
+              <button 
+                onClick={() => setAnnouncementModalOpen(false)} 
+                className="p-2 hover:bg-zinc-200 dark:hover:bg-zinc-700 rounded-full transition-colors"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+            <div className="flex-grow overflow-y-auto">
+              <AnnouncementManager />
+            </div>
+          </div>
+        </div>
+      )}
+
       <Toaster position="top-right" richColors closeButton />
     </div>
   );

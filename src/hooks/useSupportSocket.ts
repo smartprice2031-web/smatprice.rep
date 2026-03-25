@@ -34,7 +34,12 @@ export function useSupportSocket() {
     // Connect to Socket.io
     const socket = io(window.location.origin, {
       path: '/socket.io/',
-      transports: ['websocket', 'polling']
+      transports: ['websocket', 'polling'],
+      reconnection: true,
+      reconnectionAttempts: Infinity,
+      reconnectionDelay: 1000,
+      reconnectionDelayMax: 5000,
+      timeout: 20000,
     });
 
     socketRef.current = socket;
@@ -96,17 +101,33 @@ export function useSupportSocket() {
         }
 
         if (shouldNotify) {
-          setUnreadSupportCount(prev => (typeof prev === 'number' ? prev + 1 : 1));
           const senderName = newMessage.from.role === 'admin' ? 'Suporte SmartPrice' : newMessage.from.username;
           
-          if ("Notification" in window && Notification.permission === "granted") {
-            new Notification(`Nova mensagem de ${senderName}`, { body: newMessage.text });
+          if (userRole === 'admin' && newMessage.from.role === 'user') {
+            if (newMessage.from.cnpj !== state.selectedUserCnpj) {
+              setUnreadPerUser(newMessage.from.cnpj, prev => {
+                const newCount = typeof prev === 'number' ? prev + 1 : 1;
+                // Update global count for admins
+                setUnreadSupportCount(current => (typeof current === 'number' ? current + 1 : 1));
+                return newCount;
+              });
+            }
+          } else if (userRole === 'user' && newMessage.from.role === 'admin') {
+            setUnreadSupportCount(prev => (typeof prev === 'number' ? prev + 1 : 1));
           }
 
-          toast.info(`Nova mensagem de ${senderName}`, {
+          if ("Notification" in window && Notification.permission === "granted") {
+            new Notification(`Nova mensagem de ${senderName}`, { 
+              body: newMessage.text,
+              icon: '/favicon.ico'
+            });
+          }
+
+          toast.info(`Mensagem de ${senderName}`, {
             description: newMessage.text,
+            duration: 8000,
             action: {
-              label: 'Ver',
+              label: 'Responder',
               onClick: () => {
                 useStore.getState().setSupportChatOpen(true);
                 if (userRole === 'admin' && newMessage.from.cnpj) {
@@ -130,6 +151,12 @@ export function useSupportSocket() {
 
   const sendMessage = (text: string, toCnpj?: string) => {
     if (!socketRef.current || !currentUser) return;
+
+    if (!socketRef.current.connected) {
+      toast.error('Chat desconectado. Tentando reconectar...');
+      socketRef.current.connect();
+      return;
+    }
 
     const targetStore = toCnpj ? useStore.getState().allowedStores.find(s => s.cnpj === toCnpj) : null;
 
