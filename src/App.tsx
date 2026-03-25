@@ -427,10 +427,10 @@ export default function App() {
             {userRole === 'admin' && (
               <button 
                 onClick={() => setAnnouncementModalOpen(true)}
-                className="flex items-center gap-2 px-4 py-2 bg-amber-500 text-white rounded-xl transition-all text-xs font-black uppercase tracking-tighter shadow-lg hover:bg-amber-600 hover:scale-105 active:scale-95"
+                className="flex items-center justify-center w-10 h-10 bg-amber-500 text-white rounded-xl transition-all shadow-lg hover:bg-amber-600 hover:scale-105 active:scale-95"
+                title="Comunicados"
               >
-                <Megaphone className="w-4 h-4" />
-                Comunicados
+                <Megaphone className="w-5 h-5" />
               </button>
             )}
 

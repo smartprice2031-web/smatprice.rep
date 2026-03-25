@@ -155,11 +155,16 @@ export default function SupportChat() {
               </div>
               <p className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest">
                 {isConnected ? (userRole === 'admin' ? 'Central de Atendimento' : 'Suporte Online') : (
-                  <span className="text-emerald-600/50 flex items-center gap-1 animate-pulse">
+                  <span className="text-amber-600 flex items-center gap-1 animate-pulse">
                     Sincronizando...
                   </span>
                 )}
               </p>
+              {userRole === 'user' && (
+                <p className="text-[9px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-tighter mt-0.5">
+                  Adm: (99) 9 8470-1752 | (99) 9 8199-0035
+                </p>
+              )}
             </div>
           </div>
           <button 
