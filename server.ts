@@ -82,7 +82,7 @@ async function startServer() {
 
     socket.on("user:join", async (userData) => {
       if (!userData) return;
-      const cnpj = String(userData.cnpj || '');
+      const cnpj = String(userData.cnpj || '').replace(/[^\d]/g, '');
       const username = String(userData.username || 'Unknown');
       const role = String(userData.role || 'user');
 

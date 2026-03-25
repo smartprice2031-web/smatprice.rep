@@ -31,6 +31,18 @@ export function useSupportSocket() {
   useEffect(() => {
     if (!currentUser) return;
 
+    const emitJoin = () => {
+      if (globalSocket?.connected) {
+        const normalizedCnpj = currentUser.cnpj.replace(/[^\d]/g, '');
+        console.log('Emitting user:join', currentUser.username, normalizedCnpj);
+        globalSocket.emit('user:join', {
+          username: currentUser.username,
+          cnpj: normalizedCnpj,
+          role: userRole
+        });
+      }
+    };
+
     if (!globalSocket) {
       // Connect to Socket.io
       globalSocket = io(window.location.origin, {
@@ -46,13 +58,7 @@ export function useSupportSocket() {
       globalSocket.on('connect', () => {
         console.log('Chat connected');
         setIsChatConnected(true);
-        
-        // Join relevant rooms
-        globalSocket?.emit('user:join', {
-          username: currentUser.username,
-          cnpj: currentUser.cnpj,
-          role: userRole
-        });
+        emitJoin();
       });
 
       globalSocket.on('disconnect', () => {
@@ -75,7 +81,9 @@ export function useSupportSocket() {
 
         // Handle notifications
         const state = useStore.getState();
-        const isFromMe = newMessage.from.cnpj === currentUser.cnpj && newMessage.from.username === currentUser.username;
+        const normalizedUserCnpj = currentUser.cnpj.replace(/[^\d]/g, '');
+        const normalizedFromCnpj = newMessage.from.cnpj.replace(/[^\d]/g, '');
+        const isFromMe = normalizedFromCnpj === normalizedUserCnpj && newMessage.from.username === currentUser.username;
         
         if (!isFromMe) {
           // Play sound
@@ -91,12 +99,6 @@ export function useSupportSocket() {
             }
           } else if (document.hidden) {
             shouldNotify = true;
-          }
-
-          if (userRole === 'admin' && newMessage.from.role === 'user') {
-            if (newMessage.from.cnpj !== state.selectedUserCnpj) {
-              setUnreadPerUser(newMessage.from.cnpj, prev => (typeof prev === 'number' ? prev + 1 : 1));
-            }
           }
 
           if (shouldNotify) {
@@ -142,6 +144,14 @@ export function useSupportSocket() {
       globalSocket.on('message:cleared', ({ cnpj }: { cnpj: string }) => {
         setMessages(prev => prev.filter(m => m.from.cnpj !== cnpj && m.to?.cnpj !== cnpj));
       });
+    } else {
+      // Socket already exists, but currentUser or userRole might have changed
+      emitJoin();
+    }
+
+    // Request notification permission
+    if ("Notification" in window && Notification.permission === "default") {
+      Notification.requestPermission();
     }
 
     return () => {
@@ -150,19 +160,22 @@ export function useSupportSocket() {
     };
   }, [currentUser, userRole, setMessages, setUnreadPerUser, setUnreadSupportCount, setIsChatConnected]);
 
+
   const sendMessage = (text: string, toCnpj?: string) => {
     if (!globalSocket || !currentUser) return;
 
-    const targetStore = toCnpj ? useStore.getState().allowedStores.find(s => s.cnpj === toCnpj) : null;
+    const normalizedToCnpj = toCnpj ? toCnpj.replace(/[^\d]/g, '') : undefined;
+    const normalizedFromCnpj = currentUser.cnpj.replace(/[^\d]/g, '');
+    const targetStore = toCnpj ? useStore.getState().allowedStores.find(s => s.cnpj.replace(/[^\d]/g, '') === normalizedToCnpj) : null;
 
     const messageData = {
       from: {
         username: currentUser.username,
-        cnpj: currentUser.cnpj,
+        cnpj: normalizedFromCnpj,
         role: userRole
       },
-      to: toCnpj ? {
-        cnpj: toCnpj,
+      to: normalizedToCnpj ? {
+        cnpj: normalizedToCnpj,
         username: targetStore?.bandeira || null
       } : null,
       text,

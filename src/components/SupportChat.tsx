@@ -103,13 +103,14 @@ export default function SupportChat() {
   // If user: only show messages between them and admin
   // If admin: show all messages, but maybe group by user
   const filteredMessages = userRole === 'admin' 
-    ? (selectedUserCnpj ? messages.filter(m => m.from.cnpj === selectedUserCnpj || m.to?.cnpj === selectedUserCnpj) : [])
+    ? (selectedUserCnpj ? messages.filter(m => m.from.cnpj.replace(/[^\d]/g, '') === selectedUserCnpj.replace(/[^\d]/g, '') || m.to?.cnpj?.replace(/[^\d]/g, '') === selectedUserCnpj.replace(/[^\d]/g, '')) : [])
     : messages;
 
   // For admin: get list of all authorized users
   const chatUsers = userRole === 'admin' 
     ? allowedStores.map(store => {
-        const lastMsg = [...messages].reverse().find(m => m.from.cnpj === store.cnpj || m.to?.cnpj === store.cnpj);
+        const normalizedStoreCnpj = store.cnpj.replace(/[^\d]/g, '');
+        const lastMsg = [...messages].reverse().find(m => m.from.cnpj.replace(/[^\d]/g, '') === normalizedStoreCnpj || m.to?.cnpj?.replace(/[^\d]/g, '') === normalizedStoreCnpj);
         return { 
           cnpj: store.cnpj, 
           username: store.cnpj, // Using CNPJ as username if not found in messages
@@ -205,9 +206,9 @@ export default function SupportChat() {
                       </div>
                       <p className="text-[9px] text-zinc-500 truncate">{user.cnpj}</p>
                     </div>
-                    {unreadPerUser[user.cnpj] > 0 && (
+                    {unreadPerUser[user.cnpj.replace(/[^\d]/g, '')] > 0 && (
                       <div className="bg-red-500 text-white text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center flex-shrink-0">
-                        {unreadPerUser[user.cnpj]}
+                        {unreadPerUser[user.cnpj.replace(/[^\d]/g, '')]}
                       </div>
                     )}
                   </button>
@@ -292,9 +293,11 @@ export default function SupportChat() {
                   )}
 
                   {filteredMessages.map((msg, idx) => {
-                    const isMe = msg.from.cnpj === currentUser?.cnpj && msg.from.username === currentUser?.username;
+                    const normalizedUserCnpj = currentUser?.cnpj.replace(/[^\d]/g, '');
+                    const normalizedFromCnpj = msg.from.cnpj.replace(/[^\d]/g, '');
+                    const isMe = normalizedFromCnpj === normalizedUserCnpj && msg.from.username === currentUser?.username;
                     const prevMsg = idx > 0 ? filteredMessages[idx - 1] : null;
-                    const isFirstInGroup = !prevMsg || prevMsg.from.cnpj !== msg.from.cnpj;
+                    const isFirstInGroup = !prevMsg || prevMsg.from.cnpj.replace(/[^\d]/g, '') !== normalizedFromCnpj;
                     
                     return (
                       <div 
