@@ -146,7 +146,7 @@ export default function SupportChat() {
             <div>
               <div className="flex items-center gap-2">
                 <h3 className={cn(
-                  "font-black tracking-tighter uppercase",
+                  "font-black tracking-tighter uppercase text-black dark:text-white",
                   userRole === 'admin' ? "text-base" : "text-xl"
                 )}>Suporte SmartPrice</h3>
                 <div className={cn(
@@ -311,8 +311,8 @@ export default function SupportChat() {
                         <div className={cn(
                           "relative max-w-[85%] px-3 py-1.5 shadow-sm",
                           isMe 
-                            ? "bg-[#dcf8c6] dark:bg-emerald-900/40 text-zinc-900 dark:text-zinc-100 rounded-lg rounded-tr-none" 
-                            : "bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 rounded-lg rounded-tl-none"
+                            ? "bg-[#dcf8c6] dark:bg-emerald-900/40 text-black dark:text-white rounded-lg rounded-tr-none" 
+                            : "bg-white dark:bg-zinc-800 text-black dark:text-white rounded-lg rounded-tl-none"
                         )}>
                           {/* Tail */}
                           {isFirstInGroup && (
@@ -362,7 +362,7 @@ export default function SupportChat() {
                     <input
                       type="text"
                       placeholder="Digite sua mensagem..."
-                      className="flex-grow bg-zinc-100 dark:bg-zinc-800 border-none rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+                      className="flex-grow bg-zinc-100 dark:bg-zinc-800 border-none rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none transition-all text-black dark:text-white"
                       value={inputText}
                       onChange={(e) => setInputText(e.target.value)}
                     />

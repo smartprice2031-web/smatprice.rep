@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { useStore } from '../store';
 import { toast } from 'sonner';
-import { io, Socket } from 'socket.io-client';
+import { supabase, isSupabaseConfigured } from '../lib/supabase';
 
 export interface Message {
   id: string;
@@ -18,8 +18,6 @@ export interface Message {
   timestamp: string;
 }
 
-let globalSocket: Socket | null = null;
-
 export function useSupportSocket() {
   const { 
     currentUser, userRole, 
@@ -28,166 +26,235 @@ export function useSupportSocket() {
     setIsChatConnected, isChatConnected
   } = useStore();
 
-  useEffect(() => {
-    if (!currentUser) return;
+  const cleanupOldMessages = async () => {
+    if (!isSupabaseConfigured) return;
+    const sixHoursAgo = new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString();
+    
+    try {
+      const { error } = await supabase
+        .from('support_messages')
+        .delete()
+        .lt('created_at', sixHoursAgo);
+      
+      if (error) console.error('Error cleaning up old messages:', error);
+    } catch (err) {
+      console.error('Failed to cleanup messages:', err);
+    }
+  };
 
-    const emitJoin = () => {
-      if (globalSocket?.connected) {
-        const normalizedCnpj = currentUser.cnpj.replace(/[^\d]/g, '');
-        console.log('Emitting user:join', currentUser.username, normalizedCnpj);
-        globalSocket.emit('user:join', {
-          username: currentUser.username,
-          cnpj: normalizedCnpj,
-          role: userRole
-        });
+  const fetchMessages = async () => {
+    if (!isSupabaseConfigured || !currentUser) return;
+    
+    // Cleanup first
+    await cleanupOldMessages();
+
+    const sixHoursAgo = new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString();
+    
+    try {
+      const { data, error } = await supabase
+        .from('support_messages')
+        .select('*')
+        .gt('created_at', sixHoursAgo)
+        .order('created_at', { ascending: true });
+
+      if (error) throw error;
+
+      if (data) {
+        const mappedMessages: Message[] = data.map(m => ({
+          id: m.id,
+          from: {
+            username: m.from_username,
+            cnpj: m.from_cnpj,
+            role: m.from_role as 'user' | 'admin'
+          },
+          to: m.to_cnpj ? {
+            cnpj: m.to_cnpj,
+            username: m.to_username
+          } : undefined,
+          text: m.text,
+          timestamp: m.created_at
+        }));
+        setMessages(mappedMessages);
       }
-    };
+    } catch (err) {
+      console.error('Error fetching messages:', err);
+    }
+  };
 
-    if (!globalSocket) {
-      // Connect to Socket.io
-      globalSocket = io(window.location.origin, {
-        path: '/socket.io/',
-        transports: ['polling', 'websocket'],
-        reconnection: true,
-        reconnectionAttempts: Infinity,
-        reconnectionDelay: 1000,
-        reconnectionDelayMax: 5000,
-        timeout: 20000,
-      });
+  useEffect(() => {
+    if (!currentUser || !isSupabaseConfigured) return;
 
-      globalSocket.on('connect', () => {
-        console.log('Chat connected');
-        setIsChatConnected(true);
-        emitJoin();
-      });
+    fetchMessages();
+    setIsChatConnected(true);
 
-      globalSocket.on('disconnect', () => {
-        console.log('Chat disconnected');
-        setIsChatConnected(false);
-      });
+    const channel = supabase
+      .channel('support_messages_realtime')
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'support_messages' },
+        (payload) => {
+          const newMessage = payload.new;
+          const mappedMessage: Message = {
+            id: newMessage.id,
+            from: {
+              username: newMessage.from_username,
+              cnpj: newMessage.from_cnpj,
+              role: newMessage.from_role as 'user' | 'admin'
+            },
+            to: newMessage.to_cnpj ? {
+              cnpj: newMessage.to_cnpj,
+              username: newMessage.to_username
+            } : undefined,
+            text: newMessage.text,
+            timestamp: newMessage.created_at
+          };
 
-      globalSocket.on('message:history', (history: Message[]) => {
-        // Filter for last 6 hours just in case server sends more
-        const sixHoursAgo = Date.now() - 6 * 60 * 60 * 1000;
-        const filtered = history.filter(m => new Date(m.timestamp).getTime() > sixHoursAgo);
-        setMessages(filtered);
-      });
+          setMessages(prev => {
+            if (prev.some(existing => existing.id === mappedMessage.id)) return prev;
+            return [...prev, mappedMessage];
+          });
 
-      globalSocket.on('message:receive', (newMessage: Message) => {
-        setMessages(prev => {
-          if (prev.some(existing => existing.id === newMessage.id)) return prev;
-          return [...prev, newMessage];
-        });
+          // Handle notifications
+          const state = useStore.getState();
+          const normalizedUserCnpj = currentUser.cnpj.replace(/[^\d]/g, '');
+          const normalizedFromCnpj = mappedMessage.from.cnpj.replace(/[^\d]/g, '');
+          const isFromMe = normalizedFromCnpj === normalizedUserCnpj && mappedMessage.from.username === currentUser.username;
+          
+          if (!isFromMe) {
+            // Play sound
+            const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3');
+            audio.play().catch(e => console.log('Audio play blocked'));
 
-        // Handle notifications
-        const state = useStore.getState();
-        const normalizedUserCnpj = currentUser.cnpj.replace(/[^\d]/g, '');
-        const normalizedFromCnpj = newMessage.from.cnpj.replace(/[^\d]/g, '');
-        const isFromMe = normalizedFromCnpj === normalizedUserCnpj && newMessage.from.username === currentUser.username;
-        
-        if (!isFromMe) {
-          // Play sound
-          const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3');
-          audio.play().catch(e => console.log('Audio play blocked'));
-
-          let shouldNotify = false;
-          if (!state.isSupportChatOpen) {
-            shouldNotify = true;
-          } else if (userRole === 'admin') {
-            if (newMessage.from.cnpj !== state.selectedUserCnpj) {
+            let shouldNotify = false;
+            if (!state.isSupportChatOpen) {
+              shouldNotify = true;
+            } else if (userRole === 'admin') {
+              if (mappedMessage.from.cnpj !== state.selectedUserCnpj) {
+                shouldNotify = true;
+              }
+            } else if (document.hidden) {
               shouldNotify = true;
             }
-          } else if (document.hidden) {
-            shouldNotify = true;
-          }
 
-          if (shouldNotify) {
-            const senderName = newMessage.from.role === 'admin' ? 'Suporte SmartPrice' : newMessage.from.username;
-            
-            if (userRole === 'admin' && newMessage.from.role === 'user') {
-              if (newMessage.from.cnpj !== state.selectedUserCnpj) {
-                setUnreadPerUser(newMessage.from.cnpj, prev => {
-                  const newCount = typeof prev === 'number' ? prev + 1 : 1;
-                  // Update global count for admins
-                  setUnreadSupportCount(current => (typeof current === 'number' ? current + 1 : 1));
-                  return newCount;
+            if (shouldNotify) {
+              const senderName = mappedMessage.from.role === 'admin' ? 'Suporte SmartPrice' : mappedMessage.from.username;
+              
+              if (userRole === 'admin' && mappedMessage.from.role === 'user') {
+                if (mappedMessage.from.cnpj !== state.selectedUserCnpj) {
+                  setUnreadPerUser(mappedMessage.from.cnpj, prev => {
+                    const newCount = typeof prev === 'number' ? prev + 1 : 1;
+                    setUnreadSupportCount(current => (typeof current === 'number' ? current + 1 : 1));
+                    return newCount;
+                  });
+                }
+              } else if (userRole === 'user' && mappedMessage.from.role === 'admin') {
+                setUnreadSupportCount(prev => (typeof prev === 'number' ? prev + 1 : 1));
+              }
+
+              if ("Notification" in window && Notification.permission === "granted") {
+                new Notification(`Nova mensagem de ${senderName}`, { 
+                  body: mappedMessage.text,
+                  icon: '/favicon.ico'
                 });
               }
-            } else if (userRole === 'user' && newMessage.from.role === 'admin') {
-              setUnreadSupportCount(prev => (typeof prev === 'number' ? prev + 1 : 1));
-            }
 
-            if ("Notification" in window && Notification.permission === "granted") {
-              new Notification(`Nova mensagem de ${senderName}`, { 
-                body: newMessage.text,
-                icon: '/favicon.ico'
-              });
-            }
-
-            toast.info(`Mensagem de ${senderName}`, {
-              description: newMessage.text,
-              duration: 8000,
-              action: {
-                label: 'Responder',
-                onClick: () => {
-                  useStore.getState().setSupportChatOpen(true);
-                  if (userRole === 'admin' && newMessage.from.cnpj) {
-                    useStore.getState().setSelectedUserCnpj(newMessage.from.cnpj);
+              toast.info(`Mensagem de ${senderName}`, {
+                description: mappedMessage.text,
+                duration: 8000,
+                action: {
+                  label: 'Responder',
+                  onClick: () => {
+                    useStore.getState().setSupportChatOpen(true);
+                    if (userRole === 'admin' && mappedMessage.from.cnpj) {
+                      useStore.getState().setSelectedUserCnpj(mappedMessage.from.cnpj);
+                    }
                   }
                 }
-              }
-            });
+              });
+            }
           }
         }
+      )
+      .on(
+        'postgres_changes',
+        { event: 'DELETE', schema: 'public', table: 'support_messages' },
+        (payload) => {
+          const deletedId = payload.old.id;
+          setMessages(prev => prev.filter(m => m.id !== deletedId));
+        }
+      )
+      .subscribe((status) => {
+        if (status === 'SUBSCRIBED') {
+          setIsChatConnected(true);
+        } else if (status === 'CLOSED' || status === 'CHANNEL_ERROR') {
+          setIsChatConnected(false);
+        }
       });
-
-      globalSocket.on('message:cleared', ({ cnpj }: { cnpj: string }) => {
-        setMessages(prev => prev.filter(m => m.from.cnpj !== cnpj && m.to?.cnpj !== cnpj));
-      });
-    } else {
-      // Socket already exists, but currentUser or userRole might have changed
-      emitJoin();
-    }
 
     // Request notification permission
     if ("Notification" in window && Notification.permission === "default") {
       Notification.requestPermission();
     }
 
+    // Set up periodic cleanup (every 30 minutes)
+    const cleanupInterval = setInterval(cleanupOldMessages, 30 * 60 * 1000);
+
     return () => {
-      // Don't disconnect here if we want background notifications
-      // socket.disconnect();
+      supabase.removeChannel(channel);
+      clearInterval(cleanupInterval);
     };
   }, [currentUser, userRole, setMessages, setUnreadPerUser, setUnreadSupportCount, setIsChatConnected]);
 
 
-  const sendMessage = (text: string, toCnpj?: string) => {
-    if (!globalSocket || !currentUser) return;
+  const sendMessage = async (text: string, toCnpj?: string) => {
+    if (!isSupabaseConfigured || !currentUser || !userRole) return;
 
     const normalizedToCnpj = toCnpj ? toCnpj.replace(/[^\d]/g, '') : undefined;
     const normalizedFromCnpj = currentUser.cnpj.replace(/[^\d]/g, '');
     const targetStore = toCnpj ? useStore.getState().allowedStores.find(s => s.cnpj.replace(/[^\d]/g, '') === normalizedToCnpj) : null;
 
-    const messageData = {
-      from: {
-        username: currentUser.username,
-        cnpj: normalizedFromCnpj,
-        role: userRole
-      },
-      to: normalizedToCnpj ? {
-        cnpj: normalizedToCnpj,
-        username: targetStore?.bandeira || null
-      } : null,
-      text,
-      timestamp: new Date().toISOString()
-    };
+    try {
+      const { error } = await supabase
+        .from('support_messages')
+        .insert({
+          from_username: currentUser.username,
+          from_cnpj: normalizedFromCnpj,
+          from_role: userRole,
+          to_cnpj: normalizedToCnpj || null,
+          to_username: targetStore?.bandeira || null,
+          text: text,
+          created_at: new Date().toISOString()
+        });
 
-    globalSocket.emit('message:send', messageData);
+      if (error) throw error;
+    } catch (err) {
+      console.error('Error sending message:', err);
+      toast.error('Erro ao enviar mensagem');
+    }
   };
 
-  const clearMessages = (cnpj: string) => {
-    if (!globalSocket) return;
-    globalSocket.emit('message:clear', { cnpj, role: userRole });
+  const clearMessages = async (cnpj: string) => {
+    if (!isSupabaseConfigured) return;
+    
+    const normalizedCnpj = cnpj.replace(/[^\d]/g, '');
+    
+    try {
+      // Delete messages from/to this CNPJ
+      const { error } = await supabase
+        .from('support_messages')
+        .delete()
+        .or(`from_cnpj.eq.${normalizedCnpj},to_cnpj.eq.${normalizedCnpj}`);
+
+      if (error) throw error;
+      
+      setMessages(prev => prev.filter(m => 
+        m.from.cnpj.replace(/[^\d]/g, '') !== normalizedCnpj && 
+        m.to?.cnpj?.replace(/[^\d]/g, '') !== normalizedCnpj
+      ));
+    } catch (err) {
+      console.error('Error clearing messages:', err);
+      toast.error('Erro ao limpar mensagens');
+    }
   };
 
   return { messages, setMessages, sendMessage, clearMessages, isConnected: isChatConnected };
