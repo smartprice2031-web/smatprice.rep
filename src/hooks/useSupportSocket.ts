@@ -1,7 +1,7 @@
-import { useEffect, useRef, useState } from 'react';
-import { io, Socket } from 'socket.io-client';
+import { useEffect, useState } from 'react';
 import { useStore } from '../store';
 import { toast } from 'sonner';
+import { supabase, isSupabaseConfigured } from '../lib/supabase';
 
 export interface Message {
   id: string;
@@ -19,9 +19,6 @@ export interface Message {
   timestamp: string;
 }
 
-let socketInstance: Socket | null = null;
-let listenersAttached = false;
-
 export function useSupportSocket() {
   const { 
     currentUser, userRole, 
@@ -31,192 +28,200 @@ export function useSupportSocket() {
   } = useStore();
 
   useEffect(() => {
-    if (!currentUser) return;
+    if (!currentUser || !isSupabaseConfigured) return;
 
-    if (!socketInstance) {
-      socketInstance = io({
-        path: '/socket.io/',
-        transports: ['polling', 'websocket'],
-        reconnectionAttempts: 20,
-        reconnectionDelay: 1000,
-        timeout: 10000
-      });
-    }
-
-    const socket = socketInstance;
-
-    const onConnect = () => {
-      console.log('Connected to support server with ID:', socket.id);
-      setIsChatConnected(true);
-      socket.emit('user:join', { ...currentUser, role: userRole });
+    // Initial fetch of messages
+    const fetchMessages = async () => {
+      const sixHoursAgo = new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString();
       
-      // Request notification permission
-      if ("Notification" in window && Notification.permission === "default") {
-        Notification.requestPermission();
+      const { data, error } = await supabase
+        .from('chat_messages')
+        .select('*')
+        .gt('created_at', sixHoursAgo)
+        .order('created_at', { ascending: true });
+
+      if (error) {
+        console.error('Error fetching messages:', error);
+        return;
       }
-    };
 
-    const onConnectError = (err: any) => {
-      console.error('Socket connection error details:', err.message, err);
-      setIsChatConnected(false);
-    };
+      const formattedMessages: Message[] = data.map(m => ({
+        id: m.id,
+        text: m.text,
+        timestamp: m.created_at,
+        from: {
+          cnpj: m.from_cnpj,
+          username: m.from_username,
+          role: m.from_role
+        },
+        to: m.to_cnpj ? { cnpj: m.to_cnpj } : undefined,
+        attachment: m.attachment,
+        attachmentType: m.attachment_type
+      }));
 
-    const onReconnect = (attempt: number) => {
-      console.log('Socket reconnected after', attempt, 'attempts');
+      // Filter messages for the user
+      const filtered = formattedMessages.filter(m => 
+        userRole === 'admin' || m.from.cnpj === currentUser.cnpj || m.to?.cnpj === currentUser.cnpj
+      );
+
+      setMessages(filtered);
       setIsChatConnected(true);
-      toast.success('Chat de suporte reconectado!');
     };
 
-    const onDisconnect = () => {
-      console.log('Socket disconnected');
-      setIsChatConnected(false);
-    };
+    fetchMessages();
 
-    const onHistory = (history: Message[]) => {
-      setMessages(history);
-    };
+    // Subscribe to new messages
+    const channel = supabase
+      .channel('chat_messages_realtime')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'chat_messages' }, (payload) => {
+        const m = payload.new;
+        const newMessage: Message = {
+          id: m.id,
+          text: m.text,
+          timestamp: m.created_at,
+          from: {
+            cnpj: m.from_cnpj,
+            username: m.from_username,
+            role: m.from_role
+          },
+          to: m.to_cnpj ? { cnpj: m.to_cnpj } : undefined,
+          attachment: m.attachment,
+          attachmentType: m.attachment_type
+        };
 
-    const onReceive = (message: Message) => {
-      // Avoid duplicate messages in state
-      setMessages(prev => {
-        if (prev.some(m => m.id === message.id)) return prev;
-        return [...prev, message];
-      });
-      
-      const state = useStore.getState();
-      const isFromMe = message.from.cnpj === currentUser.cnpj && message.from.username === currentUser.username;
-      
-      if (!isFromMe) {
-        // Always play sound for incoming messages
-        const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3');
-        audio.play().catch(e => console.log('Audio play blocked by browser policy'));
+        // Check if message is relevant to this user
+        const isRelevant = userRole === 'admin' || 
+                           newMessage.from.cnpj === currentUser.cnpj || 
+                           newMessage.to?.cnpj === currentUser.cnpj;
 
-        // Notification logic
-        let shouldNotify = false;
-        
-        if (!state.isSupportChatOpen) {
-          shouldNotify = true;
-        } else if (userRole === 'admin') {
-          if (message.from.cnpj !== state.selectedUserCnpj) {
-            shouldNotify = true;
-          }
-        } else {
-          if (document.hidden) {
-            shouldNotify = true;
-          }
-        }
+        if (isRelevant) {
+          setMessages(prev => {
+            if (prev.some(existing => existing.id === newMessage.id)) return prev;
+            return [...prev, newMessage];
+          });
 
-        // Update unread counts
-        if (userRole === 'admin' && message.from.cnpj && message.from.role === 'user') {
-          if (message.from.cnpj !== state.selectedUserCnpj) {
-            setUnreadPerUser(message.from.cnpj, prev => prev + 1);
-          }
-        }
+          // Handle notifications
+          const state = useStore.getState();
+          const isFromMe = newMessage.from.cnpj === currentUser.cnpj && newMessage.from.username === currentUser.username;
+          
+          if (!isFromMe) {
+            // Play sound
+            const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3');
+            audio.play().catch(e => console.log('Audio play blocked'));
 
-        if (shouldNotify) {
-          setUnreadSupportCount(prev => prev + 1);
-
-          const senderName = message.from.role === 'admin' ? 'Suporte SmartPrice' : message.from.username;
-
-          // System Notification
-          if ("Notification" in window && Notification.permission === "granted") {
-            try {
-              const n = new Notification(`Nova mensagem de ${senderName}`, {
-                body: message.text,
-                icon: '/favicon.ico'
-              });
-              n.onclick = () => {
-                window.focus();
-                useStore.getState().setSupportChatOpen(true);
-                if (userRole === 'admin' && message.from.cnpj) {
-                  useStore.getState().setSelectedUserCnpj(message.from.cnpj);
-                }
-              };
-            } catch (e) {
-              console.error('Error showing system notification:', e);
+            let shouldNotify = false;
+            if (!state.isSupportChatOpen) {
+              shouldNotify = true;
+            } else if (userRole === 'admin') {
+              if (newMessage.from.cnpj !== state.selectedUserCnpj) {
+                shouldNotify = true;
+              }
+            } else if (document.hidden) {
+              shouldNotify = true;
             }
-          }
 
-          toast.info(`Nova mensagem de ${senderName}`, {
-            description: message.text.length > 50 ? message.text.substring(0, 50) + '...' : message.text,
-            duration: 5000,
-            action: {
-              label: 'Ver',
-              onClick: () => {
-                useStore.getState().setSupportChatOpen(true);
-                if (userRole === 'admin' && message.from.cnpj) {
-                  useStore.getState().setSelectedUserCnpj(message.from.cnpj);
-                  useStore.getState().setUnreadPerUser(message.from.cnpj, 0);
-                }
+            if (userRole === 'admin' && newMessage.from.role === 'user') {
+              if (newMessage.from.cnpj !== state.selectedUserCnpj) {
+                setUnreadPerUser(newMessage.from.cnpj, prev => (typeof prev === 'number' ? prev + 1 : 1));
               }
             }
-          });
+
+            if (shouldNotify) {
+              setUnreadSupportCount(prev => (typeof prev === 'number' ? prev + 1 : 1));
+              const senderName = newMessage.from.role === 'admin' ? 'Suporte SmartPrice' : newMessage.from.username;
+              
+              if ("Notification" in window && Notification.permission === "granted") {
+                new Notification(`Nova mensagem de ${senderName}`, { body: newMessage.text });
+              }
+
+              toast.info(`Nova mensagem de ${senderName}`, {
+                description: newMessage.text,
+                action: {
+                  label: 'Ver',
+                  onClick: () => {
+                    useStore.getState().setSupportChatOpen(true);
+                    if (userRole === 'admin' && newMessage.from.cnpj) {
+                      useStore.getState().setSelectedUserCnpj(newMessage.from.cnpj);
+                    }
+                  }
+                }
+              });
+            }
+          }
         }
-      }
+      })
+      .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'chat_messages' }, (payload) => {
+        // Handle message deletion (e.g. cleanup or clear chat)
+        setMessages(prev => prev.filter(m => m.id !== payload.old.id));
+      })
+      .subscribe();
+
+    // Cleanup old messages every 6 hours (client-side trigger for admin)
+    const cleanupOldMessages = async () => {
+      if (userRole !== 'admin') return;
+      
+      const sixHoursAgo = new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString();
+      const { error } = await supabase
+        .from('chat_messages')
+        .delete()
+        .lt('created_at', sixHoursAgo);
+      
+      if (error) console.error('Cleanup error:', error);
     };
 
-    const onCleared = (data: { cnpj: string }) => {
-      const state = useStore.getState();
-      if (userRole === 'admin') {
-        if (state.selectedUserCnpj === data.cnpj) {
-          setMessages([]);
-        }
-      } else {
-        if (currentUser.cnpj === data.cnpj) {
-          setMessages([]);
-        }
-      }
-      toast.success('Conversa limpa com sucesso!');
-    };
-
-    if (!listenersAttached) {
-      socket.on('connect', onConnect);
-      socket.on('connect_error', onConnectError);
-      socket.on('reconnect', onReconnect);
-      socket.on('disconnect', onDisconnect);
-      socket.on('message:history', onHistory);
-      socket.on('message:receive', onReceive);
-      socket.on('message:cleared', onCleared);
-      listenersAttached = true;
-    }
-
-    // If already connected, trigger the join logic
-    if (socket.connected) {
-      onConnect();
-    }
-
-    // Local cleanup: remove messages older than 6 hours from state
-    const cleanupInterval = setInterval(() => {
-      const sixHoursAgo = Date.now() - 6 * 60 * 60 * 1000;
-      setMessages(prev => prev.filter(m => new Date(m.timestamp).getTime() > sixHoursAgo));
-    }, 60000); // Check every minute
+    const cleanupInterval = setInterval(cleanupOldMessages, 30 * 60 * 1000); // Check every 30 mins
+    cleanupOldMessages(); // Run once on mount
 
     return () => {
-      // We don't remove listeners here because we want them to persist across hook instances
-      // since we're using a global socketInstance and listenersAttached flag.
-      // This ensures that even if SupportChat unmounts, the App.tsx instance keeps listening.
+      supabase.removeChannel(channel);
       clearInterval(cleanupInterval);
     };
-  }, [currentUser, userRole, setMessages, setUnreadPerUser, setUnreadSupportCount, setIsChatConnected]); 
+  }, [currentUser, userRole, setMessages, setUnreadPerUser, setUnreadSupportCount, setIsChatConnected]);
 
-  const sendMessage = (text: string, toCnpj?: string, attachment?: { data: string, type: 'image' | 'file' }) => {
-    if (!socketInstance || !socketInstance.connected || !currentUser) return;
+  const sendMessage = async (text: string, toCnpj?: string, attachment?: { data: string, type: 'image' | 'file' }) => {
+    if (!currentUser || !isSupabaseConfigured) return;
 
-    const messageData = {
-      from: { ...currentUser, role: userRole },
+    const targetStore = toCnpj ? useStore.getState().allowedStores.find(s => s.cnpj === toCnpj) : null;
+
+    const newMessage = {
+      from_cnpj: currentUser.cnpj,
+      from_username: currentUser.username,
+      from_role: userRole,
+      to_cnpj: userRole === 'admin' ? (toCnpj || null) : null,
+      to_username: userRole === 'admin' ? (targetStore?.bandeira || null) : null,
       text,
-      attachment: attachment?.data,
-      attachmentType: attachment?.type,
-      to: userRole === 'admin' ? (toCnpj ? { cnpj: toCnpj } : undefined) : undefined
+      attachment: attachment?.data || null,
+      attachment_type: attachment?.type || null,
+      created_at: new Date().toISOString()
     };
 
-    socketInstance.emit('message:send', messageData);
+    const { error } = await supabase
+      .from('chat_messages')
+      .insert([newMessage]);
+
+    if (error) {
+      console.error('Error sending message:', error);
+      toast.error('Erro ao enviar mensagem');
+    }
   };
 
-  const clearMessages = (cnpj: string) => {
-    if (!socketInstance || !socketInstance.connected) return;
-    socketInstance.emit('message:clear', { cnpj, role: userRole });
+  const clearMessages = async (cnpj: string) => {
+    if (!isSupabaseConfigured) return;
+
+    const { error } = await supabase
+      .from('chat_messages')
+      .delete()
+      .or(`from_cnpj.eq.${cnpj},to_cnpj.eq.${cnpj}`);
+
+    if (error) {
+      console.error('Error clearing messages:', error);
+      toast.error('Erro ao limpar conversa');
+    } else {
+      setMessages(prev => prev.filter(m => m.from.cnpj !== cnpj && m.to?.cnpj !== cnpj));
+      toast.success('Conversa limpa com sucesso!');
+    }
   };
 
   return { messages, setMessages, sendMessage, clearMessages, isConnected: isChatConnected };
 }
+

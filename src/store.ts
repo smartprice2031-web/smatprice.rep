@@ -104,6 +104,8 @@ export interface SelectedProduct extends Product {
   offsetY?: number;
   textOffsetX?: number;
   textOffsetY?: number;
+  displayType?: 'price' | 'discount';
+  discountValue?: string;
 }
 
 export interface EncarteSlot {
@@ -114,6 +116,7 @@ export interface EncarteSlot {
   frontProducts: (SelectedProduct | null)[];
   backProducts: (SelectedProduct | null)[];
   productCount: number;
+  extraProducts?: (SelectedProduct | null)[];
 }
 
 export interface EncarteModel {
@@ -1088,6 +1091,7 @@ export const useStore = create<AppState>()(
         frontProducts: Array(12).fill(null),
         backProducts: Array(12).fill(null),
         productCount: 12,
+        extraProducts: [null, null],
       })),
       setEncartes: (encartes) => set({ encartes }),
       selectedEncarteModel: null,

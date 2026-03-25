@@ -112,6 +112,24 @@ export default function EncarteCreator() {
   const handleAddProduct = (product: Product) => {
     let targetSlot = activeSlot;
     
+    // Handle extra products (slots 100+)
+    if (targetSlot !== null && targetSlot >= 100) {
+      const extraIdx = targetSlot - 100;
+      const newExtras = [...(currentEncarte.extraProducts || [null, null])];
+      newExtras[extraIdx] = { 
+        ...product, 
+        id: Math.random().toString(36).substr(2, 9),
+        subtitle: product.description || '',
+        displayType: 'price',
+        offsetX: 0,
+        offsetY: 0
+      };
+      updateActiveEncarte({ extraProducts: newExtras });
+      setIsSelectorOpen(false);
+      setActiveSlot(null);
+      return;
+    }
+
     if (targetSlot === null) {
       // Find first empty slot in the current side
       const fullProducts = currentSide === 'frente' ? currentEncarte.frontProducts : currentEncarte.backProducts;
@@ -679,6 +697,112 @@ export default function EncarteCreator() {
                   ))}
                 </div>
               </div>
+
+              {/* Extra Products Section */}
+              <div className="bg-white dark:bg-zinc-900 p-6 rounded-3xl border border-zinc-200 dark:border-zinc-800 shadow-sm">
+                <div className="flex items-center gap-2 mb-4">
+                  <Plus className="w-4 h-4 text-zinc-400" />
+                  <h3 className="text-xs font-black uppercase tracking-widest text-zinc-400">Produtos Extras (Destaque)</h3>
+                </div>
+                <div className="space-y-6">
+                  {[0, 1].map((idx) => {
+                    const extra = currentEncarte.extraProducts?.[idx];
+                    return (
+                      <div key={idx} className="p-4 bg-zinc-50 dark:bg-zinc-800 rounded-2xl border border-zinc-100 dark:border-zinc-700 space-y-3">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Extra {idx + 1}</span>
+                          {extra && (
+                            <button 
+                              onClick={() => {
+                                const newExtras = [...(currentEncarte.extraProducts || [null, null])];
+                                newExtras[idx] = null;
+                                updateActiveEncarte({ extraProducts: newExtras });
+                              }}
+                              className="text-red-500 hover:text-red-600 transition-colors"
+                            >
+                              <Trash2 className="w-3 h-3" />
+                            </button>
+                          )}
+                        </div>
+                        
+                        {!extra ? (
+                          <button 
+                            onClick={() => {
+                              setActiveSlot(100 + idx);
+                              setIsSelectorOpen(true);
+                            }}
+                            className="w-full py-4 border-2 border-dashed border-zinc-200 dark:border-zinc-800 rounded-xl text-zinc-400 hover:text-emerald-500 hover:border-emerald-500/50 transition-all flex flex-col items-center gap-1"
+                          >
+                            <Plus className="w-4 h-4" />
+                            <span className="text-[9px] font-black uppercase tracking-widest">Adicionar Extra</span>
+                          </button>
+                        ) : (
+                          <div className="space-y-3">
+                            <div className="flex items-center gap-3">
+                              <div className="w-10 h-10 bg-white dark:bg-zinc-900 rounded-lg flex items-center justify-center border border-zinc-100 dark:border-zinc-700 flex-shrink-0">
+                                {extra.image ? (
+                                  <img src={extra.image} className="w-full h-full object-contain p-1" referrerPolicy="no-referrer" />
+                                ) : (
+                                  <Package className="w-5 h-5 text-zinc-400" />
+                                )}
+                              </div>
+                              <div className="flex-grow min-w-0">
+                                <p className="text-[10px] font-black uppercase truncate">{extra.name}</p>
+                              </div>
+                            </div>
+                            
+                            <div className="grid grid-cols-2 gap-2">
+                              <button 
+                                onClick={() => {
+                                  const newExtras = [...(currentEncarte.extraProducts || [null, null])];
+                                  newExtras[idx] = { ...extra, displayType: 'price' };
+                                  updateActiveEncarte({ extraProducts: newExtras });
+                                }}
+                                className={cn(
+                                  "py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all",
+                                  extra.displayType === 'price' ? "bg-emerald-600 text-white" : "bg-zinc-100 dark:bg-zinc-700 text-zinc-500"
+                                )}
+                              >
+                                Preço
+                              </button>
+                              <button 
+                                onClick={() => {
+                                  const newExtras = [...(currentEncarte.extraProducts || [null, null])];
+                                  newExtras[idx] = { ...extra, displayType: 'discount' };
+                                  updateActiveEncarte({ extraProducts: newExtras });
+                                }}
+                                className={cn(
+                                  "py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all",
+                                  extra.displayType === 'discount' ? "bg-emerald-600 text-white" : "bg-zinc-100 dark:bg-zinc-700 text-zinc-500"
+                                )}
+                              >
+                                Desconto %
+                              </button>
+                            </div>
+
+                            {extra.displayType === 'discount' && (
+                              <div className="space-y-1">
+                                <label className="text-[9px] font-black uppercase text-zinc-500">Valor do Desconto (%)</label>
+                                <input 
+                                  type="text"
+                                  placeholder="Ex: 15% ou Até 30%"
+                                  value={extra.discountValue || ''}
+                                  onChange={(e) => {
+                                    const newExtras = [...(currentEncarte.extraProducts || [null, null])];
+                                    newExtras[idx] = { ...extra, discountValue: e.target.value };
+                                    updateActiveEncarte({ extraProducts: newExtras });
+                                  }}
+                                  className="w-full px-3 py-1.5 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-lg text-xs font-bold outline-none focus:ring-1 focus:ring-emerald-500"
+                                />
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
             </div>
           )}
         </div>
@@ -715,6 +839,39 @@ export default function EncarteCreator() {
 
               {/* Products Grid */}
               <div className={cn("grid gap-6 flex-grow content-start pt-56 px-4 relative", getGridClass(currentEncarte.productCount))}>
+                {/* Extra Products Row */}
+                {currentEncarte.extraProducts?.some(p => p !== null) && (
+                  <div className="col-span-full grid grid-cols-2 gap-6 mb-6">
+                    {currentEncarte.extraProducts.map((extra, idx) => extra && (
+                      <div key={`extra-${idx}`} className="bg-white/95 backdrop-blur-sm p-4 rounded-3xl border-2 border-red-600 shadow-xl flex items-center gap-4 relative">
+                        <div className="flex-grow">
+                          <h4 className="text-sm font-black uppercase text-red-600 leading-tight">{extra.name}</h4>
+                          <p className="text-[10px] font-bold text-red-500 uppercase">{extra.subtitle}</p>
+                          <div className="mt-2">
+                            {extra.displayType === 'discount' ? (
+                              <div className="bg-red-600 text-white px-3 py-1 rounded-lg inline-block">
+                                <span className="text-lg font-black">{extra.discountValue || '0%'}</span>
+                                <span className="text-[8px] font-black uppercase ml-1">OFF</span>
+                              </div>
+                            ) : (
+                              <div className="text-red-600 font-black">
+                                <span className="text-xs">R$</span>
+                                <span className="text-xl leading-none">{formatPrice(extra.price).integer}</span>
+                                <span className="text-xs leading-none">{formatPrice(extra.price).cents}</span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                        <div className="w-24 h-24 flex-shrink-0">
+                          {extra.image && (
+                            <img src={extra.image} className="w-full h-full object-contain" referrerPolicy="no-referrer" />
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
                 {/* Horizontal Ruler */}
                 {showRuler && (
                   <div 
@@ -785,7 +942,7 @@ export default function EncarteCreator() {
                         </div>
 
                         <div className="flex flex-col h-full pointer-events-none bg-transparent">
-                          <div className="text-left mb-2 min-h-[3rem] flex flex-col justify-end bg-transparent">
+                          <div className="text-left mb-1 h-[2.8rem] flex flex-col justify-end bg-transparent">
                             <h4 className={cn("font-black tracking-tight leading-tight uppercase text-red-600 line-clamp-2", adaptive.title)}>
                               {product.name}
                             </h4>
@@ -867,6 +1024,39 @@ export default function EncarteCreator() {
               </div>
             )}
             <div className={cn("grid gap-4 flex-grow content-start pt-48", getGridClass(currentEncarte.productCount))}>
+              {/* Extra Products Row */}
+              {currentEncarte.extraProducts?.some(p => p !== null) && (
+                <div className="col-span-full grid grid-cols-2 gap-4 mb-4">
+                  {currentEncarte.extraProducts.map((extra, idx) => extra && (
+                    <div key={`extra-print-${idx}`} className="bg-white/95 p-3 rounded-2xl border-2 border-red-600 shadow-sm flex items-center gap-3 relative">
+                      <div className="flex-grow">
+                        <h4 className="text-[10px] font-black uppercase text-red-600 leading-tight">{extra.name}</h4>
+                        <p className="text-[8px] font-bold text-red-500 uppercase">{extra.subtitle}</p>
+                        <div className="mt-1">
+                          {extra.displayType === 'discount' ? (
+                            <div className="bg-red-600 text-white px-2 py-0.5 rounded-md inline-block">
+                              <span className="text-sm font-black">{extra.discountValue || '0%'}</span>
+                              <span className="text-[6px] font-black uppercase ml-0.5">OFF</span>
+                            </div>
+                          ) : (
+                            <div className="text-red-600 font-black">
+                              <span className="text-[8px]">R$</span>
+                              <span className="text-sm leading-none">{formatPrice(extra.price).integer}</span>
+                              <span className="text-[8px] leading-none">{formatPrice(extra.price).cents}</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      <div className="w-16 h-16 flex-shrink-0">
+                        {extra.image && (
+                          <img src={extra.image} className="w-full h-full object-contain" referrerPolicy="no-referrer" crossOrigin="anonymous" />
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
               {currentEncarte.frontProducts.slice(0, currentEncarte.productCount).map((product, index) => (
                 <div 
                   key={index} 
@@ -878,7 +1068,7 @@ export default function EncarteCreator() {
                   {product && (
                     <div className="flex flex-col h-full bg-transparent">
                       <div 
-                        className="text-left mb-1 min-h-[3rem] flex flex-col justify-end bg-transparent"
+                        className="text-left mb-1 h-[2.8rem] flex flex-col justify-end bg-transparent"
                         style={{ 
                           transform: `translate(${product.textOffsetX || 0}px, ${product.textOffsetY || 0}px)`
                         }}
@@ -938,6 +1128,39 @@ export default function EncarteCreator() {
               </div>
             )}
             <div className={cn("grid gap-4 flex-grow content-start pt-48", getGridClass(currentEncarte.productCount))}>
+              {/* Extra Products Row */}
+              {currentEncarte.extraProducts?.some(p => p !== null) && (
+                <div className="col-span-full grid grid-cols-2 gap-4 mb-4">
+                  {currentEncarte.extraProducts.map((extra, idx) => extra && (
+                    <div key={`extra-print-verso-${idx}`} className="bg-white/95 p-3 rounded-2xl border-2 border-red-600 shadow-sm flex items-center gap-3 relative">
+                      <div className="flex-grow">
+                        <h4 className="text-[10px] font-black uppercase text-red-600 leading-tight">{extra.name}</h4>
+                        <p className="text-[8px] font-bold text-red-500 uppercase">{extra.subtitle}</p>
+                        <div className="mt-1">
+                          {extra.displayType === 'discount' ? (
+                            <div className="bg-red-600 text-white px-2 py-0.5 rounded-md inline-block">
+                              <span className="text-sm font-black">{extra.discountValue || '0%'}</span>
+                              <span className="text-[6px] font-black uppercase ml-0.5">OFF</span>
+                            </div>
+                          ) : (
+                            <div className="text-red-600 font-black">
+                              <span className="text-[8px]">R$</span>
+                              <span className="text-sm leading-none">{formatPrice(extra.price).integer}</span>
+                              <span className="text-[8px] leading-none">{formatPrice(extra.price).cents}</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      <div className="w-16 h-16 flex-shrink-0">
+                        {extra.image && (
+                          <img src={extra.image} className="w-full h-full object-contain" referrerPolicy="no-referrer" crossOrigin="anonymous" />
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
               {currentEncarte.backProducts.slice(0, currentEncarte.productCount).map((product, index) => (
                 <div 
                   key={index} 
@@ -949,7 +1172,7 @@ export default function EncarteCreator() {
                   {product && (
                     <div className="flex flex-col h-full bg-transparent">
                       <div 
-                        className="text-left mb-1 min-h-[3rem] flex flex-col justify-end bg-transparent"
+                        className="text-left mb-1 h-[2.8rem] flex flex-col justify-end bg-transparent"
                         style={{ 
                           transform: `translate(${product.textOffsetX || 0}px, ${product.textOffsetY || 0}px)`
                         }}
