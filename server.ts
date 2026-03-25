@@ -81,15 +81,22 @@ async function startServer() {
     });
 
     socket.on("user:join", async (userData) => {
-      console.log("User joined chat:", userData.username, userData.cnpj, "Role:", userData.role);
-      activeUsers.set(socket.id, userData);
+      if (!userData) return;
+      const cnpj = String(userData.cnpj || '');
+      const username = String(userData.username || 'Unknown');
+      const role = String(userData.role || 'user');
+
+      console.log(`[CHAT] User joined: ${username} (${cnpj}) as ${role}`);
+      activeUsers.set(socket.id, { ...userData, cnpj, username, role });
       
-      if (userData.cnpj) {
-        socket.join(`user_${userData.cnpj}`);
+      if (cnpj) {
+        socket.join(`user_${cnpj}`);
+        console.log(`[CHAT] Socket ${socket.id} joined room: user_${cnpj}`);
       }
 
-      if (userData.role === 'admin') {
+      if (role === 'admin') {
         socket.join("admin_room");
+        console.log(`[CHAT] Socket ${socket.id} joined room: admin_room`);
       }
 
       let history: any[] = [];
@@ -205,19 +212,25 @@ async function startServer() {
       }
 
       // Route message
+      const targetCnpj = messageData.to?.cnpj ? String(messageData.to.cnpj) : null;
+      const fromCnpj = String(messageData.from.cnpj || '');
+
       if (messageData.from.role === 'admin') {
-        if (messageData.to?.cnpj) {
+        if (targetCnpj) {
           // Send to user and all admins
-          io.to(`user_${messageData.to.cnpj}`).emit("message:receive", fullMessage);
+          console.log(`[CHAT] Admin message to user_${targetCnpj}`);
+          io.to(`user_${targetCnpj}`).emit("message:receive", fullMessage);
           io.to("admin_room").emit("message:receive", fullMessage);
         } else {
           // Broadcast to everyone if no target
+          console.log(`[CHAT] Admin broadcast message`);
           io.emit("message:receive", fullMessage);
         }
       } else {
         // Send to all admins and back to the user's rooms
+        console.log(`[CHAT] User message from user_${fromCnpj} to admin_room`);
         io.to("admin_room").emit("message:receive", fullMessage);
-        io.to(`user_${messageData.from.cnpj}`).emit("message:receive", fullMessage);
+        io.to(`user_${fromCnpj}`).emit("message:receive", fullMessage);
       }
     });
 

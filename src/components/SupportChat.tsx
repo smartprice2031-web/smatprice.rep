@@ -234,35 +234,38 @@ export default function SupportChat() {
                 <div 
                   ref={scrollRef}
                   onScroll={handleScroll}
-                  className="flex-grow overflow-y-auto p-6 space-y-4 bg-zinc-50/30 dark:bg-zinc-950/30 relative"
+                  className="flex-grow overflow-y-auto p-4 space-y-2 bg-[#e5ddd5] dark:bg-zinc-950 relative"
+                  style={{ backgroundImage: 'url("https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png")', backgroundBlendMode: 'overlay' }}
                 >
-                  <div className="absolute top-4 right-4 z-10">
-                    {confirmClear ? (
-                      <div className="flex items-center gap-2 bg-white dark:bg-zinc-800 p-1 rounded-full border border-red-200 dark:border-red-900/30 shadow-lg animate-in fade-in zoom-in duration-200">
-                        <span className="text-[8px] font-black uppercase tracking-widest text-red-500 px-2">Limpar?</span>
+                  <div className="sticky top-0 right-0 z-10 flex justify-end p-2 pointer-events-none">
+                    <div className="pointer-events-auto">
+                      {confirmClear ? (
+                        <div className="flex items-center gap-2 bg-white dark:bg-zinc-800 p-1 rounded-full border border-red-200 dark:border-red-900/30 shadow-lg animate-in fade-in zoom-in duration-200">
+                          <span className="text-[8px] font-black uppercase tracking-widest text-red-500 px-2">Limpar?</span>
+                          <button 
+                            onClick={handleClearChat}
+                            className="px-3 py-1 bg-red-600 text-white rounded-full text-[9px] font-black uppercase tracking-widest hover:bg-red-700 transition-colors"
+                          >
+                            Sim
+                          </button>
+                          <button 
+                            onClick={() => setConfirmClear(false)}
+                            className="px-3 py-1 bg-zinc-100 dark:bg-zinc-700 text-zinc-600 dark:text-zinc-300 rounded-full text-[9px] font-black uppercase tracking-widest hover:bg-zinc-200 dark:hover:bg-zinc-600 transition-colors"
+                          >
+                            Não
+                          </button>
+                        </div>
+                      ) : (
                         <button 
-                          onClick={handleClearChat}
-                          className="px-3 py-1 bg-red-600 text-white rounded-full text-[9px] font-black uppercase tracking-widest hover:bg-red-700 transition-colors"
+                          onClick={() => setConfirmClear(true)}
+                          className="flex items-center gap-1.5 px-3 py-1.5 bg-white/80 dark:bg-zinc-800/80 backdrop-blur-sm border border-zinc-200 dark:border-zinc-700 rounded-full text-[10px] font-black uppercase tracking-widest text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors shadow-sm"
                         >
-                          Sim
+                          <Trash2 className="w-3 h-3" />
                         </button>
-                        <button 
-                          onClick={() => setConfirmClear(false)}
-                          className="px-3 py-1 bg-zinc-100 dark:bg-zinc-700 text-zinc-600 dark:text-zinc-300 rounded-full text-[9px] font-black uppercase tracking-widest hover:bg-zinc-200 dark:hover:bg-zinc-600 transition-colors"
-                        >
-                          Não
-                        </button>
-                      </div>
-                    ) : (
-                      <button 
-                        onClick={() => setConfirmClear(true)}
-                        className="flex items-center gap-1.5 px-3 py-1.5 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-full text-[10px] font-black uppercase tracking-widest text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors shadow-sm"
-                      >
-                        <Trash2 className="w-3 h-3" />
-                        Limpar Histórico
-                      </button>
-                    )}
+                      )}
+                    </div>
                   </div>
+
                   {showScrollButton && (
                     <button 
                       onClick={scrollToBottom}
@@ -271,12 +274,13 @@ export default function SupportChat() {
                       Novas Mensagens Abaixo
                     </button>
                   )}
+
                   {filteredMessages.length === 0 && (
                     <div className="flex flex-col items-center justify-center h-full text-center space-y-4">
-                      <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-2xl">
+                      <div className="p-4 bg-white/50 dark:bg-zinc-800/50 backdrop-blur-sm rounded-2xl">
                         <AlertCircle className="w-8 h-8 text-blue-600" />
                       </div>
-                      <div className="max-w-xs">
+                      <div className="max-w-xs bg-white/80 dark:bg-zinc-800/80 backdrop-blur-sm p-4 rounded-2xl">
                         <p className="text-sm font-bold text-zinc-900 dark:text-white mb-1">Inicie uma conversa</p>
                         <p className="text-xs text-zinc-500">
                           {userRole === 'admin' 
@@ -286,33 +290,60 @@ export default function SupportChat() {
                       </div>
                     </div>
                   )}
-                  {filteredMessages.map((msg) => {
+
+                  {filteredMessages.map((msg, idx) => {
                     const isMe = msg.from.cnpj === currentUser?.cnpj && msg.from.username === currentUser?.username;
+                    const prevMsg = idx > 0 ? filteredMessages[idx - 1] : null;
+                    const isFirstInGroup = !prevMsg || prevMsg.from.cnpj !== msg.from.cnpj;
+                    
                     return (
                       <div 
                         key={msg.id}
                         className={cn(
-                          "flex flex-col max-w-[80%]",
-                          isMe ? "ml-auto items-end" : "mr-auto items-start"
+                          "flex flex-col w-full",
+                          isMe ? "items-end" : "items-start",
+                          isFirstInGroup ? "mt-4" : "mt-1"
                         )}
                       >
-                        <div className="flex items-center gap-2 mb-1 px-1">
-                          {!isMe && (
-                            <span className="text-[10px] font-black uppercase tracking-tighter text-zinc-400">
-                              {msg.from.role === 'admin' ? 'Suporte' : msg.from.username}
-                            </span>
-                          )}
-                          <span className="text-[9px] text-zinc-400 font-medium">
-                            {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                          </span>
-                        </div>
                         <div className={cn(
-                          "px-4 py-3 rounded-2xl text-sm font-medium shadow-sm",
+                          "relative max-w-[85%] px-3 py-1.5 shadow-sm",
                           isMe 
-                            ? "bg-blue-600 text-white rounded-tr-none" 
-                            : "bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 border border-zinc-100 dark:border-zinc-700 rounded-tl-none"
+                            ? "bg-[#dcf8c6] dark:bg-emerald-900/40 text-zinc-900 dark:text-zinc-100 rounded-lg rounded-tr-none" 
+                            : "bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 rounded-lg rounded-tl-none"
                         )}>
-                          {msg.text}
+                          {/* Tail */}
+                          {isFirstInGroup && (
+                            <div className={cn(
+                              "absolute top-0 w-2 h-2",
+                              isMe 
+                                ? "right-[-8px] border-l-[8px] border-l-[#dcf8c6] dark:border-l-emerald-900/40 border-b-[8px] border-b-transparent" 
+                                : "left-[-8px] border-r-[8px] border-r-white dark:border-r-zinc-800 border-b-[8px] border-b-transparent"
+                            )} />
+                          )}
+                          
+                          {!isMe && isFirstInGroup && userRole === 'admin' && (
+                            <p className="text-[10px] font-bold text-blue-600 dark:text-blue-400 mb-0.5">
+                              {msg.from.username}
+                            </p>
+                          )}
+                          
+                          <div className="flex flex-wrap items-end gap-2">
+                            <p className="text-sm leading-relaxed break-words max-w-full">
+                              {msg.text}
+                            </p>
+                            <div className="flex items-center gap-1 ml-auto pt-1">
+                              <span className="text-[9px] text-zinc-500 dark:text-zinc-400 font-medium">
+                                {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                              </span>
+                              {isMe && (
+                                <div className="flex items-center -space-x-1">
+                                  <svg viewBox="0 0 16 15" width="12" height="11" className="text-blue-500 fill-current">
+                                    <path d="M15.01 3.316l-.478-.372a.365.365 0 0 0-.51.063L8.666 9.879a.32.32 0 0 1-.484.033l-.358-.325a.319.319 0 0 0-.484.032l-.378.483a.418.418 0 0 0 .036.541l1.32 1.266c.143.14.361.125.484-.033l6.272-8.048a.366.366 0 0 0-.064-.512zm-4.1 0l-.478-.372a.365.365 0 0 0-.51.063L5.066 9.879a.32.32 0 0 1-.484.033L1.582 7.13a.32.32 0 0 0-.484.032l-.378.483a.418.418 0 0 0 .036.541l3.413 3.274c.143.14.361.125.484-.033l6.272-8.048a.366.366 0 0 0-.064-.512z"></path>
+                                  </svg>
+                                </div>
+                              )}
+                            </div>
+                          </div>
                         </div>
                       </div>
                     );
