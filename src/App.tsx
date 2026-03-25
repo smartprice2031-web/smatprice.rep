@@ -7,6 +7,7 @@ import Adjustments from './components/Adjustments';
 import PrintQueue from './components/PrintQueue';
 import UserManagement from './components/UserManagement';
 import AnnouncementManager from './components/AnnouncementManager';
+import UserAnnouncementModal from './components/UserAnnouncementModal';
 import SupportChat from './components/SupportChat';
 import Login from './components/Login';
 import EncarteCreator from './components/EncarteCreator';
@@ -45,6 +46,7 @@ export default function App() {
     isAnnouncementModalOpen, setAnnouncementModalOpen
   } = useStore();
   const [activeTab, setActiveTab] = useState<'select' | 'adjustments'>('select');
+  const [pendingAnnouncements, setPendingAnnouncements] = useState<any[]>([]);
 
   // Filter layouts based on user permissions
   const filteredLayouts = React.useMemo(() => {
@@ -93,7 +95,7 @@ export default function App() {
   }, [userRole, activeTab]);
 
   useEffect(() => {
-    if (isAuthenticated && announcements.length > 0 && currentUser) {
+    if (isAuthenticated && userRole !== 'admin' && announcements.length > 0 && currentUser) {
       const userCnpj = currentUser.cnpj.replace(/[^\d]/g, '');
       const store = allowedStores.find(s => s.cnpj.replace(/[^\d]/g, '') === userCnpj);
       const userGroupId = store?.groupId;
@@ -109,17 +111,17 @@ export default function App() {
       });
 
       if (relevantAnnouncements.length > 0) {
-        relevantAnnouncements.forEach(ann => {
-          toast.info(ann.title, {
-            description: ann.message,
-            duration: 10000,
-            icon: <Megaphone className="w-5 h-5 text-blue-600" />
-          });
-        });
-        setSeenAnnouncements([...seenAnnouncements, ...relevantAnnouncements.map(a => a.id)]);
+        setPendingAnnouncements(relevantAnnouncements);
       }
     }
-  }, [isAuthenticated, announcements, currentUser, allowedStores, seenAnnouncements, setSeenAnnouncements]);
+  }, [isAuthenticated, announcements, currentUser, allowedStores, seenAnnouncements]);
+
+  const handleCloseAnnouncements = () => {
+    if (pendingAnnouncements.length > 0) {
+      setSeenAnnouncements([...seenAnnouncements, ...pendingAnnouncements.map(a => a.id)]);
+      setPendingAnnouncements([]);
+    }
+  };
 
   useEffect(() => {
     // Force logout on fresh access (new tab/window)
@@ -678,6 +680,14 @@ export default function App() {
         </div>
       )}
       <SupportChat />
+      
+      {/* User Announcement Modal */}
+      {pendingAnnouncements.length > 0 && (
+        <UserAnnouncementModal 
+          announcements={pendingAnnouncements} 
+          onClose={handleCloseAnnouncements} 
+        />
+      )}
       
       {/* Announcement Management Modal */}
       {isAnnouncementModalOpen && (

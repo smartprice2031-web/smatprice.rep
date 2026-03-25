@@ -726,12 +726,12 @@ export const useStore = create<AppState>()(
       setAnnouncements: (announcements) => set({ announcements }),
       addAnnouncement: (announcement) => set((state) => {
         const newAnnouncements = [...state.announcements, announcement];
-        state.saveUsersAndFlags();
+        setTimeout(() => get().saveUsersAndFlags(), 0);
         return { announcements: newAnnouncements };
       }),
       deleteAnnouncement: (id) => set((state) => {
         const newAnnouncements = state.announcements.filter(a => a.id !== id);
-        state.saveUsersAndFlags();
+        setTimeout(() => get().saveUsersAndFlags(), 0);
         return { announcements: newAnnouncements };
       }),
       seenAnnouncements: [],
@@ -1200,6 +1200,7 @@ export const useStore = create<AppState>()(
         encartes: state.encartes,
         selectedEncarteModel: state.selectedEncarteModel,
         announcements: state.announcements,
+        seenAnnouncements: state.seenAnnouncements,
       }),
     }
   )
