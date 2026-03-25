@@ -212,16 +212,18 @@ export function useSupportSocket() {
 
     const targetStore = toCnpj ? useStore.getState().allowedStores.find(s => s.cnpj === toCnpj) : null;
 
-    // Construct message data without ID and created_at to let Supabase handle them
-    // This avoids UUID vs String issues
+    // Construct message data with generated ID and timestamp
     const messageData: any = {
+      id: `msg_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`,
       from_cnpj: currentUser.cnpj,
       from_username: currentUser.username,
       from_role: userRole,
       to_cnpj: userRole === 'admin' ? (toCnpj || null) : null,
+      to_username: null,
       text,
       attachment: attachment?.data || null,
-      attachment_type: attachment?.type || null
+      attachment_type: attachment?.type || null,
+      created_at: new Date().toISOString()
     };
 
     if (userRole === 'admin' && targetStore?.bandeira) {
