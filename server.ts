@@ -48,11 +48,20 @@ async function startServer() {
     // Cleanup Supabase
     if (supabase) {
       try {
-        const { error } = await supabase
+        let { error } = await supabase
           .from('chat_messages')
           .delete()
           .lt('created_at', sixHoursAgo.toISOString());
         
+        // Fallback to 'chat_messagens'
+        if (error && (error.code === '42P01' || error.message?.includes('not found'))) {
+          const { error: retryError } = await supabase
+            .from('chat_messagens')
+            .delete()
+            .lt('created_at', sixHoursAgo.toISOString());
+          error = retryError;
+        }
+
         if (error && error.code !== 'PGRST116') {
           console.error('Error cleaning up Supabase messages:', error);
         }
@@ -88,10 +97,20 @@ async function startServer() {
       // Try to load from Supabase first
       if (supabase) {
         try {
-          const { data, error } = await supabase
+          let { data, error } = await supabase
             .from('chat_messages')
             .select('*')
             .order('created_at', { ascending: true });
+
+          // Fallback to 'chat_messagens'
+          if (error && (error.code === '42P01' || error.message?.includes('not found'))) {
+            const { data: retryData, error: retryError } = await supabase
+              .from('chat_messagens')
+              .select('*')
+              .order('created_at', { ascending: true });
+            data = retryData;
+            error = retryError;
+          }
 
           if (!error && data) {
             history = data.map(m => ({
@@ -145,7 +164,7 @@ async function startServer() {
       // Store in Supabase
       if (supabase) {
         try {
-          const { error } = await supabase
+          let { error } = await supabase
             .from('chat_messages')
             .insert([{
               id: fullMessage.id,
@@ -159,6 +178,25 @@ async function startServer() {
               attachment_type: fullMessage.attachmentType || null,
               created_at: fullMessage.timestamp
             }]);
+
+          // Fallback to 'chat_messagens'
+          if (error && (error.code === '42P01' || error.message?.includes('not found'))) {
+            const { error: retryError } = await supabase
+              .from('chat_messagens')
+              .insert([{
+                id: fullMessage.id,
+                from_cnpj: fullMessage.from.cnpj,
+                from_username: fullMessage.from.username,
+                from_role: fullMessage.from.role,
+                to_cnpj: fullMessage.to?.cnpj || null,
+                to_username: fullMessage.to?.username || null,
+                text: fullMessage.text,
+                attachment: fullMessage.attachment || null,
+                attachment_type: fullMessage.attachmentType || null,
+                created_at: fullMessage.timestamp
+              }]);
+            error = retryError;
+          }
 
           if (error) console.error('Supabase insert error:', error.message);
         } catch (err) {
@@ -195,11 +233,20 @@ async function startServer() {
       // Clear Supabase
       if (supabase) {
         try {
-          const { error } = await supabase
+          let { error } = await supabase
             .from('chat_messages')
             .delete()
             .or(`from_cnpj.eq.${cnpj},to_cnpj.eq.${cnpj}`);
           
+          // Fallback to 'chat_messagens'
+          if (error && (error.code === '42P01' || error.message?.includes('not found'))) {
+            const { error: retryError } = await supabase
+              .from('chat_messagens')
+              .delete()
+              .or(`from_cnpj.eq.${cnpj},to_cnpj.eq.${cnpj}`);
+            error = retryError;
+          }
+
           if (error) console.error('Supabase delete error:', error.message);
         } catch (err) {
           console.error('Supabase delete exception:', err);

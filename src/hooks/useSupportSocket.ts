@@ -34,16 +34,29 @@ export function useSupportSocket() {
     const fetchMessages = async () => {
       const sixHoursAgo = new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString();
       
-      const { data, error } = await supabase
+      let { data, error } = await supabase
         .from('chat_messages')
         .select('*')
         .gt('created_at', sixHoursAgo)
         .order('created_at', { ascending: true });
 
+      // Fallback to 'chat_messagens' if 'chat_messages' doesn't exist
+      if (error && (error.code === '42P01' || error.message?.includes('not found'))) {
+        const { data: retryData, error: retryError } = await supabase
+          .from('chat_messagens')
+          .select('*')
+          .gt('created_at', sixHoursAgo)
+          .order('created_at', { ascending: true });
+        data = retryData;
+        error = retryError;
+      }
+
       if (error) {
         console.error('Error fetching messages:', error);
         return;
       }
+
+      if (!data) return;
 
       const formattedMessages: Message[] = data.map(m => ({
         id: m.id,
@@ -74,98 +87,114 @@ export function useSupportSocket() {
     const channel = supabase
       .channel('chat_messages_realtime')
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'chat_messages' }, (payload) => {
-        const m = payload.new;
-        const newMessage: Message = {
-          id: m.id,
-          text: m.text,
-          timestamp: m.created_at,
-          from: {
-            cnpj: m.from_cnpj,
-            username: m.from_username,
-            role: m.from_role
-          },
-          to: m.to_cnpj ? { cnpj: m.to_cnpj } : undefined,
-          attachment: m.attachment,
-          attachmentType: m.attachment_type
-        };
-
-        // Check if message is relevant to this user
-        const isRelevant = userRole === 'admin' || 
-                           newMessage.from.cnpj === currentUser.cnpj || 
-                           newMessage.to?.cnpj === currentUser.cnpj;
-
-        if (isRelevant) {
-          setMessages(prev => {
-            if (prev.some(existing => existing.id === newMessage.id)) return prev;
-            return [...prev, newMessage];
-          });
-
-          // Handle notifications
-          const state = useStore.getState();
-          const isFromMe = newMessage.from.cnpj === currentUser.cnpj && newMessage.from.username === currentUser.username;
-          
-          if (!isFromMe) {
-            // Play sound
-            const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3');
-            audio.play().catch(e => console.log('Audio play blocked'));
-
-            let shouldNotify = false;
-            if (!state.isSupportChatOpen) {
-              shouldNotify = true;
-            } else if (userRole === 'admin') {
-              if (newMessage.from.cnpj !== state.selectedUserCnpj) {
-                shouldNotify = true;
-              }
-            } else if (document.hidden) {
-              shouldNotify = true;
-            }
-
-            if (userRole === 'admin' && newMessage.from.role === 'user') {
-              if (newMessage.from.cnpj !== state.selectedUserCnpj) {
-                setUnreadPerUser(newMessage.from.cnpj, prev => (typeof prev === 'number' ? prev + 1 : 1));
-              }
-            }
-
-            if (shouldNotify) {
-              setUnreadSupportCount(prev => (typeof prev === 'number' ? prev + 1 : 1));
-              const senderName = newMessage.from.role === 'admin' ? 'Suporte SmartPrice' : newMessage.from.username;
-              
-              if ("Notification" in window && Notification.permission === "granted") {
-                new Notification(`Nova mensagem de ${senderName}`, { body: newMessage.text });
-              }
-
-              toast.info(`Nova mensagem de ${senderName}`, {
-                description: newMessage.text,
-                action: {
-                  label: 'Ver',
-                  onClick: () => {
-                    useStore.getState().setSupportChatOpen(true);
-                    if (userRole === 'admin' && newMessage.from.cnpj) {
-                      useStore.getState().setSelectedUserCnpj(newMessage.from.cnpj);
-                    }
-                  }
-                }
-              });
-            }
-          }
-        }
+        handleNewMessage(payload.new);
+      })
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'chat_messagens' }, (payload) => {
+        handleNewMessage(payload.new);
       })
       .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'chat_messages' }, (payload) => {
-        // Handle message deletion (e.g. cleanup or clear chat)
+        setMessages(prev => prev.filter(m => m.id !== payload.old.id));
+      })
+      .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'chat_messagens' }, (payload) => {
         setMessages(prev => prev.filter(m => m.id !== payload.old.id));
       })
       .subscribe();
+
+    function handleNewMessage(m: any) {
+      const newMessage: Message = {
+        id: m.id,
+        text: m.text,
+        timestamp: m.created_at,
+        from: {
+          cnpj: m.from_cnpj,
+          username: m.from_username,
+          role: m.from_role
+        },
+        to: m.to_cnpj ? { cnpj: m.to_cnpj } : undefined,
+        attachment: m.attachment,
+        attachmentType: m.attachment_type
+      };
+
+      // Check if message is relevant to this user
+      const isRelevant = userRole === 'admin' || 
+                         newMessage.from.cnpj === currentUser.cnpj || 
+                         newMessage.to?.cnpj === currentUser.cnpj;
+
+      if (isRelevant) {
+        setMessages(prev => {
+          if (prev.some(existing => existing.id === newMessage.id)) return prev;
+          return [...prev, newMessage];
+        });
+
+        // Handle notifications
+        const state = useStore.getState();
+        const isFromMe = newMessage.from.cnpj === currentUser.cnpj && newMessage.from.username === currentUser.username;
+        
+        if (!isFromMe) {
+          // Play sound
+          const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3');
+          audio.play().catch(e => console.log('Audio play blocked'));
+
+          let shouldNotify = false;
+          if (!state.isSupportChatOpen) {
+            shouldNotify = true;
+          } else if (userRole === 'admin') {
+            if (newMessage.from.cnpj !== state.selectedUserCnpj) {
+              shouldNotify = true;
+            }
+          } else if (document.hidden) {
+            shouldNotify = true;
+          }
+
+          if (userRole === 'admin' && newMessage.from.role === 'user') {
+            if (newMessage.from.cnpj !== state.selectedUserCnpj) {
+              setUnreadPerUser(newMessage.from.cnpj, prev => (typeof prev === 'number' ? prev + 1 : 1));
+            }
+          }
+
+          if (shouldNotify) {
+            setUnreadSupportCount(prev => (typeof prev === 'number' ? prev + 1 : 1));
+            const senderName = newMessage.from.role === 'admin' ? 'Suporte SmartPrice' : newMessage.from.username;
+            
+            if ("Notification" in window && Notification.permission === "granted") {
+              new Notification(`Nova mensagem de ${senderName}`, { body: newMessage.text });
+            }
+
+            toast.info(`Nova mensagem de ${senderName}`, {
+              description: newMessage.text,
+              action: {
+                label: 'Ver',
+                onClick: () => {
+                  useStore.getState().setSupportChatOpen(true);
+                  if (userRole === 'admin' && newMessage.from.cnpj) {
+                    useStore.getState().setSelectedUserCnpj(newMessage.from.cnpj);
+                  }
+                }
+              }
+            });
+          }
+        }
+      }
+    }
 
     // Cleanup old messages every 6 hours (client-side trigger for admin)
     const cleanupOldMessages = async () => {
       if (userRole !== 'admin') return;
       
       const sixHoursAgo = new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString();
-      const { error } = await supabase
+      let { error } = await supabase
         .from('chat_messages')
         .delete()
         .lt('created_at', sixHoursAgo);
       
+      if (error && (error.code === '42P01' || error.message?.includes('not found'))) {
+        const { error: retryError } = await supabase
+          .from('chat_messagens')
+          .delete()
+          .lt('created_at', sixHoursAgo);
+        error = retryError;
+      }
+
       if (error) console.error('Cleanup error:', error);
     };
 
@@ -183,35 +212,56 @@ export function useSupportSocket() {
 
     const targetStore = toCnpj ? useStore.getState().allowedStores.find(s => s.cnpj === toCnpj) : null;
 
-    const newMessage = {
+    // Construct message data without ID and created_at to let Supabase handle them
+    // This avoids UUID vs String issues
+    const messageData: any = {
       from_cnpj: currentUser.cnpj,
       from_username: currentUser.username,
       from_role: userRole,
       to_cnpj: userRole === 'admin' ? (toCnpj || null) : null,
-      to_username: userRole === 'admin' ? (targetStore?.bandeira || null) : null,
       text,
       attachment: attachment?.data || null,
-      attachment_type: attachment?.type || null,
-      created_at: new Date().toISOString()
+      attachment_type: attachment?.type || null
     };
 
-    const { error } = await supabase
+    if (userRole === 'admin' && targetStore?.bandeira) {
+      messageData.to_username = targetStore.bandeira;
+    }
+
+    // Try 'chat_messages' first (standard)
+    let { error } = await supabase
       .from('chat_messages')
-      .insert([newMessage]);
+      .insert([messageData]);
+
+    // If 'chat_messages' fails with "relation does not exist", try 'chat_messagens' (user's likely name)
+    if (error && (error.code === '42P01' || error.message?.includes('not found'))) {
+      const { error: retryError } = await supabase
+        .from('chat_messagens')
+        .insert([messageData]);
+      error = retryError;
+    }
 
     if (error) {
-      console.error('Error sending message:', error);
-      toast.error('Erro ao enviar mensagem');
+      console.error('Supabase Insert Error:', error);
+      toast.error(`Erro ao enviar: ${error.message}`);
     }
   };
 
   const clearMessages = async (cnpj: string) => {
     if (!isSupabaseConfigured) return;
 
-    const { error } = await supabase
+    let { error } = await supabase
       .from('chat_messages')
       .delete()
       .or(`from_cnpj.eq.${cnpj},to_cnpj.eq.${cnpj}`);
+
+    if (error && (error.code === '42P01' || error.message?.includes('not found'))) {
+      const { error: retryError } = await supabase
+        .from('chat_messagens')
+        .delete()
+        .or(`from_cnpj.eq.${cnpj},to_cnpj.eq.${cnpj}`);
+      error = retryError;
+    }
 
     if (error) {
       console.error('Error clearing messages:', error);
