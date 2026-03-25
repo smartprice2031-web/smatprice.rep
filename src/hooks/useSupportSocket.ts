@@ -152,12 +152,6 @@ export function useSupportSocket() {
   const sendMessage = (text: string, toCnpj?: string) => {
     if (!socketRef.current || !currentUser) return;
 
-    if (!socketRef.current.connected) {
-      toast.error('Chat desconectado. Tentando reconectar...');
-      socketRef.current.connect();
-      return;
-    }
-
     const targetStore = toCnpj ? useStore.getState().allowedStores.find(s => s.cnpj === toCnpj) : null;
 
     const messageData = {

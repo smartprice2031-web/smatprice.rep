@@ -125,53 +125,60 @@ export default function SupportChat() {
     : [];
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[100] p-4 no-print">
-      <div className="bg-white dark:bg-zinc-900 w-full max-w-4xl h-[80vh] rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col border border-zinc-200 dark:border-zinc-800">
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[100] p-2 md:p-4 no-print">
+      <div className={cn(
+        "bg-white dark:bg-zinc-900 w-full rounded-[2rem] shadow-2xl overflow-hidden flex flex-col border border-zinc-200 dark:border-zinc-800 transition-all duration-300",
+        userRole === 'admin' ? "max-w-6xl w-[95vw] h-[85vh]" : "max-w-2xl h-[70vh]"
+      )}>
         {/* Header */}
-        <div className="p-6 border-b border-zinc-200 dark:border-zinc-800 flex justify-between items-center bg-zinc-50 dark:bg-zinc-800/50">
+        <div className={cn(
+          "border-b border-zinc-200 dark:border-zinc-800 flex justify-between items-center bg-zinc-50 dark:bg-zinc-800/50",
+          userRole === 'admin' ? "p-3 md:p-4" : "p-6"
+        )}>
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-blue-600 rounded-xl text-white shadow-lg shadow-blue-500/20">
-              <MessageCircle className="w-6 h-6" />
+            <div className={cn(
+              "bg-blue-600 rounded-xl text-white shadow-lg shadow-blue-500/20",
+              userRole === 'admin' ? "p-1.5" : "p-2"
+            )}>
+              <MessageCircle className={userRole === 'admin' ? "w-5 h-5" : "w-6 h-6"} />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h3 className="text-xl font-black tracking-tighter uppercase">Suporte SmartPrice</h3>
+                <h3 className={cn(
+                  "font-black tracking-tighter uppercase",
+                  userRole === 'admin' ? "text-base" : "text-xl"
+                )}>Suporte SmartPrice</h3>
                 <div className={cn(
                   "w-2 h-2 rounded-full",
-                  isConnected ? "bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)] animate-pulse" : "bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.5)]"
+                  isConnected ? "bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)] animate-pulse" : "bg-amber-500 shadow-[0_0_10px_rgba(245,158,11,0.5)]"
                 )} />
               </div>
-              <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">
-                {isConnected ? (userRole === 'admin' ? 'Central de Atendimento' : 'Enviar mensagem para o suporte') : (
-                  <button onClick={handleReconnect} className="text-red-500 hover:underline flex items-center gap-1">
-                    Desconectado - Clique para reconectar
-                  </button>
+              <p className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest">
+                {isConnected ? (userRole === 'admin' ? 'Central de Atendimento' : 'Suporte Online') : (
+                  <span className="text-emerald-600/50 flex items-center gap-1 animate-pulse">
+                    Sincronizando...
+                  </span>
                 )}
               </p>
-              {userRole === 'user' && (
-                <p className="text-[9px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-tighter mt-0.5">
-                  WhatsApp Adm: (99) 9 8470-1752 • (99) 9 8199-0035
-                </p>
-              )}
             </div>
           </div>
           <button 
             onClick={() => setSupportChatOpen(false)} 
             className="p-2 hover:bg-zinc-200 dark:hover:bg-zinc-700 rounded-full transition-colors"
           >
-            <X className="w-6 h-6" />
+            <X className="w-5 h-5 md:w-6 h-6" />
           </button>
         </div>
 
         <div className="flex-grow flex overflow-hidden">
           {userRole === 'admin' && (
-            <div className="w-64 border-r border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/50 overflow-y-auto">
-              <div className="p-4 border-b border-zinc-200 dark:border-zinc-800">
-                <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Lojas Autorizadas</p>
+            <div className="w-48 md:w-56 border-r border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/50 overflow-y-auto">
+              <div className="p-3 border-b border-zinc-200 dark:border-zinc-800">
+                <p className="text-[9px] font-black text-zinc-400 uppercase tracking-widest">Lojas</p>
               </div>
               {chatUsers.length === 0 ? (
-                <div className="p-8 text-center">
-                  <p className="text-xs text-zinc-500 font-medium">Nenhuma loja cadastrada.</p>
+                <div className="p-4 text-center">
+                  <p className="text-[10px] text-zinc-500 font-medium">Nenhuma loja.</p>
                 </div>
               ) : (
                 chatUsers.map(user => (
@@ -179,29 +186,26 @@ export default function SupportChat() {
                     key={user.cnpj}
                     onClick={() => setSelectedUserCnpj(user.cnpj)}
                     className={cn(
-                      "w-full p-4 flex items-center gap-3 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors text-left border-b border-zinc-100 dark:border-zinc-800/50",
+                      "w-full p-3 flex items-center gap-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors text-left border-b border-zinc-100 dark:border-zinc-800/50",
                       selectedUserCnpj === user.cnpj && "bg-blue-50 dark:bg-blue-900/10 border-l-4 border-l-blue-600"
                     )}
                   >
-                    <div className="w-10 h-10 rounded-full bg-zinc-200 dark:bg-zinc-700 flex items-center justify-center flex-shrink-0">
-                      <User className="w-5 h-5 text-zinc-500" />
+                    <div className="w-8 h-8 rounded-full bg-zinc-200 dark:bg-zinc-700 flex items-center justify-center flex-shrink-0">
+                      <User className="w-4 h-4 text-zinc-500" />
                     </div>
                     <div className="overflow-hidden flex-grow">
                       <div className="flex justify-between items-start">
-                        <p className="text-sm font-bold truncate">{user.bandeira}</p>
+                        <p className="text-xs font-bold truncate">{user.bandeira}</p>
                         {user.lastTimestamp && (
-                          <span className="text-[8px] text-zinc-400">
+                          <span className="text-[7px] text-zinc-400">
                             {new Date(user.lastTimestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                           </span>
                         )}
                       </div>
-                      <p className="text-[10px] text-zinc-500 truncate">{user.cnpj}</p>
-                      {user.lastMessage && (
-                        <p className="text-[10px] text-zinc-400 truncate mt-1 italic">"{user.lastMessage}"</p>
-                      )}
+                      <p className="text-[9px] text-zinc-500 truncate">{user.cnpj}</p>
                     </div>
                     {unreadPerUser[user.cnpj] > 0 && (
-                      <div className="bg-red-500 text-white text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0">
+                      <div className="bg-red-500 text-white text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center flex-shrink-0">
                         {unreadPerUser[user.cnpj]}
                       </div>
                     )}
@@ -213,19 +217,6 @@ export default function SupportChat() {
 
           {/* Chat Area */}
           <div className="flex-grow flex flex-col bg-white dark:bg-zinc-900 relative">
-            {!isConnected && (
-              <div className="absolute top-0 left-0 right-0 bg-red-500/10 backdrop-blur-sm p-2 z-20 flex items-center justify-center gap-2 border-b border-red-500/20">
-                <AlertCircle className="w-4 h-4 text-red-500" />
-                <span className="text-[10px] font-bold text-red-600 uppercase tracking-widest">Conexão perdida. Tentando reconectar...</span>
-                <button 
-                  onClick={handleReconnect}
-                  className="px-2 py-0.5 bg-red-600 text-white text-[8px] font-black uppercase tracking-widest rounded hover:bg-red-700 transition-colors"
-                >
-                  Reconectar Agora
-                </button>
-              </div>
-            )}
-            
             {userRole === 'admin' && !selectedUserCnpj ? (
               <div className="flex-grow flex flex-col items-center justify-center p-12 text-center">
                 <div className="w-20 h-20 bg-zinc-100 dark:bg-zinc-800 rounded-full flex items-center justify-center mb-4">
@@ -328,37 +319,22 @@ export default function SupportChat() {
                 </div>
 
                 {/* Input Area */}
-                <div className="p-6 border-t border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900">
-                  {!isConnected && (
-                    <div className="mb-3 p-2 bg-red-50 dark:bg-red-900/10 rounded-xl border border-red-100 dark:border-red-900/20 flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <AlertCircle className="w-4 h-4 text-red-500" />
-                        <span className="text-[10px] font-bold text-red-600 uppercase tracking-widest">Você está offline</span>
-                      </div>
-                      <button 
-                        onClick={handleReconnect}
-                        className="text-[9px] font-black text-blue-600 uppercase tracking-widest hover:underline"
-                      >
-                        Reconectar
-                      </button>
-                    </div>
-                  )}
-                  <form onSubmit={handleSendMessage} className="flex gap-3">
+                <div className={cn(
+                  "border-t border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900",
+                  userRole === 'admin' ? "p-2 md:p-3" : "p-4 md:p-6"
+                )}>
+                  <form onSubmit={handleSendMessage} className="flex gap-2">
                     <input
                       type="text"
-                      placeholder={isConnected ? "Digite sua mensagem..." : "Aguardando conexão..."}
-                      className={cn(
-                        "flex-grow bg-zinc-100 dark:bg-zinc-800 border-none rounded-2xl px-6 py-4 text-sm focus:ring-2 focus:ring-blue-500 outline-none transition-all",
-                        !isConnected && "opacity-50 cursor-not-allowed"
-                      )}
+                      placeholder="Digite sua mensagem..."
+                      className="flex-grow bg-zinc-100 dark:bg-zinc-800 border-none rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none transition-all"
                       value={inputText}
                       onChange={(e) => setInputText(e.target.value)}
-                      disabled={!isConnected}
                     />
                     <button
                       type="submit"
-                      disabled={!inputText.trim() || !isConnected}
-                      className="bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:hover:bg-blue-600 text-white p-4 rounded-2xl shadow-lg shadow-blue-500/20 transition-all active:scale-95"
+                      disabled={!inputText.trim()}
+                      className="bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white p-2.5 rounded-xl shadow-lg shadow-blue-500/20 transition-all active:scale-95"
                     >
                       <Send className="w-5 h-5" />
                     </button>
