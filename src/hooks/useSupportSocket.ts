@@ -32,7 +32,7 @@ export function useSupportSocket() {
     
     try {
       const { error } = await supabase
-        .from('support_messages')
+        .from('chat_messages')
         .delete()
         .lt('created_at', sixHoursAgo);
       
@@ -52,7 +52,7 @@ export function useSupportSocket() {
     
     try {
       const { data, error } = await supabase
-        .from('support_messages')
+        .from('chat_messages')
         .select('*')
         .gt('created_at', sixHoursAgo)
         .order('created_at', { ascending: true });
@@ -88,10 +88,10 @@ export function useSupportSocket() {
     setIsChatConnected(true);
 
     const channel = supabase
-      .channel('support_messages_realtime')
+      .channel('chat_messages_realtime')
       .on(
         'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'support_messages' },
+        { event: 'INSERT', schema: 'public', table: 'chat_messages' },
         (payload) => {
           const newMessage = payload.new;
           const mappedMessage: Message = {
@@ -177,7 +177,7 @@ export function useSupportSocket() {
       )
       .on(
         'postgres_changes',
-        { event: 'DELETE', schema: 'public', table: 'support_messages' },
+        { event: 'DELETE', schema: 'public', table: 'chat_messages' },
         (payload) => {
           const deletedId = payload.old.id;
           setMessages(prev => prev.filter(m => m.id !== deletedId));
@@ -212,18 +212,18 @@ export function useSupportSocket() {
     const normalizedToCnpj = toCnpj ? toCnpj.replace(/[^\d]/g, '') : undefined;
     const normalizedFromCnpj = currentUser.cnpj.replace(/[^\d]/g, '');
     const targetStore = toCnpj ? useStore.getState().allowedStores.find(s => s.cnpj.replace(/[^\d]/g, '') === normalizedToCnpj) : null;
+    const toUsername = userRole === 'user' ? 'Suporte SmartPrice' : (targetStore?.bandeira || null);
 
     try {
       const { error } = await supabase
-        .from('support_messages')
+        .from('chat_messages')
         .insert({
-          from_username: currentUser.username,
+          from_username: currentUser.username || 'Usuário',
           from_cnpj: normalizedFromCnpj,
           from_role: userRole,
           to_cnpj: normalizedToCnpj || null,
-          to_username: targetStore?.bandeira || null,
-          text: text,
-          created_at: new Date().toISOString()
+          to_username: toUsername,
+          text: text
         });
 
       if (error) throw error;
@@ -241,7 +241,7 @@ export function useSupportSocket() {
     try {
       // Delete messages from/to this CNPJ
       const { error } = await supabase
-        .from('support_messages')
+        .from('chat_messages')
         .delete()
         .or(`from_cnpj.eq.${normalizedCnpj},to_cnpj.eq.${normalizedCnpj}`);
 

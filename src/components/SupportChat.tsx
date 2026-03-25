@@ -154,7 +154,7 @@ export default function SupportChat() {
                   isConnected && "animate-pulse"
                 )} />
               </div>
-              <p className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest">
+              <p className="text-[9px] font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-widest">
                 {userRole === 'admin' ? 'Central de Atendimento' : 'Suporte Online'}
               </p>
               {userRole === 'user' && (
@@ -166,7 +166,7 @@ export default function SupportChat() {
           </div>
           <button 
             onClick={() => setSupportChatOpen(false)} 
-            className="p-2 hover:bg-zinc-200 dark:hover:bg-zinc-700 rounded-full transition-colors"
+            className="p-2 hover:bg-zinc-200 dark:hover:bg-zinc-700 rounded-full transition-colors text-zinc-500 dark:text-zinc-400"
           >
             <X className="w-5 h-5 md:w-6 h-6" />
           </button>
@@ -180,7 +180,7 @@ export default function SupportChat() {
               </div>
               {chatUsers.length === 0 ? (
                 <div className="p-4 text-center">
-                  <p className="text-[10px] text-zinc-500 font-medium">Nenhuma loja.</p>
+                  <p className="text-[10px] text-zinc-500 dark:text-zinc-400 font-medium">Nenhuma loja.</p>
                 </div>
               ) : (
                 chatUsers.map(user => (
@@ -197,14 +197,14 @@ export default function SupportChat() {
                     </div>
                     <div className="overflow-hidden flex-grow">
                       <div className="flex justify-between items-start">
-                        <p className="text-xs font-bold truncate">{user.bandeira}</p>
+                        <p className="text-xs font-bold truncate text-black dark:text-white">{user.bandeira}</p>
                         {user.lastTimestamp && (
-                          <span className="text-[7px] text-zinc-400">
+                          <span className="text-[7px] text-zinc-400 dark:text-zinc-500">
                             {new Date(user.lastTimestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                           </span>
                         )}
                       </div>
-                      <p className="text-[9px] text-zinc-500 truncate">{user.cnpj}</p>
+                      <p className="text-[9px] text-zinc-500 dark:text-zinc-400 truncate">{user.cnpj}</p>
                     </div>
                     {unreadPerUser[user.cnpj.replace(/[^\d]/g, '')] > 0 && (
                       <div className="bg-red-500 text-white text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center flex-shrink-0">
@@ -224,8 +224,8 @@ export default function SupportChat() {
                 <div className="w-20 h-20 bg-zinc-100 dark:bg-zinc-800 rounded-full flex items-center justify-center mb-4">
                   <MessageCircle className="w-10 h-10 text-zinc-400" />
                 </div>
-                <h4 className="text-lg font-bold mb-2">Selecione uma conversa</h4>
-                <p className="text-sm text-zinc-500 max-w-xs">
+                <h4 className="text-lg font-bold mb-2 text-black dark:text-white">Selecione uma conversa</h4>
+                <p className="text-sm text-zinc-500 dark:text-zinc-400 max-w-xs">
                   Escolha um usuário na lista ao lado para visualizar as mensagens e responder.
                 </p>
               </div>
@@ -282,8 +282,8 @@ export default function SupportChat() {
                         <AlertCircle className="w-8 h-8 text-blue-600" />
                       </div>
                       <div className="max-w-xs bg-white/80 dark:bg-zinc-800/80 backdrop-blur-sm p-4 rounded-2xl">
-                        <p className="text-sm font-bold text-zinc-900 dark:text-white mb-1">Inicie uma conversa</p>
-                        <p className="text-xs text-zinc-500">
+                        <p className="text-sm font-bold text-black dark:text-white mb-1">Inicie uma conversa</p>
+                        <p className="text-xs text-zinc-500 dark:text-zinc-400">
                           {userRole === 'admin' 
                             ? "Envie uma resposta para ajudar o usuário." 
                             : "Descreva o problema ou o produto que está faltando. Nossa equipe responderá em breve."}
@@ -295,7 +295,8 @@ export default function SupportChat() {
                   {filteredMessages.map((msg, idx) => {
                     const normalizedUserCnpj = currentUser?.cnpj.replace(/[^\d]/g, '');
                     const normalizedFromCnpj = msg.from.cnpj.replace(/[^\d]/g, '');
-                    const isMe = normalizedFromCnpj === normalizedUserCnpj && msg.from.username === currentUser?.username;
+                    const isMe = normalizedFromCnpj === normalizedUserCnpj && 
+                                 msg.from.username.toLowerCase().trim() === currentUser?.username.toLowerCase().trim();
                     const prevMsg = idx > 0 ? filteredMessages[idx - 1] : null;
                     const isFirstInGroup = !prevMsg || prevMsg.from.cnpj.replace(/[^\d]/g, '') !== normalizedFromCnpj;
                     
@@ -331,7 +332,7 @@ export default function SupportChat() {
                           )}
                           
                           <div className="flex flex-wrap items-end gap-2">
-                            <p className="text-sm leading-relaxed break-words max-w-full">
+                            <p className="text-sm leading-relaxed break-words max-w-full text-black dark:text-white">
                               {msg.text}
                             </p>
                             <div className="flex items-center gap-1 ml-auto pt-1">
