@@ -971,27 +971,51 @@ export const useStore = create<AppState>()(
       lastUpdateTimestamp: null,
       
       flags: ['Ultra Popular', 'Maxi Popular', 'Entrefarma', 'Farmanorte', 'Outra'],
-      addFlag: (flag) => set((state) => ({ 
-        flags: state.flags.includes(flag) ? state.flags : [...state.flags, flag] 
-      })),
-      removeFlag: (flag) => set((state) => ({ 
-        flags: state.flags.filter(f => f !== flag) 
-      })),
-      updateFlag: (oldFlag, newFlag) => set((state) => ({
-        flags: state.flags.map(f => f === oldFlag ? newFlag : f)
-      })),
+      addFlag: (flag) => set((state) => {
+        const newState = {
+          flags: state.flags.includes(flag) ? state.flags : [...state.flags, flag]
+        };
+        setTimeout(() => get().saveUsersAndFlags(), 0);
+        return newState;
+      }),
+      removeFlag: (flag) => set((state) => {
+        const newState = {
+          flags: state.flags.filter(f => f !== flag)
+        };
+        setTimeout(() => get().saveUsersAndFlags(), 0);
+        return newState;
+      }),
+      updateFlag: (oldFlag, newFlag) => set((state) => {
+        const newState = {
+          flags: state.flags.map(f => f === oldFlag ? newFlag : f)
+        };
+        setTimeout(() => get().saveUsersAndFlags(), 0);
+        return newState;
+      }),
 
       userGroups: [],
-      addUserGroup: (name) => set((state) => ({
-        userGroups: [...state.userGroups, { id: crypto.randomUUID(), name }]
-      })),
-      removeUserGroup: (id) => set((state) => ({
-        userGroups: state.userGroups.filter(g => g.id !== id),
-        allowedStores: state.allowedStores.map(s => s.groupId === id ? { ...s, groupId: undefined } : s)
-      })),
-      updateUserGroup: (id, name) => set((state) => ({
-        userGroups: state.userGroups.map(g => g.id === id ? { ...g, name } : g)
-      })),
+      addUserGroup: (name) => set((state) => {
+        const newState = {
+          userGroups: [...state.userGroups, { id: crypto.randomUUID(), name }]
+        };
+        setTimeout(() => get().saveUsersAndFlags(), 0);
+        return newState;
+      }),
+      removeUserGroup: (id) => set((state) => {
+        const newState = {
+          userGroups: state.userGroups.filter(g => g.id !== id),
+          allowedStores: state.allowedStores.map(s => s.groupId === id ? { ...s, groupId: undefined } : s)
+        };
+        setTimeout(() => get().saveUsersAndFlags(), 0);
+        return newState;
+      }),
+      updateUserGroup: (id, name) => set((state) => {
+        const newState = {
+          userGroups: state.userGroups.map(g => g.id === id ? { ...g, name } : g)
+        };
+        setTimeout(() => get().saveUsersAndFlags(), 0);
+        return newState;
+      }),
       setUserGroup: (cnpj, groupId) => set((state) => {
         const normalizedCnpj = cnpj.replace(/[^\d]/g, '');
         const newAllowedStores = state.allowedStores.map(s => 
@@ -999,6 +1023,7 @@ export const useStore = create<AppState>()(
             ? { ...s, groupId }
             : s
         );
+        setTimeout(() => get().saveUsersAndFlags(), 0);
         return { allowedStores: newAllowedStores };
       }),
 
@@ -1022,13 +1047,16 @@ export const useStore = create<AppState>()(
           newAllowedStores = [...state.allowedStores, updatedStore];
         }
 
+        setTimeout(() => get().saveUsersAndFlags(), 0);
         return { allowedStores: newAllowedStores };
       }),
       removeAllowedStore: (cnpj) => set((state) => {
         const normalizedCnpj = cnpj.replace(/[^\d]/g, '');
-        return { 
+        const newState = { 
           allowedStores: state.allowedStores.filter(s => s.cnpj.replace(/[^\d]/g, '') !== normalizedCnpj) 
         };
+        setTimeout(() => get().saveUsersAndFlags(), 0);
+        return newState;
       }),
 
       toggleEncarteAccess: (cnpj) => set((state) => {
@@ -1038,7 +1066,7 @@ export const useStore = create<AppState>()(
             ? { ...s, hasEncarteAccess: !s.hasEncarteAccess }
             : s
         );
-        state.saveUsersAndFlags();
+        setTimeout(() => get().saveUsersAndFlags(), 0);
         return { allowedStores: newAllowedStores };
       }),
 
