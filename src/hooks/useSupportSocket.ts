@@ -215,9 +215,11 @@ export function useSupportSocket() {
     const toUsername = userRole === 'user' ? 'Suporte SmartPrice' : (targetStore?.bandeira || null);
 
     try {
+      const messageId = `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
       const { error } = await supabase
         .from('chat_messages')
         .insert({
+          id: messageId,
           from_username: currentUser.username || 'Usuário',
           from_cnpj: normalizedFromCnpj,
           from_role: userRole,

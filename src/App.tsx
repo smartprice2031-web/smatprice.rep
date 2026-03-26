@@ -303,7 +303,7 @@ export default function App() {
                 <h2 className="text-xl font-black tracking-tighter uppercase">Pré-visualização de Impressão</h2>
               </div>
               <div className="flex items-center gap-3">
-                <span className="text-xs font-bold text-zinc-500 uppercase tracking-widest">Plaquinha Individual A4</span>
+                <span className="text-xs font-bold text-black dark:text-white opacity-60 uppercase tracking-widest">Plaquinha Individual A4</span>
                 <button 
                   onClick={confirmPrint}
                   className="flex items-center gap-2 px-6 py-2 bg-blue-600 text-white rounded-xl font-black uppercase tracking-tighter shadow-lg hover:bg-blue-700 transition-all"
@@ -347,11 +347,11 @@ export default function App() {
               
               {/* User Info Badge */}
               <div className="hidden lg:flex flex-col items-start ml-4 pl-4 border-l border-zinc-200 dark:border-zinc-800">
-                <span className="text-[9px] font-black uppercase tracking-widest text-zinc-400 leading-none mb-1">Acesso Identificado</span>
+                <span className="text-[9px] font-black uppercase tracking-widest text-black dark:text-white opacity-40 leading-none mb-1">Acesso Identificado</span>
                 <div className="flex items-center gap-2">
                   <div className="flex flex-col">
-                    <span className="text-xs font-bold text-zinc-900 dark:text-zinc-100 leading-none">{currentUser?.username}</span>
-                    <span className="text-[10px] text-zinc-500 font-medium leading-none mt-1">{currentUser?.bandeira}</span>
+                    <span className="text-xs font-bold text-black dark:text-white leading-none">{currentUser?.username}</span>
+                    <span className="text-[10px] text-black dark:text-white opacity-60 font-medium leading-none mt-1">{currentUser?.bandeira}</span>
                   </div>
                   <div className="px-2 py-1 bg-zinc-100 dark:bg-zinc-800 rounded-lg border border-zinc-200 dark:border-zinc-700">
                     <span className="text-[10px] font-mono font-bold text-blue-600 dark:text-blue-400">{currentUser?.cnpj}</span>
@@ -533,12 +533,12 @@ export default function App() {
                     <AlertTriangle className="w-10 h-10 text-amber-500" />
                   </div>
                   <div className="space-y-2">
-                    <h3 className="text-2xl font-black tracking-tighter uppercase">Acesso Restrito</h3>
-                    <p className="text-zinc-500 dark:text-zinc-400 text-sm font-medium leading-relaxed">
+                    <h3 className="text-2xl font-black tracking-tighter uppercase text-black dark:text-white">Acesso Restrito</h3>
+                    <p className="text-black dark:text-white opacity-60 text-sm font-medium leading-relaxed">
                       Sua conta ainda não possui modelos de etiquetas liberados pelo administrador para o CNPJ <span className="font-mono font-bold text-blue-600">{currentUser?.cnpj}</span>.
                     </p>
                     <div className="pt-2 flex flex-col items-center gap-1">
-                      <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Contatos Administrativos:</p>
+                      <p className="text-[10px] font-black text-black dark:text-white opacity-40 uppercase tracking-widest">Contatos Administrativos:</p>
                       <p className="text-xs font-bold text-blue-600">(99) 9 8470-1752 • (99) 9 8199-0035</p>
                     </div>
                   </div>
@@ -568,7 +568,7 @@ export default function App() {
                     "flex-1 py-4 text-sm font-bold flex items-center justify-center gap-2 border-b-2 transition-all",
                     activeTab === 'select' 
                       ? "border-blue-600 text-blue-600 bg-blue-50/50 dark:bg-blue-900/10" 
-                      : "border-transparent text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300"
+                      : "border-transparent text-black dark:text-white opacity-60 hover:opacity-100"
                   )}
                 >
                   <Search className="w-4 h-4" />
@@ -581,7 +581,7 @@ export default function App() {
                       "flex-1 py-4 text-sm font-bold flex items-center justify-center gap-2 border-b-2 transition-all",
                       activeTab === 'adjustments' 
                         ? "border-blue-600 text-blue-600 bg-blue-50/50 dark:bg-blue-900/10" 
-                        : "border-transparent text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300"
+                        : "border-transparent text-black dark:text-white opacity-60 hover:opacity-100"
                     )}
                   >
                     <SettingsIcon className="w-4 h-4" />
@@ -602,7 +602,7 @@ export default function App() {
                           "py-2 px-0.5 text-[8px] font-black uppercase tracking-tighter rounded-lg border transition-all truncate",
                           activeLayoutIndex === layout.originalIndex
                             ? "bg-blue-600 border-blue-600 text-white shadow-md shadow-blue-500/20"
-                            : "bg-white dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 text-zinc-500 hover:border-zinc-400"
+                            : "bg-white dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 text-black dark:text-white opacity-60 hover:border-zinc-400"
                         )}
                         title={layout.name}
                       >
@@ -619,7 +619,7 @@ export default function App() {
               </div>
 
               {/* Footer Info */}
-              <div className="p-4 border-t border-zinc-200 dark:border-zinc-800 text-[10px] text-zinc-400 text-center uppercase tracking-widest font-bold">
+              <div className="p-4 border-t border-zinc-200 dark:border-zinc-800 text-[10px] text-black dark:text-white opacity-40 text-center uppercase tracking-widest font-bold">
                 SmartPrice v1.1 • Pronto para Impressão A4
               </div>
             </aside>
@@ -643,8 +643,8 @@ export default function App() {
                   <Database className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="text-xl font-bold">Gerenciar Estoque</h3>
-                  <p className="text-xs text-zinc-500">Cadastre e edite seus produtos para as plaquinhas</p>
+                  <h3 className="text-xl font-bold text-black dark:text-white">Gerenciar Estoque</h3>
+                  <p className="text-xs text-black dark:text-white opacity-60">Cadastre e edite seus produtos para as plaquinhas</p>
                 </div>
               </div>
               <button 
@@ -670,8 +670,8 @@ export default function App() {
                   <Users className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="text-xl font-bold">Gerenciar Usuários</h3>
-                  <p className="text-xs text-zinc-500">Controle quais CNPJs podem acessar o sistema</p>
+                  <h3 className="text-xl font-bold text-black dark:text-white">Gerenciar Usuários</h3>
+                  <p className="text-xs text-black dark:text-white opacity-60">Controle quais CNPJs podem acessar o sistema</p>
                 </div>
               </div>
               <button 
@@ -707,8 +707,8 @@ export default function App() {
                   <Megaphone className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="text-xl font-bold">Gerenciar Comunicados</h3>
-                  <p className="text-xs text-zinc-500">Envie avisos importantes para os usuários</p>
+                  <h3 className="text-xl font-bold text-black dark:text-white">Gerenciar Comunicados</h3>
+                  <p className="text-xs text-black dark:text-white opacity-60">Envie avisos importantes para os usuários</p>
                 </div>
               </div>
               <button 

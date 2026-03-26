@@ -101,10 +101,10 @@ const PrintQueue = () => {
             >
               <ArrowLeft className="w-5 h-5" />
             </button>
-            <h2 className="text-xl font-black tracking-tighter uppercase">Pré-visualização de Impressão</h2>
+            <h2 className="text-xl font-black tracking-tighter uppercase text-black dark:text-white">Pré-visualização de Impressão</h2>
           </div>
           <div className="flex items-center gap-3">
-            <span className="text-xs font-bold text-zinc-500 uppercase tracking-widest">
+            <span className="text-xs font-bold text-black dark:text-white opacity-60 uppercase tracking-widest">
               {printQueue.length} {printQueue.length === 1 ? 'Página' : 'Páginas'} A4
             </span>
             <button 
@@ -121,7 +121,7 @@ const PrintQueue = () => {
         <div className="flex flex-col items-center gap-8 py-12 px-4 no-print">
           {printQueue.map((item, index) => (
             <div key={index} className="relative group">
-              <div className="absolute -left-12 top-0 text-zinc-400 font-black text-2xl">
+              <div className="absolute -left-12 top-0 text-black dark:text-white opacity-40 font-black text-2xl">
                 {index + 1}
               </div>
               <div className={`bg-white shadow-[0_0_50px_rgba(0,0,0,0.1)] ${item.isLandscape ? 'w-[297mm] h-[210mm]' : 'w-[210mm] h-[297mm]'} flex items-center justify-center overflow-hidden border border-zinc-200`}>
@@ -156,15 +156,15 @@ const PrintQueue = () => {
               <ArrowLeft className="w-6 h-6" />
             </button>
             <div>
-              <h1 className="text-3xl font-black tracking-tighter">FILA DE <span className="text-blue-600">IMPRESSÃO</span></h1>
-              <p className="text-zinc-500 text-sm font-medium uppercase tracking-widest">{printQueue.length} plaquinhas na fila</p>
+              <h1 className="text-3xl font-black tracking-tighter text-black dark:text-white">FILA DE <span className="text-blue-600">IMPRESSÃO</span></h1>
+              <p className="text-black dark:text-white opacity-60 text-sm font-medium uppercase tracking-widest">{printQueue.length} plaquinhas na fila</p>
             </div>
           </div>
 
           <div className="flex items-center gap-3">
             <button 
               onClick={clearQueue}
-              className="px-4 py-2 text-zinc-500 hover:text-red-500 font-bold text-sm uppercase tracking-tighter flex items-center gap-2"
+              className="px-4 py-2 text-black dark:text-white opacity-60 hover:text-red-500 font-bold text-sm uppercase tracking-tighter flex items-center gap-2"
             >
               <Trash2 className="w-4 h-4" />
               Limpar Fila
@@ -217,12 +217,12 @@ const PrintQueue = () => {
           ))}
 
           {printQueue.length === 0 && (
-            <div className="col-span-full py-20 flex flex-col items-center justify-center text-zinc-400 border-2 border-dashed border-zinc-200 dark:border-zinc-800 rounded-3xl">
+            <div className="col-span-full py-20 flex flex-col items-center justify-center text-black dark:text-white opacity-40 border-2 border-dashed border-zinc-200 dark:border-zinc-800 rounded-3xl">
               <LayoutGrid className="w-16 h-16 mb-4 opacity-20" />
-              <p className="font-bold uppercase tracking-widest text-sm">Sua fila está vazia</p>
+              <p className="font-bold uppercase tracking-widest text-sm text-black dark:text-white opacity-60">Sua fila está vazia</p>
               <button 
                 onClick={() => setView('editor')}
-                className="mt-4 text-blue-600 font-bold hover:underline"
+                className="mt-4 text-blue-600 font-bold hover:underline opacity-100"
               >
                 Voltar ao editor para adicionar plaquinhas
               </button>

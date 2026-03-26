@@ -154,7 +154,7 @@ export default function SupportChat() {
                   isConnected && "animate-pulse"
                 )} />
               </div>
-              <p className="text-[9px] font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-widest">
+              <p className="text-[9px] font-bold text-black dark:text-white uppercase tracking-widest">
                 {userRole === 'admin' ? 'Central de Atendimento' : 'Suporte Online'}
               </p>
               {userRole === 'user' && (
@@ -180,7 +180,7 @@ export default function SupportChat() {
               </div>
               {chatUsers.length === 0 ? (
                 <div className="p-4 text-center">
-                  <p className="text-[10px] text-zinc-500 dark:text-zinc-400 font-medium">Nenhuma loja.</p>
+                  <p className="text-[10px] text-black dark:text-white font-medium">Nenhuma loja.</p>
                 </div>
               ) : (
                 chatUsers.map(user => (
@@ -204,7 +204,7 @@ export default function SupportChat() {
                           </span>
                         )}
                       </div>
-                      <p className="text-[9px] text-zinc-500 dark:text-zinc-400 truncate">{user.cnpj}</p>
+                      <p className="text-[9px] text-black dark:text-white truncate">{user.cnpj}</p>
                     </div>
                     {unreadPerUser[user.cnpj.replace(/[^\d]/g, '')] > 0 && (
                       <div className="bg-red-500 text-white text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center flex-shrink-0">
@@ -225,7 +225,7 @@ export default function SupportChat() {
                   <MessageCircle className="w-10 h-10 text-zinc-400" />
                 </div>
                 <h4 className="text-lg font-bold mb-2 text-black dark:text-white">Selecione uma conversa</h4>
-                <p className="text-sm text-zinc-500 dark:text-zinc-400 max-w-xs">
+                <p className="text-sm text-black dark:text-white max-w-xs">
                   Escolha um usuário na lista ao lado para visualizar as mensagens e responder.
                 </p>
               </div>
@@ -283,7 +283,7 @@ export default function SupportChat() {
                       </div>
                       <div className="max-w-xs bg-white/80 dark:bg-zinc-800/80 backdrop-blur-sm p-4 rounded-2xl">
                         <p className="text-sm font-bold text-black dark:text-white mb-1">Inicie uma conversa</p>
-                        <p className="text-xs text-zinc-500 dark:text-zinc-400">
+                        <p className="text-xs text-black dark:text-white">
                           {userRole === 'admin' 
                             ? "Envie uma resposta para ajudar o usuário." 
                             : "Descreva o problema ou o produto que está faltando. Nossa equipe responderá em breve."}
@@ -336,7 +336,7 @@ export default function SupportChat() {
                               {msg.text}
                             </p>
                             <div className="flex items-center gap-1 ml-auto pt-1">
-                              <span className="text-[9px] text-zinc-500 dark:text-zinc-400 font-medium">
+                              <span className="text-[9px] text-black dark:text-white font-medium">
                                 {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                               </span>
                               {isMe && (

@@ -183,10 +183,10 @@ const ProductManager = () => {
     <div className="p-6 space-y-6">
       <div className="flex justify-between items-center">
         <div className="space-y-1">
-          <h2 className="text-2xl font-bold flex items-center gap-2">
+          <h2 className="text-2xl font-bold flex items-center gap-2 text-black dark:text-white">
             <Package className="w-6 h-6 text-blue-600" />
             Gerenciar Produtos
-            <span className="text-sm font-normal text-zinc-500 ml-2 bg-zinc-100 dark:bg-zinc-800 px-2 py-0.5 rounded-full">
+            <span className="text-sm font-normal text-black dark:text-white opacity-60 ml-2 bg-zinc-100 dark:bg-zinc-800 px-2 py-0.5 rounded-full">
               {productCount !== null ? productCount : products.length} { (productCount !== null ? productCount : products.length) === 1 ? 'produto' : 'produtos'}
             </span>
           </h2>
@@ -231,7 +231,7 @@ const ProductManager = () => {
         <input
           type="text"
           placeholder="Buscar produtos..."
-          className="w-full pl-10 pr-4 py-2 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+          className="w-full pl-10 pr-4 py-2 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-black dark:text-white"
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
         />
@@ -239,7 +239,7 @@ const ProductManager = () => {
 
       <div className="grid grid-cols-1 gap-4">
         {isLoading ? (
-          <div className="py-20 flex flex-col items-center justify-center text-zinc-500 gap-4">
+          <div className="py-20 flex flex-col items-center justify-center text-black dark:text-white opacity-60 gap-4">
             <RefreshCw className="w-8 h-8 animate-spin text-blue-600" />
             <p className="font-medium">Carregando produtos...</p>
           </div>
@@ -260,12 +260,12 @@ const ProductManager = () => {
               </div>
               
               <div className="flex-grow">
-                <h3 className="font-bold text-lg uppercase">{product.name}</h3>
-                <p className="text-sm text-zinc-500 line-clamp-1">{product.description}</p>
+                <h3 className="font-bold text-lg uppercase text-black dark:text-white">{product.name}</h3>
+                <p className="text-sm text-black dark:text-white opacity-60 line-clamp-1">{product.description}</p>
                 <div className="flex items-center gap-3 mt-1">
                   <span className="text-blue-600 font-bold">{product.price}</span>
                   {product.category && (
-                    <span className="text-xs bg-zinc-100 dark:bg-zinc-700 px-2 py-0.5 rounded text-zinc-500">
+                    <span className="text-xs bg-zinc-100 dark:bg-zinc-700 px-2 py-0.5 rounded text-black dark:text-white opacity-60">
                       {product.category}
                     </span>
                   )}
@@ -299,10 +299,10 @@ const ProductManager = () => {
             </div>
           ))
         ) : (
-          <div className="py-20 text-center text-zinc-500 bg-white dark:bg-zinc-800 rounded-xl border border-dashed border-zinc-300 dark:border-zinc-700">
+          <div className="py-20 text-center text-black dark:text-white opacity-40 bg-white dark:bg-zinc-800 rounded-xl border border-dashed border-zinc-300 dark:border-zinc-700">
             <Package className="w-12 h-12 mx-auto mb-4 opacity-20" />
-            <p className="font-medium">Nenhum produto encontrado.</p>
-            <p className="text-sm opacity-60">Tente buscar por outro nome ou cadastre um novo produto.</p>
+            <p className="font-medium text-black dark:text-white opacity-60">Nenhum produto encontrado.</p>
+            <p className="text-sm opacity-40">Tente buscar por outro nome ou cadastre um novo produto.</p>
           </div>
         )}
       </div>
@@ -311,16 +311,16 @@ const ProductManager = () => {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white dark:bg-zinc-900 w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden">
             <div className="p-6 border-b border-zinc-200 dark:border-zinc-800 flex justify-between items-center">
-              <h3 className="text-xl font-bold">Adicionar em Massa</h3>
-              <button onClick={() => setIsBulkModalOpen(false)} className="text-zinc-500 hover:text-zinc-700">&times;</button>
+              <h3 className="text-xl font-bold text-black dark:text-white">Adicionar em Massa</h3>
+              <button onClick={() => setIsBulkModalOpen(false)} className="text-black dark:text-white opacity-60 hover:opacity-100">&times;</button>
             </div>
             
             <form onSubmit={handleBulkSubmit} className="p-6 space-y-4">
               <div className="space-y-2">
-                <label className="block text-sm font-medium">Dados JSON (Array de objetos)</label>
+                <label className="block text-sm font-medium text-black dark:text-white opacity-60">Dados JSON (Array de objetos)</label>
                 <textarea
                   rows={10}
-                  className="w-full px-3 py-2 bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg font-mono text-xs"
+                  className="w-full px-3 py-2 bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg font-mono text-xs text-black dark:text-white"
                   placeholder='[{"name": "Produto A", "price": "R$ 10,00"}, {"name": "Produto B", "price": "R$ 20,00"}]'
                   value={bulkData}
                   onChange={e => setBulkData(e.target.value)}
@@ -351,58 +351,58 @@ const ProductManager = () => {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white dark:bg-zinc-900 w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden">
             <div className="p-6 border-b border-zinc-200 dark:border-zinc-800 flex justify-between items-center">
-              <h3 className="text-xl font-bold">{editingProduct ? 'Editar Produto' : 'Novo Produto'}</h3>
-              <button onClick={() => setIsModalOpen(false)} className="text-zinc-500 hover:text-zinc-700">&times;</button>
+              <h3 className="text-xl font-bold text-black dark:text-white">{editingProduct ? 'Editar Produto' : 'Novo Produto'}</h3>
+              <button onClick={() => setIsModalOpen(false)} className="text-black dark:text-white opacity-60 hover:opacity-100">&times;</button>
             </div>
             
-            <form onSubmit={handleSubmit} className="p-6 space-y-4">
+            <form onSubmit={handleSubmit} className="p-6 space-y-4 text-black dark:text-white">
               <div className="grid grid-cols-2 gap-4">
                 <div className="col-span-2">
-                  <label className="block text-sm font-medium mb-1">Nome do Produto</label>
+                  <label className="block text-sm font-medium mb-1 opacity-60">Nome do Produto</label>
                   <input
                     required
                     type="text"
-                    className="w-full px-3 py-2 bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg"
+                    className="w-full px-3 py-2 bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg text-black dark:text-white"
                     value={formData.name}
                     onChange={e => setFormData({ ...formData, name: e.target.value })}
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1">Preço</label>
+                  <label className="block text-sm font-medium mb-1 opacity-60">Preço</label>
                   <input
                     required
                     type="text"
                     placeholder="R$ 0,00"
-                    className="w-full px-3 py-2 bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg"
+                    className="w-full px-3 py-2 bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg text-black dark:text-white"
                     value={formData.price}
                     onChange={e => setFormData({ ...formData, price: e.target.value })}
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1">Categoria</label>
+                  <label className="block text-sm font-medium mb-1 opacity-60">Categoria</label>
                   <input
                     type="text"
-                    className="w-full px-3 py-2 bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg"
+                    className="w-full px-3 py-2 bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg text-black dark:text-white"
                     value={formData.category}
                     onChange={e => setFormData({ ...formData, category: e.target.value })}
                   />
                 </div>
                 <div className="col-span-2">
-                  <label className="block text-sm font-medium mb-1">Descrição</label>
+                  <label className="block text-sm font-medium mb-1 opacity-60">Descrição</label>
                   <textarea
                     rows={3}
-                    className="w-full px-3 py-2 bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg"
+                    className="w-full px-3 py-2 bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg text-black dark:text-white"
                     value={formData.description}
                     onChange={e => setFormData({ ...formData, description: e.target.value })}
                   />
                 </div>
                 <div className="col-span-2">
-                  <label className="block text-sm font-medium mb-1">URL da Imagem do Produto</label>
+                  <label className="block text-sm font-medium mb-1 opacity-60">URL da Imagem do Produto</label>
                   <div className="space-y-3">
                     <input
                       type="url"
                       placeholder="https://exemplo.com/imagem.jpg"
-                      className="w-full px-3 py-2 bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg"
+                      className="w-full px-3 py-2 bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg text-black dark:text-white"
                       value={formData.image || ''}
                       onChange={e => setFormData({ ...formData, image: e.target.value })}
                     />
@@ -430,8 +430,8 @@ const ProductManager = () => {
                     
                     {!formData.image && (
                       <div className="py-8 border-2 border-zinc-300 dark:border-zinc-700 border-dashed rounded-lg text-center">
-                        <Package className="mx-auto h-8 w-8 text-zinc-400 opacity-50" />
-                        <p className="text-xs text-zinc-500 mt-2">Insira a URL para visualizar a imagem</p>
+                        <Package className="mx-auto h-8 w-8 text-black dark:text-white opacity-20" />
+                        <p className="text-xs text-black dark:text-white opacity-40 mt-2">Insira a URL para visualizar a imagem</p>
                       </div>
                     )}
                   </div>
@@ -465,7 +465,7 @@ const ProductManager = () => {
               <AlertTriangle className="w-6 h-6" />
               <h3 className="text-lg font-bold">Confirmar Exclusão</h3>
             </div>
-            <p className="text-sm text-zinc-500">
+            <p className="text-sm text-black dark:text-white opacity-60">
               Tem certeza que deseja excluir este produto? Esta ação não pode ser desfeita.
             </p>
             <div className="flex gap-3 pt-2">

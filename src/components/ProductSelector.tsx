@@ -53,11 +53,11 @@ const ProductSelector: React.FC<{ onSelect?: (product: Product) => void }> = ({ 
     return (
       <div className="space-y-4">
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 w-4 h-4" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-black dark:text-white opacity-40 w-4 h-4" />
           <input
             type="text"
             placeholder="Buscar produto pelo nome..."
-            className="w-full pl-10 pr-4 py-3 bg-zinc-100 dark:bg-zinc-800 border-none rounded-2xl text-sm focus:ring-2 focus:ring-emerald-500 outline-none transition-all"
+            className="w-full pl-10 pr-4 py-3 bg-zinc-100 dark:bg-zinc-800 border-none rounded-2xl text-sm text-black dark:text-white focus:ring-2 focus:ring-emerald-500 outline-none transition-all"
             value={generalSearchTerm}
             onChange={(e) => setGeneralSearchTerm(e.target.value)}
           />
@@ -74,17 +74,17 @@ const ProductSelector: React.FC<{ onSelect?: (product: Product) => void }> = ({ 
                 {product.image ? (
                   <img src={product.image} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                 ) : (
-                  <Package className="w-full h-full p-2 text-zinc-400" />
+                  <Package className="w-full h-full p-2 text-black dark:text-white opacity-40" />
                 )}
               </div>
               <div className="flex-grow min-w-0">
-                <h4 className="font-bold text-sm truncate uppercase text-zinc-900 dark:text-white">{product.name}</h4>
+                <h4 className="font-bold text-sm truncate uppercase text-black dark:text-white">{product.name}</h4>
                 <p className="text-xs text-emerald-600 font-black">{product.price}</p>
               </div>
             </button>
           ))}
           {generalFilteredProducts.length === 0 && (
-            <div className="text-center py-12 text-zinc-500 text-sm italic">
+            <div className="text-center py-12 text-black dark:text-white opacity-60 text-sm italic">
               Nenhum produto encontrado.
             </div>
           )}
@@ -196,7 +196,7 @@ const ProductSlot = ({
       <button 
         onClick={handleSync}
         disabled={isSyncing}
-        className="flex items-center gap-1.5 px-2 py-1 text-zinc-400 hover:text-blue-600 transition-colors disabled:opacity-50 text-[10px] font-black uppercase tracking-tighter"
+        className="flex items-center gap-1.5 px-2 py-1 text-black dark:text-white opacity-60 hover:text-blue-600 transition-colors disabled:opacity-50 text-[10px] font-black uppercase tracking-tighter"
         title="Sincronizar produtos"
       >
         <RefreshCw className={`w-3 h-3 ${isSyncing ? 'animate-spin' : ''}`} />
@@ -238,31 +238,31 @@ const ProductSlot = ({
     {/* Manual Info Editing */}
     <div className="grid grid-cols-1 gap-3">
       <div className="space-y-1">
-        <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">
+        <label className="text-[10px] font-black text-black dark:text-white opacity-60 uppercase tracking-widest">
           Nome do Produto
         </label>
         <input
           type="text"
-          className="w-full px-3 py-1.5 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg text-xs font-bold focus:ring-2 focus:ring-blue-500 outline-none text-zinc-900 dark:text-white"
+          className="w-full px-3 py-1.5 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg text-xs font-bold focus:ring-2 focus:ring-blue-500 outline-none text-black dark:text-white"
           value={currentName}
           onChange={(e) => setElement(slot, 'name', { text: e.target.value })}
         />
       </div>
 
       <div className="space-y-1">
-        <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">
+        <label className="text-[10px] font-black text-black dark:text-white opacity-60 uppercase tracking-widest">
           Descrição
         </label>
         <textarea
           rows={2}
-          className="w-full px-3 py-1.5 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg text-xs focus:ring-2 focus:ring-blue-500 outline-none resize-none text-zinc-900 dark:text-white"
+          className="w-full px-3 py-1.5 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg text-xs focus:ring-2 focus:ring-blue-500 outline-none resize-none text-black dark:text-white"
           value={currentDescription}
           onChange={(e) => setElement(slot, 'description', { text: e.target.value })}
         />
       </div>
 
       <div className="space-y-1">
-        <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">
+        <label className="text-[10px] font-black text-black dark:text-white opacity-60 uppercase tracking-widest">
           Preço
         </label>
         <input
@@ -277,22 +277,22 @@ const ProductSlot = ({
 
     {/* Search Input */}
     <div className="space-y-1">
-      <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">
+      <label className="text-[10px] font-black text-black dark:text-white opacity-60 uppercase tracking-widest">
         Buscar Produto
       </label>
       <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 w-3.5 h-3.5" />
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-black dark:text-white opacity-40 w-3.5 h-3.5" />
         <input
           type="text"
           placeholder="Digite para pesquisar..."
-          className="w-full pl-9 pr-10 py-2 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+          className="w-full pl-9 pr-10 py-2 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl text-sm text-black dark:text-white focus:ring-2 focus:ring-blue-500 outline-none"
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
         />
         {searchTerm && (
           <button 
             onClick={() => setSearchTerm('')}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200"
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-black dark:text-white opacity-40 hover:opacity-100"
           >
             <X className="w-3.5 h-3.5" />
           </button>
@@ -322,11 +322,11 @@ const ProductSlot = ({
                 {product.image ? (
                   <img src={product.image} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                 ) : (
-                  <Package className="w-full h-full p-1.5 text-zinc-400" />
+                  <Package className="w-full h-full p-1.5 text-black dark:text-white opacity-40" />
                 )}
               </div>
               <div className="flex-grow min-w-0">
-                <h4 className="font-bold text-xs truncate uppercase text-zinc-900 dark:text-white">{product.name}</h4>
+                <h4 className="font-bold text-xs truncate uppercase text-black dark:text-white">{product.name}</h4>
                 <p className="text-[10px] text-blue-600 font-black">{product.price}</p>
               </div>
               {isSelected && <Check className="w-3 h-3 text-blue-500 flex-shrink-0" />}
@@ -334,7 +334,7 @@ const ProductSlot = ({
           );
         })
       ) : (
-        <div className="text-center py-4 text-zinc-500 text-xs">
+        <div className="text-center py-4 text-black dark:text-white opacity-60 text-xs">
           Nenhum produto encontrado.
         </div>
       )}

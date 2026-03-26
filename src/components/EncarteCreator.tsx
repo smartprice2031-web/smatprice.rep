@@ -378,7 +378,7 @@ export default function EncarteCreator() {
                 "flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all",
                 activeTab === 'products' 
                   ? "bg-white dark:bg-zinc-700 shadow-sm text-zinc-900 dark:text-white" 
-                  : "text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300"
+                  : "text-black dark:text-white opacity-60 hover:opacity-100"
               )}
             >
               <Package className="w-4 h-4" />
@@ -390,7 +390,7 @@ export default function EncarteCreator() {
                 "flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all",
                 activeTab === 'adjustments' 
                   ? "bg-white dark:bg-zinc-700 shadow-sm text-zinc-900 dark:text-white" 
-                  : "text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300"
+                  : "text-black dark:text-white opacity-60 hover:opacity-100"
               )}
             >
               <Settings2 className="w-4 h-4" />
@@ -401,22 +401,22 @@ export default function EncarteCreator() {
           {activeTab === 'products' ? (
             <>
               <div className="bg-white dark:bg-zinc-900 p-6 rounded-3xl border border-zinc-200 dark:border-zinc-800 shadow-sm">
-                <h3 className="text-xs font-black uppercase tracking-widest text-zinc-400 mb-4">Configuração Geral</h3>
+                <h3 className="text-xs font-black uppercase tracking-widest text-black dark:text-white opacity-40 mb-4">Configuração Geral</h3>
                 
                 <div className="space-y-4">
                   <div className="space-y-1">
-                    <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 ml-1">Data do Encarte</label>
+                    <label className="text-[10px] font-black uppercase tracking-widest text-black dark:text-white opacity-60 ml-1">Data do Encarte</label>
                     <input 
                       type="text"
                       placeholder="Ex: Ofertas válidas até 25/03"
                       value={currentEncarte.date || ''}
                       onChange={(e) => updateActiveEncarte({ date: e.target.value })}
-                      className="w-full px-4 py-2.5 bg-zinc-50 dark:bg-zinc-800 border-none rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none transition-all font-bold text-zinc-900 dark:text-white"
+                      className="w-full px-4 py-2.5 bg-zinc-50 dark:bg-zinc-800 border-none rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none transition-all font-bold text-black dark:text-white"
                     />
                   </div>
 
                   <div className="space-y-1">
-                    <h4 className="text-[10px] font-black uppercase tracking-widest text-zinc-400 mb-2">Modelos de Encarte</h4>
+                    <h4 className="text-[10px] font-black uppercase tracking-widest text-black dark:text-white opacity-40 mb-2">Modelos de Encarte</h4>
                     <div className="grid grid-cols-2 gap-2">
                       {encartes.map((encarte, index) => (
                         <button
@@ -426,7 +426,7 @@ export default function EncarteCreator() {
                             "py-2 px-3 rounded-xl text-[10px] font-black uppercase transition-all border-2 truncate",
                             activeEncarteIndex === index
                               ? "bg-emerald-600 border-emerald-600 text-white shadow-lg scale-105"
-                              : "bg-zinc-100 dark:bg-zinc-800 border-transparent text-zinc-500 hover:bg-zinc-200 dark:hover:bg-zinc-700"
+                              : "bg-zinc-100 dark:bg-zinc-800 border-transparent text-black dark:text-white opacity-40 hover:opacity-100"
                           )}
                           title={encarte.name}
                         >
@@ -436,14 +436,14 @@ export default function EncarteCreator() {
                     </div>
                   </div>
                 </div>
-                <p className="mt-3 text-[10px] font-bold text-zinc-400 uppercase text-center">
-                  Editando: <span className="text-zinc-900 dark:text-white">{currentEncarte.name}</span>
+                <p className="mt-3 text-[10px] font-bold text-black dark:text-white opacity-40 uppercase text-center">
+                  Editando: <span className="text-black dark:text-white opacity-100">{currentEncarte.name}</span>
                 </p>
               </div>
 
               <div className="bg-white dark:bg-zinc-900 p-6 rounded-3xl border border-zinc-200 dark:border-zinc-800 shadow-sm flex-grow overflow-hidden flex flex-col">
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-xs font-black uppercase tracking-widest text-zinc-400 mb-4">Produtos ({currentSide})</h3>
+                  <h3 className="text-xs font-black uppercase tracking-widest text-black dark:text-white opacity-40 mb-4">Produtos ({currentSide})</h3>
                   <div className="flex items-center gap-2">
                     <button 
                       onClick={() => {
@@ -458,10 +458,10 @@ export default function EncarteCreator() {
                     <select 
                       value={currentEncarte.productCount}
                       onChange={(e) => updateActiveEncarte({ productCount: parseInt(e.target.value) })}
-                      className="text-[10px] font-black uppercase tracking-widest bg-zinc-100 dark:bg-zinc-800 px-2 py-1 rounded-lg outline-none border-none"
+                      className="text-[10px] font-black uppercase tracking-widest bg-zinc-100 dark:bg-zinc-800 px-2 py-1 rounded-lg outline-none border-none text-black dark:text-white"
                     >
                       {[4, 6, 8, 10, 12].map(n => (
-                        <option key={n} value={n}>{n} Itens</option>
+                        <option key={n} value={n} className="bg-white dark:bg-zinc-800">{n} Itens</option>
                       ))}
                     </select>
                     <button 
@@ -483,7 +483,7 @@ export default function EncarteCreator() {
                   {currentProducts.map((product, index) => (
                     <div key={index} className="space-y-2">
                       <div className="flex items-center justify-between px-2">
-                        <span className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Posição {index + 1}</span>
+                        <span className="text-[10px] font-black text-black dark:text-white opacity-40 uppercase tracking-widest">Posição {index + 1}</span>
                         {product && (
                           <button 
                             onClick={() => handleRemoveProduct(index)}
@@ -501,7 +501,7 @@ export default function EncarteCreator() {
                               {product.image ? (
                                 <img src={product.image} className="w-full h-full object-contain p-1" referrerPolicy="no-referrer" />
                               ) : (
-                                <Package className="w-6 h-6 text-zinc-400" />
+                                <Package className="w-6 h-6 text-black dark:text-white opacity-40" />
                               )}
                             </div>
                             <div className="flex-grow min-w-0">
@@ -509,13 +509,13 @@ export default function EncarteCreator() {
                                 type="text"
                                 value={product.name}
                                 onChange={(e) => handleUpdateProduct(index, 'name', e.target.value)}
-                                className="w-full bg-transparent text-xs font-black uppercase tracking-tighter outline-none border-b border-transparent focus:border-emerald-500 text-zinc-900 dark:text-white"
+                                className="w-full bg-transparent text-xs font-black uppercase tracking-tighter outline-none border-b border-transparent focus:border-emerald-500 text-black dark:text-white"
                               />
                               <input 
                                 type="text"
                                 value={product.subtitle || ''}
                                 onChange={(e) => handleUpdateProduct(index, 'subtitle', e.target.value)}
-                                className="w-full bg-transparent text-[10px] font-bold text-zinc-500 dark:text-zinc-400 outline-none border-b border-transparent focus:border-emerald-500"
+                                className="w-full bg-transparent text-[10px] font-bold text-black dark:text-white opacity-60 outline-none border-b border-transparent focus:border-emerald-500"
                                 placeholder="Subdescrição..."
                               />
                             </div>
@@ -523,7 +523,7 @@ export default function EncarteCreator() {
                           
                           <div className="flex items-center justify-between gap-4">
                             <div className="flex items-center gap-2">
-                              <span className="text-[10px] font-black text-zinc-400 uppercase">Preço:</span>
+                              <span className="text-[10px] font-black text-black dark:text-white opacity-40 uppercase">Preço:</span>
                               <input 
                                 type="text"
                                 value={product.price}
@@ -534,19 +534,19 @@ export default function EncarteCreator() {
 
                           <div className="flex items-center justify-between gap-2">
                             <div className="flex flex-col gap-1">
-                              <span className="text-[9px] font-black text-zinc-400 uppercase">Mover Card:</span>
+                              <span className="text-[9px] font-black text-black dark:text-white opacity-40 uppercase">Mover Card:</span>
                               <div className="flex items-center gap-1 bg-zinc-100 dark:bg-zinc-900 p-1 rounded-lg">
-                                <button onClick={() => handleMove(index, 'left', 'card')} className="p-1 hover:bg-white dark:hover:bg-zinc-800 rounded shadow-sm transition-all"><MoveLeft className="w-3 h-3" /></button>
+                                <button onClick={() => handleMove(index, 'left', 'card')} className="p-1 hover:bg-white dark:hover:bg-zinc-800 rounded shadow-sm transition-all text-black dark:text-white"><MoveLeft className="w-3 h-3" /></button>
                                 <div className="flex flex-col gap-1">
-                                  <button onClick={() => handleMove(index, 'up', 'card')} className="p-1 hover:bg-white dark:hover:bg-zinc-800 rounded shadow-sm transition-all"><MoveUp className="w-3 h-3" /></button>
-                                  <button onClick={() => handleMove(index, 'down', 'card')} className="p-1 hover:bg-white dark:hover:bg-zinc-800 rounded shadow-sm transition-all"><MoveDown className="w-3 h-3" /></button>
+                                  <button onClick={() => handleMove(index, 'up', 'card')} className="p-1 hover:bg-white dark:hover:bg-zinc-800 rounded shadow-sm transition-all text-black dark:text-white"><MoveUp className="w-3 h-3" /></button>
+                                  <button onClick={() => handleMove(index, 'down', 'card')} className="p-1 hover:bg-white dark:hover:bg-zinc-800 rounded shadow-sm transition-all text-black dark:text-white"><MoveDown className="w-3 h-3" /></button>
                                 </div>
-                                <button onClick={() => handleMove(index, 'right', 'card')} className="p-1 hover:bg-white dark:hover:bg-zinc-800 rounded shadow-sm transition-all"><MoveRight className="w-3 h-3" /></button>
+                                <button onClick={() => handleMove(index, 'right', 'card')} className="p-1 hover:bg-white dark:hover:bg-zinc-800 rounded shadow-sm transition-all text-black dark:text-white"><MoveRight className="w-3 h-3" /></button>
                               </div>
                             </div>
 
                             <div className="flex flex-col gap-1">
-                              <span className="text-[9px] font-black text-zinc-400 uppercase">Mover Texto:</span>
+                              <span className="text-[9px] font-black text-black dark:text-white opacity-40 uppercase">Mover Texto:</span>
                               <div className="flex items-center gap-1 bg-zinc-100 dark:bg-zinc-900 p-1 rounded-lg">
                                 <button onClick={() => handleMove(index, 'left', 'text')} className="p-1 hover:bg-white dark:hover:bg-zinc-800 rounded shadow-sm transition-all text-emerald-600"><MoveLeft className="w-3 h-3" /></button>
                                 <div className="flex flex-col gap-1">
@@ -562,7 +562,7 @@ export default function EncarteCreator() {
                       ) : (
                         <button 
                           onClick={() => openSelector(index)}
-                          className="w-full py-4 border-2 border-dashed border-zinc-200 dark:border-zinc-800 rounded-2xl text-zinc-400 hover:text-emerald-500 hover:border-emerald-500/50 transition-all flex flex-col items-center gap-1"
+                          className="w-full py-4 border-2 border-dashed border-zinc-200 dark:border-zinc-800 rounded-2xl text-black dark:text-white opacity-40 hover:text-emerald-500 hover:border-emerald-500/50 transition-all flex flex-col items-center gap-1"
                         >
                           <Plus className="w-5 h-5" />
                           <span className="text-[10px] font-black uppercase tracking-widest">Adicionar</span>

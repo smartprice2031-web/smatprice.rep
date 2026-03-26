@@ -158,7 +158,7 @@ export default function UserManagement() {
               "py-4 px-6 text-xs font-black uppercase tracking-widest flex items-center gap-2 border-b-2 transition-all whitespace-nowrap",
               activeTab === 'stores' 
                 ? "border-blue-600 text-blue-600" 
-                : "border-transparent text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300"
+                : "border-transparent text-black dark:text-white opacity-60 hover:opacity-100"
             )}
           >
             <Store className="w-4 h-4" />
@@ -170,7 +170,7 @@ export default function UserManagement() {
               "py-4 px-6 text-xs font-black uppercase tracking-widest flex items-center gap-2 border-b-2 transition-all whitespace-nowrap",
               activeTab === 'flags' 
                 ? "border-blue-600 text-blue-600" 
-                : "border-transparent text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300"
+                : "border-transparent text-black dark:text-white opacity-60 hover:opacity-100"
             )}
           >
             <Flag className="w-4 h-4" />
@@ -182,7 +182,7 @@ export default function UserManagement() {
               "py-4 px-6 text-xs font-black uppercase tracking-widest flex items-center gap-2 border-b-2 transition-all whitespace-nowrap",
               activeTab === 'groups' 
                 ? "border-blue-600 text-blue-600" 
-                : "border-transparent text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300"
+                : "border-transparent text-black dark:text-white opacity-60 hover:opacity-100"
             )}
           >
             <Users className="w-4 h-4" />
@@ -211,28 +211,28 @@ export default function UserManagement() {
             <div className="bg-zinc-50 dark:bg-zinc-800/50 p-6 rounded-2xl border border-zinc-200 dark:border-zinc-800">
               <div className="flex items-center gap-2 mb-4">
                 <Shield className="w-5 h-5 text-blue-600" />
-                <h3 className="font-bold text-lg">Autorizar Novo Acesso</h3>
+                <h3 className="font-bold text-lg text-black dark:text-white">Autorizar Novo Acesso</h3>
               </div>
               
               <form onSubmit={handleAdd} className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="space-y-1">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 ml-1">CNPJ da Loja</label>
+                  <label className="text-[10px] font-black uppercase tracking-widest text-black dark:text-white opacity-60 ml-1">CNPJ da Loja</label>
                   <input
                     type="text"
                     value={newCnpj}
                     onChange={(e) => setNewCnpj(e.target.value)}
                     placeholder="00.000.000/0000-00"
-                    className="w-full px-4 py-2.5 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all font-mono"
+                    className="w-full px-4 py-2.5 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all font-mono text-black dark:text-white"
                     required
                   />
                 </div>
                 
                   <div className="space-y-1">
-                    <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 ml-1">Bandeira</label>
+                    <label className="text-[10px] font-black uppercase tracking-widest text-black dark:text-white opacity-60 ml-1">Bandeira</label>
                     <select
                       value={newBandeira}
                       onChange={(e) => setNewBandeira(e.target.value)}
-                      className="w-full px-4 py-2.5 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all font-bold"
+                      className="w-full px-4 py-2.5 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all font-bold text-black dark:text-white"
                     >
                       {flags.map(flag => (
                         <option key={flag} value={flag}>{flag}</option>
@@ -241,11 +241,11 @@ export default function UserManagement() {
                   </div>
 
                   <div className="space-y-1">
-                    <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 ml-1">Grupo (Empresa)</label>
+                    <label className="text-[10px] font-black uppercase tracking-widest text-black dark:text-white opacity-60 ml-1">Grupo (Empresa)</label>
                     <select
                       value={newStoreGroupId}
                       onChange={(e) => setNewStoreGroupId(e.target.value)}
-                      className="w-full px-4 py-2.5 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all font-bold"
+                      className="w-full px-4 py-2.5 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all font-bold text-black dark:text-white"
                     >
                       <option value="">Sem Grupo</option>
                       {userGroups.map(group => (
@@ -256,7 +256,7 @@ export default function UserManagement() {
 
                 <div className="space-y-1 md:col-span-2">
                   <div className="flex items-center justify-between mb-1">
-                    <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 ml-1">Modelos de Plaquinhas Permitidos</label>
+                    <label className="text-[10px] font-black uppercase tracking-widest text-black dark:text-white opacity-60 ml-1">Modelos de Plaquinhas Permitidos</label>
                     <div className="flex gap-2">
                       <button 
                         type="button"
@@ -291,7 +291,7 @@ export default function UserManagement() {
                       </button>
                     ))}
                     {selectedLayouts.length === 0 && (
-                      <span className="text-[10px] text-zinc-400 font-bold italic py-1.5">Nenhum selecionado (o usuário não verá nenhum modelo até que você selecione)</span>
+                      <span className="text-[10px] text-black dark:text-white opacity-40 font-bold italic py-1.5">Nenhum selecionado (o usuário não verá nenhum modelo até que você selecione)</span>
                     )}
                   </div>
                 </div>
@@ -313,8 +313,8 @@ export default function UserManagement() {
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <Store className="w-5 h-5 text-zinc-400" />
-                  <h3 className="font-bold text-lg">Lojas Autorizadas</h3>
-                  <span className="bg-zinc-100 dark:bg-zinc-800 text-zinc-500 text-[10px] px-2 py-0.5 rounded-full font-black">
+                  <h3 className="font-bold text-lg text-black dark:text-white">Lojas Autorizadas</h3>
+                  <span className="bg-zinc-100 dark:bg-zinc-800 text-black dark:text-white opacity-60 text-[10px] px-2 py-0.5 rounded-full font-black">
                     {allowedStores.length}
                   </span>
                 </div>
@@ -326,7 +326,7 @@ export default function UserManagement() {
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     placeholder="Buscar CNPJ ou Bandeira..."
-                    className="w-full pl-10 pr-4 py-2 bg-zinc-100 dark:bg-zinc-800 border-transparent rounded-xl text-sm focus:bg-white dark:focus:bg-zinc-900 focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+                    className="w-full pl-10 pr-4 py-2 bg-zinc-100 dark:bg-zinc-800 border-transparent rounded-xl text-sm focus:bg-white dark:focus:bg-zinc-900 focus:ring-2 focus:ring-blue-500 outline-none transition-all text-black dark:text-white"
                   />
                 </div>
               </div>
@@ -334,7 +334,7 @@ export default function UserManagement() {
               <div className="grid grid-cols-1 gap-3">
                 {filteredStores.length === 0 ? (
                   <div className="text-center py-12 bg-zinc-50 dark:bg-zinc-800/30 rounded-3xl border-2 border-dashed border-zinc-200 dark:border-zinc-800">
-                    <p className="text-zinc-400 font-bold uppercase tracking-widest text-xs">Nenhuma loja encontrada</p>
+                    <p className="text-black dark:text-white opacity-40 font-bold uppercase tracking-widest text-xs">Nenhuma loja encontrada</p>
                   </div>
                 ) : (
                   filteredStores.map((store) => (
@@ -352,7 +352,7 @@ export default function UserManagement() {
                             <div className="flex items-center gap-2">
                               <p className="text-xs font-black uppercase tracking-tighter text-blue-600">{store.bandeira}</p>
                               {store.groupId && (
-                                <span className="text-[9px] font-black uppercase tracking-widest bg-zinc-100 dark:bg-zinc-800 text-zinc-500 px-1.5 py-0.5 rounded">
+                                <span className="text-[9px] font-black uppercase tracking-widest bg-zinc-100 dark:bg-zinc-800 text-black dark:text-white opacity-60 px-1.5 py-0.5 rounded">
                                   {userGroups.find(g => g.id === store.groupId)?.name || 'Grupo Removido'}
                                 </span>
                               )}
@@ -364,7 +364,7 @@ export default function UserManagement() {
                           <select
                             value={store.groupId || ''}
                             onChange={(e) => setUserGroup(store.cnpj, e.target.value || undefined)}
-                            className="px-3 py-1.5 bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg text-[10px] font-black uppercase tracking-widest outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+                            className="px-3 py-1.5 bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg text-[10px] font-black uppercase tracking-widest outline-none focus:ring-2 focus:ring-blue-500 transition-all text-black dark:text-white"
                           >
                             <option value="">Sem Grupo</option>
                             {userGroups.map(group => (
@@ -402,7 +402,7 @@ export default function UserManagement() {
                           <div className="flex items-center justify-between mb-3">
                             <div className="flex items-center gap-2">
                               <LayoutGrid className="w-4 h-4 text-blue-600" />
-                              <h4 className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Modelos Permitidos para este CNPJ</h4>
+                              <h4 className="text-[10px] font-black uppercase tracking-widest text-black dark:text-white opacity-60">Modelos Permitidos para este CNPJ</h4>
                             </div>
                             <div className="flex gap-2">
                               <button 
@@ -446,7 +446,7 @@ export default function UserManagement() {
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-2">
                             <Layout className="w-4 h-4 text-emerald-600" />
-                            <h4 className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Acesso ao Encarte Online</h4>
+                            <h4 className="text-[10px] font-black uppercase tracking-widest text-black dark:text-white opacity-60">Acesso ao Encarte Online</h4>
                           </div>
                           <button
                             onClick={() => toggleEncarteAccess(store.cnpj)}
@@ -472,12 +472,12 @@ export default function UserManagement() {
                           ) : (
                             <>
                               {store.allowedLayouts.slice(0, 5).map(idx => (
-                                <span key={idx} className="text-[8px] font-bold text-zinc-400 bg-zinc-100 dark:bg-zinc-800 px-1.5 py-0.5 rounded uppercase">
+                                <span key={idx} className="text-[8px] font-bold text-black dark:text-white opacity-40 bg-zinc-100 dark:bg-zinc-800 px-1.5 py-0.5 rounded uppercase">
                                   {layouts[idx]?.name || `Modelo ${idx + 1}`}
                                 </span>
                               ))}
                               {store.allowedLayouts.length > 5 && (
-                                <span className="text-[8px] font-bold text-zinc-400 bg-zinc-100 dark:bg-zinc-800 px-1.5 py-0.5 rounded uppercase">
+                                <span className="text-[8px] font-bold text-black dark:text-white opacity-40 bg-zinc-100 dark:bg-zinc-800 px-1.5 py-0.5 rounded uppercase">
                                   +{store.allowedLayouts.length - 5}
                                 </span>
                               )}
@@ -504,18 +504,18 @@ export default function UserManagement() {
             <div className="bg-zinc-50 dark:bg-zinc-800/50 p-6 rounded-2xl border border-zinc-200 dark:border-zinc-800">
               <div className="flex items-center gap-2 mb-4">
                 <Flag className="w-5 h-5 text-blue-600" />
-                <h3 className="font-bold text-lg">Adicionar Nova Bandeira</h3>
+                <h3 className="font-bold text-lg text-black dark:text-white">Adicionar Nova Bandeira</h3>
               </div>
               
               <form onSubmit={handleAddFlag} className="flex gap-4">
                 <div className="flex-1 space-y-1">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 ml-1">Nome da Bandeira</label>
+                  <label className="text-[10px] font-black uppercase tracking-widest text-black dark:text-white opacity-60 ml-1">Nome da Bandeira</label>
                   <input
                     type="text"
                     value={newFlagName}
                     onChange={(e) => setNewFlagName(e.target.value)}
                     placeholder="Ex: Farmácia Popular"
-                    className="w-full px-4 py-2.5 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all font-bold"
+                    className="w-full px-4 py-2.5 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all font-bold text-black dark:text-white"
                     required
                   />
                 </div>
@@ -537,8 +537,8 @@ export default function UserManagement() {
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <Flag className="w-5 h-5 text-zinc-400" />
-                  <h3 className="font-bold text-lg">Bandeiras Disponíveis</h3>
-                  <span className="bg-zinc-100 dark:bg-zinc-800 text-zinc-500 text-[10px] px-2 py-0.5 rounded-full font-black">
+                  <h3 className="font-bold text-lg text-black dark:text-white">Bandeiras Disponíveis</h3>
+                  <span className="bg-zinc-100 dark:bg-zinc-800 text-black dark:text-white opacity-60 text-[10px] px-2 py-0.5 rounded-full font-black">
                     {flags.length}
                   </span>
                 </div>
@@ -550,7 +550,7 @@ export default function UserManagement() {
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     placeholder="Buscar bandeira..."
-                    className="w-full pl-10 pr-4 py-2 bg-zinc-100 dark:bg-zinc-800 border-transparent rounded-xl text-sm focus:bg-white dark:focus:bg-zinc-900 focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+                    className="w-full pl-10 pr-4 py-2 bg-zinc-100 dark:bg-zinc-800 border-transparent rounded-xl text-sm focus:bg-white dark:focus:bg-zinc-900 focus:ring-2 focus:ring-blue-500 outline-none transition-all text-black dark:text-white"
                   />
                 </div>
               </div>
@@ -558,7 +558,7 @@ export default function UserManagement() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {filteredFlags.length === 0 ? (
                    <div className="col-span-full text-center py-12 bg-zinc-50 dark:bg-zinc-800/30 rounded-3xl border-2 border-dashed border-zinc-200 dark:border-zinc-800">
-                    <p className="text-zinc-400 font-bold uppercase tracking-widest text-xs">Nenhuma bandeira encontrada</p>
+                    <p className="text-black dark:text-white opacity-40 font-bold uppercase tracking-widest text-xs">Nenhuma bandeira encontrada</p>
                   </div>
                 ) : (
                   filteredFlags.map((flag) => (
@@ -577,7 +577,7 @@ export default function UserManagement() {
                               type="text"
                               value={editFlagName}
                               onChange={(e) => setEditFlagName(e.target.value)}
-                              className="flex-1 px-3 py-1.5 bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg text-sm font-bold focus:ring-2 focus:ring-blue-500 outline-none"
+                              className="flex-1 px-3 py-1.5 bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg text-sm font-bold focus:ring-2 focus:ring-blue-500 outline-none text-black dark:text-white"
                               autoFocus
                             />
                             <button type="submit" className="p-2 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 rounded-lg">
@@ -622,18 +622,18 @@ export default function UserManagement() {
             <div className="bg-zinc-50 dark:bg-zinc-800/50 p-6 rounded-2xl border border-zinc-200 dark:border-zinc-800">
               <div className="flex items-center gap-2 mb-4">
                 <Users className="w-5 h-5 text-blue-600" />
-                <h3 className="font-bold text-lg">Adicionar Novo Grupo (Empresa)</h3>
+                <h3 className="font-bold text-lg text-black dark:text-white">Adicionar Novo Grupo (Empresa)</h3>
               </div>
               
               <form onSubmit={handleAddGroup} className="flex gap-4">
                 <div className="flex-1 space-y-1">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 ml-1">Nome do Grupo</label>
+                  <label className="text-[10px] font-black uppercase tracking-widest text-black dark:text-white opacity-60 ml-1">Nome do Grupo</label>
                   <input
                     type="text"
                     value={newGroupName}
                     onChange={(e) => setNewGroupName(e.target.value)}
                     placeholder="Ex: Grupo Pão de Açúcar"
-                    className="w-full px-4 py-2.5 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all font-bold"
+                    className="w-full px-4 py-2.5 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all font-bold text-black dark:text-white"
                     required
                   />
                 </div>
@@ -655,8 +655,8 @@ export default function UserManagement() {
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <Users className="w-5 h-5 text-zinc-400" />
-                  <h3 className="font-bold text-lg">Grupos Disponíveis</h3>
-                  <span className="bg-zinc-100 dark:bg-zinc-800 text-zinc-500 text-[10px] px-2 py-0.5 rounded-full font-black">
+                  <h3 className="font-bold text-lg text-black dark:text-white">Grupos Disponíveis</h3>
+                  <span className="bg-zinc-100 dark:bg-zinc-800 text-black dark:text-white opacity-60 text-[10px] px-2 py-0.5 rounded-full font-black">
                     {userGroups.length}
                   </span>
                 </div>
@@ -668,7 +668,7 @@ export default function UserManagement() {
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     placeholder="Buscar grupo..."
-                    className="w-full pl-10 pr-4 py-2 bg-zinc-100 dark:bg-zinc-800 border-transparent rounded-xl text-sm focus:bg-white dark:focus:bg-zinc-900 focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+                    className="w-full pl-10 pr-4 py-2 bg-zinc-100 dark:bg-zinc-800 border-transparent rounded-xl text-sm focus:bg-white dark:focus:bg-zinc-900 focus:ring-2 focus:ring-blue-500 outline-none transition-all text-black dark:text-white"
                   />
                 </div>
               </div>
@@ -676,7 +676,7 @@ export default function UserManagement() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {filteredGroups.length === 0 ? (
                    <div className="col-span-full text-center py-12 bg-zinc-50 dark:bg-zinc-800/30 rounded-3xl border-2 border-dashed border-zinc-200 dark:border-zinc-800">
-                    <p className="text-zinc-400 font-bold uppercase tracking-widest text-xs">Nenhum grupo encontrado</p>
+                    <p className="text-black dark:text-white opacity-40 font-bold uppercase tracking-widest text-xs">Nenhum grupo encontrado</p>
                   </div>
                 ) : (
                   filteredGroups.map((group) => (
@@ -695,7 +695,7 @@ export default function UserManagement() {
                               type="text"
                               value={editGroupName}
                               onChange={(e) => setEditGroupName(e.target.value)}
-                              className="flex-1 px-3 py-1.5 bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg text-sm font-bold focus:ring-2 focus:ring-blue-500 outline-none"
+                              className="flex-1 px-3 py-1.5 bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg text-sm font-bold focus:ring-2 focus:ring-blue-500 outline-none text-black dark:text-white"
                               autoFocus
                             />
                             <button type="submit" className="p-2 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 rounded-lg">
@@ -707,8 +707,8 @@ export default function UserManagement() {
                           </form>
                         ) : (
                           <div>
-                            <p className="font-bold text-zinc-900 dark:text-zinc-100">{group.name}</p>
-                            <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">
+                            <p className="font-bold text-black dark:text-white">{group.name}</p>
+                            <p className="text-[10px] font-black text-black dark:text-white opacity-40 uppercase tracking-widest">
                               {allowedStores.filter(s => s.groupId === group.id).length} Lojas vinculadas
                             </p>
                           </div>

@@ -101,7 +101,7 @@ const Adjustments = () => {
 
           <div className="grid grid-cols-2 gap-2">
             <div>
-              <label className="text-[10px] text-zinc-500 block mb-0.5">Tamanho: {el.fontSize}px</label>
+              <label className="text-[10px] text-black dark:text-white opacity-60 block mb-0.5">Tamanho: {el.fontSize}px</label>
               <input 
                 type="range" min="10" max="300" 
                 value={el.fontSize}
@@ -110,7 +110,7 @@ const Adjustments = () => {
               />
             </div>
             <div>
-              <label className="text-[10px] text-zinc-500 block mb-0.5">Cor</label>
+              <label className="text-[10px] text-black dark:text-white opacity-60 block mb-0.5">Cor</label>
               <input 
                 type="color" 
                 value={el.color}
@@ -162,30 +162,30 @@ const Adjustments = () => {
             onClick={() => setProductImage(slot, { visible: !productImage.visible })}
             className="p-1 hover:bg-zinc-200 dark:hover:bg-zinc-700 rounded"
           >
-            {productImage.visible ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5 text-zinc-400" />}
+            {productImage.visible ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5 text-black dark:text-white opacity-40" />}
           </button>
           <button 
             onClick={() => setProductImage(slot, { locked: !productImage.locked })}
             className="p-1 hover:bg-zinc-200 dark:hover:bg-zinc-700 rounded"
           >
-            {productImage.locked ? <Lock className="w-3.5 h-3.5 text-blue-600" /> : <Unlock className="w-3.5 h-3.5 text-zinc-400" />}
+            {productImage.locked ? <Lock className="w-3.5 h-3.5 text-blue-600" /> : <Unlock className="w-3.5 h-3.5 text-black dark:text-white opacity-40" />}
           </button>
         </div>
       </div>
 
       <div className="space-y-2">
         <div>
-          <label className="text-[10px] text-zinc-500 block mb-1">URL da Imagem</label>
+          <label className="text-[10px] text-black dark:text-white opacity-60 block mb-1">URL da Imagem</label>
           <input 
             type="url" 
             placeholder="https://exemplo.com/imagem.jpg"
             value={productImage.url || ''}
             onChange={(e) => handleProductImageUrlChange(slot, e.target.value)}
-            className="w-full px-2 py-1 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded text-[10px] outline-none focus:ring-1 focus:ring-blue-500"
+            className="w-full px-2 py-1 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded text-[10px] text-black dark:text-white outline-none focus:ring-1 focus:ring-blue-500"
           />
         </div>
         <div>
-          <label className="text-[10px] text-zinc-500 block mb-0.5">Opacidade: {Math.round(productImage.opacity * 100)}%</label>
+          <label className="text-[10px] text-black dark:text-white opacity-60 block mb-0.5">Opacidade: {Math.round(productImage.opacity * 100)}%</label>
           <input 
             type="range" min="0" max="1" step="0.1" 
             value={productImage.opacity}
@@ -194,7 +194,7 @@ const Adjustments = () => {
           />
         </div>
         <div>
-          <label className="text-[10px] text-zinc-500 block mb-0.5">Rotação: {productImage.rotation}°</label>
+          <label className="text-[10px] text-black dark:text-white opacity-60 block mb-0.5">Rotação: {productImage.rotation}°</label>
           <input 
             type="range" min="0" max="360" 
             value={productImage.rotation}
@@ -217,13 +217,13 @@ const Adjustments = () => {
       {userRole === 'admin' && (
         <section className="space-y-4">
           <div className="flex items-center justify-between">
-            <h3 className="text-sm font-black uppercase tracking-widest text-zinc-400 flex items-center gap-2">
+            <h3 className="text-sm font-black uppercase tracking-widest text-black dark:text-white opacity-60 flex items-center gap-2">
               <Layout className="w-4 h-4" />
               Nomes dos Modelos
             </h3>
             <button 
               onClick={() => setShowResetConfirm(true)}
-              className="text-[10px] font-bold text-zinc-400 hover:text-red-500 uppercase tracking-widest transition-colors"
+              className="text-[10px] font-bold text-black dark:text-white opacity-40 hover:opacity-100 uppercase tracking-widest transition-colors"
             >
               Resetar Modelos
             </button>
@@ -232,12 +232,12 @@ const Adjustments = () => {
             {layouts.map((layout, index) => (
               <div key={index} className="space-y-1 p-2 bg-zinc-50 dark:bg-zinc-800/50 rounded-xl border border-zinc-200 dark:border-zinc-700">
                 <div className="flex justify-between items-center mb-1">
-                  <label className="text-[10px] font-black uppercase tracking-tighter text-zinc-500">Modelo {index + 1}</label>
+                  <label className="text-[10px] font-black uppercase tracking-tighter text-black dark:text-white opacity-60">Modelo {index + 1}</label>
                   <button 
                     onClick={() => setLayoutHasThirdProduct(index, !layout.hasThirdProduct)}
                     className={cn(
                       "p-1 rounded transition-colors",
-                      layout.hasThirdProduct ? "text-blue-600 bg-blue-50 dark:bg-blue-900/20" : "text-zinc-400 bg-zinc-100 dark:bg-zinc-800"
+                      layout.hasThirdProduct ? "text-blue-600 bg-blue-50 dark:bg-blue-900/20" : "text-black dark:text-white opacity-40 bg-zinc-100 dark:bg-zinc-800"
                     )}
                     title={layout.hasThirdProduct ? "Desativar 3º Produto" : "Ativar 3º Produto"}
                   >
@@ -258,7 +258,7 @@ const Adjustments = () => {
 
       {/* Background Section */}
       <section className="space-y-4">
-        <h3 className="text-sm font-black uppercase tracking-widest text-zinc-400 flex items-center gap-2">
+        <h3 className="text-sm font-black uppercase tracking-widest text-black dark:text-white opacity-60 flex items-center gap-2">
           <Layout className="w-4 h-4" />
           Fundo Geral
         </h3>
@@ -370,7 +370,7 @@ const Adjustments = () => {
               <AlertTriangle className="w-6 h-6" />
               <h3 className="text-lg font-bold">Resetar Modelos</h3>
             </div>
-            <p className="text-sm text-zinc-500">
+            <p className="text-sm text-black dark:text-white opacity-60">
               Deseja resetar todos os modelos para o padrão? Isso apagará permanentemente as customizações de nomes e posições.
             </p>
             <div className="flex gap-3 pt-2">

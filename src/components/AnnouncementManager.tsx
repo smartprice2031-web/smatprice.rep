@@ -46,7 +46,7 @@ export default function AnnouncementManager() {
   return (
     <div className="p-6 space-y-6">
       <div className="flex justify-between items-center">
-        <h3 className="text-lg font-bold flex items-center gap-2">
+        <h3 className="text-lg font-bold flex items-center gap-2 text-black dark:text-white">
           <Megaphone className="w-5 h-5 text-blue-600" />
           Comunicados do Sistema
         </h3>
@@ -63,17 +63,17 @@ export default function AnnouncementManager() {
         <div className="bg-zinc-50 dark:bg-zinc-800/50 p-6 rounded-2xl border border-zinc-200 dark:border-zinc-700 space-y-4 animate-in fade-in slide-in-from-top-4 duration-300">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-1.5">
-              <label className="text-[10px] font-black uppercase tracking-widest text-zinc-400">Título do Aviso</label>
+              <label className="text-[10px] font-black uppercase tracking-widest text-black dark:text-white opacity-60">Título do Aviso</label>
               <input
                 type="text"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 placeholder="Ex: Manutenção Programada"
-                className="w-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500 text-black dark:text-white"
               />
             </div>
             <div className="space-y-1.5">
-              <label className="text-[10px] font-black uppercase tracking-widest text-zinc-400">Destinatários</label>
+              <label className="text-[10px] font-black uppercase tracking-widest text-black dark:text-white opacity-60">Destinatários</label>
               <div className="flex gap-2">
                 <select
                   value={targetType}
@@ -81,7 +81,7 @@ export default function AnnouncementManager() {
                     setTargetType(e.target.value as any);
                     setTargetValue('');
                   }}
-                  className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500"
+                  className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500 text-black dark:text-white"
                 >
                   <option value="all">Todos</option>
                   <option value="group">Grupo</option>
@@ -92,7 +92,7 @@ export default function AnnouncementManager() {
                   <select
                     value={targetValue}
                     onChange={(e) => setTargetValue(e.target.value)}
-                    className="flex-grow bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500"
+                    className="flex-grow bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500 text-black dark:text-white"
                   >
                     <option value="">Selecionar Grupo</option>
                     {userGroups.map(g => (
@@ -105,7 +105,7 @@ export default function AnnouncementManager() {
                   <select
                     value={targetValue}
                     onChange={(e) => setTargetValue(e.target.value)}
-                    className="flex-grow bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500"
+                    className="flex-grow bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500 text-black dark:text-white"
                   >
                     <option value="">Selecionar Loja</option>
                     {allowedStores.map(s => (
@@ -118,13 +118,13 @@ export default function AnnouncementManager() {
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-[10px] font-black uppercase tracking-widest text-zinc-400">Mensagem</label>
+            <label className="text-[10px] font-black uppercase tracking-widest text-black dark:text-white opacity-60">Mensagem</label>
             <textarea
               value={message}
               onChange={(e) => setMessage(e.target.value)}
               placeholder="Digite o conteúdo do comunicado..."
               rows={3}
-              className="w-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+              className="w-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500 resize-none text-black dark:text-white"
             />
           </div>
 
@@ -141,15 +141,15 @@ export default function AnnouncementManager() {
       )}
 
       <div className="space-y-4">
-        <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-zinc-400">
+        <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-black dark:text-white opacity-60">
           <Globe className="w-3 h-3" />
           Histórico de Envios
         </div>
 
         {announcements.length === 0 ? (
           <div className="text-center py-12 bg-zinc-50 dark:bg-zinc-800/30 rounded-3xl border border-dashed border-zinc-200 dark:border-zinc-700">
-            <Megaphone className="w-8 h-8 text-zinc-300 mx-auto mb-2" />
-            <p className="text-xs text-zinc-500 font-medium">Nenhum comunicado enviado ainda.</p>
+            <Megaphone className="w-8 h-8 text-black dark:text-white opacity-20 mx-auto mb-2" />
+            <p className="text-xs text-black dark:text-white opacity-40 font-medium">Nenhum comunicado enviado ainda.</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 gap-3">
@@ -160,8 +160,8 @@ export default function AnnouncementManager() {
               >
                 <div className="space-y-1">
                   <div className="flex items-center gap-2">
-                    <h4 className="font-bold text-sm">{ann.title}</h4>
-                    <span className="text-[8px] font-black uppercase tracking-widest px-1.5 py-0.5 bg-zinc-100 dark:bg-zinc-800 rounded text-zinc-500">
+                    <h4 className="font-bold text-sm text-black dark:text-white">{ann.title}</h4>
+                    <span className="text-[8px] font-black uppercase tracking-widest px-1.5 py-0.5 bg-zinc-100 dark:bg-zinc-800 rounded text-black dark:text-white opacity-60">
                       {new Date(ann.createdAt).toLocaleDateString()}
                     </span>
                     <div className="flex items-center gap-1 px-1.5 py-0.5 bg-blue-50 dark:bg-blue-900/20 rounded text-[8px] font-black uppercase tracking-widest text-blue-600">
@@ -172,7 +172,7 @@ export default function AnnouncementManager() {
                       {ann.targetValue && <span className="opacity-60 ml-1">({ann.targetValue})</span>}
                     </div>
                   </div>
-                  <p className="text-xs text-zinc-500 dark:text-zinc-400 line-clamp-2">{ann.message}</p>
+                  <p className="text-xs text-black dark:text-white opacity-60 line-clamp-2">{ann.message}</p>
                 </div>
                 <button
                   onClick={() => deleteAnnouncement(ann.id)}
