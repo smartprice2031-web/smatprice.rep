@@ -43,7 +43,13 @@ export function useSupportSocket() {
         .eq('status', 'open')
         .order('updated_at', { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        if (error.code === '42P01') {
+          console.error('Table support_conversations does not exist');
+          toast.error('Tabela support_conversations não encontrada. Execute o SQL de configuração.');
+        }
+        throw error;
+      }
       setConversations(data || []);
     } catch (err) {
       console.error('Error fetching conversations:', err);
@@ -54,6 +60,7 @@ export function useSupportSocket() {
     if (!isSupabaseConfigured) return null;
     
     const normalizedCnpj = cnpj?.replace(/[^\d]/g, '');
+    if (!normalizedCnpj) return null;
     
     try {
       // Try to find existing open conversation
@@ -62,7 +69,11 @@ export function useSupportSocket() {
         .select('id')
         .eq('user_id', normalizedCnpj)
         .eq('status', 'open')
-        .single();
+        .maybeSingle();
+
+      if (findError && findError.code !== 'PGRST116') {
+        console.error('Error finding conversation:', findError);
+      }
 
       if (existing) return existing.id;
 
@@ -71,18 +82,27 @@ export function useSupportSocket() {
         .from('support_conversations')
         .insert({
           user_id: normalizedCnpj,
-          user_name: name,
-          status: 'open'
+          user_name: name || 'Usuário',
+          status: 'open',
+          updated_at: new Date().toISOString()
         })
         .select('id')
-        .single();
+        .maybeSingle();
 
-      if (createError) throw createError;
+      if (createError) {
+        console.error('Error creating conversation:', createError);
+        if (createError.code === '42P01') {
+          toast.error('Tabela support_conversations não encontrada.');
+        } else {
+          toast.error(`Erro ao iniciar chat: ${createError.message}`);
+        }
+        return null;
+      }
       
       // Refresh conversations list for admin
       if (userRole === 'admin') fetchConversations();
       
-      return created.id;
+      return created?.id || null;
     } catch (err) {
       console.error('Error in getOrCreateConversation:', err);
       return null;
@@ -90,7 +110,7 @@ export function useSupportSocket() {
   };
 
   const fetchMessages = async (conversationId: string) => {
-    if (!isSupabaseConfigured) return;
+    if (!isSupabaseConfigured || !conversationId) return;
     
     try {
       const { data, error } = await supabase
@@ -99,7 +119,12 @@ export function useSupportSocket() {
         .eq('conversation_id', conversationId)
         .order('created_at', { ascending: true });
 
-      if (error) throw error;
+      if (error) {
+        if (error.code === '42P01') {
+          toast.error('Tabela support_messages não encontrada.');
+        }
+        throw error;
+      }
 
       if (data) {
         const mappedMessages: Message[] = data.map(m => ({
@@ -121,34 +146,44 @@ export function useSupportSocket() {
   useEffect(() => {
     if (!currentUser || !isSupabaseConfigured) return;
 
+    let isMounted = true;
+
     const initChat = async () => {
       setIsLoading(true);
       
-      if (userRole === 'admin') {
-        await fetchConversations();
-        if (selectedUserCnpj) {
-          const convId = await getOrCreateConversation(selectedUserCnpj, selectedUserCnpj);
-          if (convId) {
+      try {
+        if (userRole === 'admin') {
+          await fetchConversations();
+          if (selectedUserCnpj) {
+            const convId = await getOrCreateConversation(selectedUserCnpj, selectedUserCnpj);
+            if (convId && isMounted) {
+              setActiveConversationId(convId);
+              activeConversationIdRef.current = convId;
+              await fetchMessages(convId);
+            }
+          } else {
+            if (isMounted) {
+              setActiveConversationId(null);
+              activeConversationIdRef.current = null;
+              setMessages([]);
+            }
+          }
+        } else {
+          const convId = await getOrCreateConversation(currentUser.cnpj, currentUser.username);
+          if (convId && isMounted) {
             setActiveConversationId(convId);
             activeConversationIdRef.current = convId;
             await fetchMessages(convId);
           }
-        } else {
-          setActiveConversationId(null);
-          activeConversationIdRef.current = null;
-          setMessages([]);
         }
-      } else {
-        const convId = await getOrCreateConversation(currentUser.cnpj, currentUser.username);
-        if (convId) {
-          setActiveConversationId(convId);
-          activeConversationIdRef.current = convId;
-          await fetchMessages(convId);
+      } catch (err) {
+        console.error('Error in initChat:', err);
+      } finally {
+        if (isMounted) {
+          setIsLoading(false);
+          setIsChatConnected(true);
         }
       }
-      
-      setIsLoading(false);
-      setIsChatConnected(true);
     };
 
     initChat();
@@ -162,12 +197,10 @@ export function useSupportSocket() {
           if (payload.event === 'INSERT') {
             const newMessage = payload.new;
             
-            // Update conversations list for admin to show last message
             if (userRole === 'admin') {
               fetchConversations();
             }
 
-            // Only add if it belongs to the active conversation
             if (activeConversationIdRef.current && String(newMessage.conversation_id) === String(activeConversationIdRef.current)) {
               const mappedMessage: Message = {
                 id: newMessage.id,
@@ -199,11 +232,11 @@ export function useSupportSocket() {
         }
       )
       .subscribe((status) => {
-        if (status === 'SUBSCRIBED') setIsChatConnected(true);
-        else setIsChatConnected(false);
+        if (status === 'SUBSCRIBED' && isMounted) setIsChatConnected(true);
       });
 
     return () => {
+      isMounted = false;
       supabase.removeChannel(channel);
     };
   }, [currentUser?.cnpj, userRole, selectedUserCnpj]); // Re-init when user or selection changes
@@ -235,7 +268,13 @@ export function useSupportSocket() {
   };
 
   const sendMessage = async (text: string, toCnpj?: string) => {
-    if (!isSupabaseConfigured || !currentUser || !activeConversationId) return;
+    if (!isSupabaseConfigured || !currentUser || !activeConversationId) {
+      if (!activeConversationId) {
+        toast.error('Chat não inicializado. Tente recarregar a página.');
+        console.error('Cannot send message: activeConversationId is null');
+      }
+      return;
+    }
 
     const tempId = `temp-${crypto.randomUUID()}`;
     const senderId = userRole === 'admin' ? 'admin' : currentUser?.cnpj?.replace(/[^\d]/g, '') || '';
@@ -264,9 +303,12 @@ export function useSupportSocket() {
           message: text.trim()
         })
         .select()
-        .single();
+        .maybeSingle();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase error sending message:', error);
+        throw error;
+      }
       
       if (data) {
         const realMsg: Message = {

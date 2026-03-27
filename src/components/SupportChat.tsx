@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useStore } from '../store';
 import { useSupportSocket, Message } from '../hooks/useSupportSocket';
-import { MessageCircle, Send, X, User, Trash2, AlertCircle } from 'lucide-react';
+import { MessageCircle, Send, X, User, Trash2, AlertCircle, RefreshCw } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
@@ -129,8 +129,8 @@ export default function SupportChat() {
                   userRole === 'admin' ? "text-base" : "text-xl"
                 )}>Suporte SmartPrice</h3>
                 <div className={cn(
-                  "w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]",
-                  isConnected && "animate-pulse"
+                  "w-2 h-2 rounded-full shadow-[0_0_10px_rgba(16,185,129,0.5)]",
+                  isConnected ? "bg-emerald-500 animate-pulse" : "bg-amber-500"
                 )} />
               </div>
               <p className="text-[9px] font-bold text-black dark:text-white uppercase tracking-widest">
@@ -146,11 +146,25 @@ export default function SupportChat() {
           </button>
         </div>
 
+        {!isConnected && !isLoading && (
+          <div className="bg-amber-500/10 border-b border-amber-500/20 px-4 py-2 flex items-center gap-2">
+            <AlertCircle className="w-3 h-3 text-amber-500" />
+            <p className="text-[10px] text-amber-500 font-medium uppercase tracking-widest">Conectando ao chat...</p>
+          </div>
+        )}
+
         <div className="flex-grow flex overflow-hidden">
           {userRole === 'admin' && (
             <div className="w-48 md:w-56 border-r border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/50 overflow-y-auto">
-              <div className="p-3 border-b border-zinc-200 dark:border-zinc-800">
+              <div className="p-3 border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between">
                 <p className="text-[9px] font-black text-zinc-400 uppercase tracking-widest">Lojas</p>
+                <button 
+                  onClick={() => window.location.reload()} 
+                  className="p-1 hover:bg-zinc-200 dark:hover:bg-zinc-800 rounded transition-colors"
+                  title="Recarregar"
+                >
+                  <RefreshCw className="w-3 h-3 text-zinc-400" />
+                </button>
               </div>
               {chatUsers.length === 0 ? (
                 <div className="p-4 text-center">
