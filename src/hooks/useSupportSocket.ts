@@ -91,96 +91,115 @@ export function useSupportSocket() {
       .channel('chat_messages_realtime')
       .on(
         'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'chat_messages' },
-        (payload) => {
-          const newMessage = payload.new;
-          const mappedMessage: Message = {
-            id: newMessage.id,
-            from: {
-              username: newMessage.from_username,
-              cnpj: newMessage.from_cnpj,
-              role: newMessage.from_role as 'user' | 'admin'
-            },
-            to: newMessage.to_cnpj ? {
-              cnpj: newMessage.to_cnpj,
-              username: newMessage.to_username
-            } : undefined,
-            text: newMessage.text,
-            timestamp: newMessage.created_at
-          };
+        { event: '*', schema: 'public', table: 'chat_messages' },
+        (payload: any) => {
+          if (payload.event === 'INSERT') {
+            const newMessage = payload.new;
+            const mappedMessage: Message = {
+              id: newMessage.id,
+              from: {
+                username: newMessage.from_username,
+                cnpj: newMessage.from_cnpj,
+                role: newMessage.from_role as 'user' | 'admin'
+              },
+              to: newMessage.to_cnpj ? {
+                cnpj: newMessage.to_cnpj,
+                username: newMessage.to_username
+              } : undefined,
+              text: newMessage.text,
+              timestamp: newMessage.created_at
+            };
 
-          setMessages(prev => {
-            if (prev.some(existing => existing.id === mappedMessage.id)) return prev;
-            return [...prev, mappedMessage];
-          });
+            setMessages(prev => {
+              if (prev.some(existing => existing.id === mappedMessage.id)) return prev;
+              return [...prev, mappedMessage];
+            });
 
-          // Handle notifications
-          const state = useStore.getState();
-          const normalizedUserCnpj = currentUser.cnpj.replace(/[^\d]/g, '');
-          const normalizedFromCnpj = mappedMessage.from.cnpj.replace(/[^\d]/g, '');
-          const isFromMe = normalizedFromCnpj === normalizedUserCnpj && mappedMessage.from.username === currentUser.username;
-          
-          if (!isFromMe) {
-            // Play sound
-            const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3');
-            audio.play().catch(e => console.log('Audio play blocked'));
+            // Handle notifications
+            const state = useStore.getState();
+            const normalizedUserCnpj = currentUser.cnpj.replace(/[^\d]/g, '');
+            const normalizedFromCnpj = mappedMessage.from.cnpj.replace(/[^\d]/g, '');
+            const isFromMe = normalizedFromCnpj === normalizedUserCnpj && mappedMessage.from.username === currentUser.username;
+            
+            if (!isFromMe) {
+              // Play sound
+              const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3');
+              audio.play().catch(e => console.log('Audio play blocked'));
 
-            let shouldNotify = false;
-            if (!state.isSupportChatOpen) {
-              shouldNotify = true;
-            } else if (userRole === 'admin') {
-              if (mappedMessage.from.cnpj !== state.selectedUserCnpj) {
+              let shouldNotify = false;
+              if (!state.isSupportChatOpen) {
+                shouldNotify = true;
+              } else if (userRole === 'admin') {
+                if (mappedMessage.from.cnpj !== state.selectedUserCnpj) {
+                  shouldNotify = true;
+                }
+              } else if (document.hidden) {
                 shouldNotify = true;
               }
-            } else if (document.hidden) {
-              shouldNotify = true;
-            }
 
-            if (shouldNotify) {
-              const senderName = mappedMessage.from.role === 'admin' ? 'Suporte SmartPrice' : mappedMessage.from.username;
-              
-              if (userRole === 'admin' && mappedMessage.from.role === 'user') {
-                if (mappedMessage.from.cnpj !== state.selectedUserCnpj) {
-                  setUnreadPerUser(mappedMessage.from.cnpj, prev => {
-                    const newCount = typeof prev === 'number' ? prev + 1 : 1;
-                    setUnreadSupportCount(current => (typeof current === 'number' ? current + 1 : 1));
-                    return newCount;
-                  });
+              if (shouldNotify) {
+                const senderName = mappedMessage.from.role === 'admin' ? 'Suporte SmartPrice' : mappedMessage.from.username;
+                
+                if (userRole === 'admin' && mappedMessage.from.role === 'user') {
+                  if (mappedMessage.from.cnpj !== state.selectedUserCnpj) {
+                    setUnreadPerUser(mappedMessage.from.cnpj, prev => {
+                      const newCount = typeof prev === 'number' ? prev + 1 : 1;
+                      setUnreadSupportCount(current => (typeof current === 'number' ? current + 1 : 1));
+                      return newCount;
+                    });
+                  }
+                } else if (userRole === 'user' && mappedMessage.from.role === 'admin') {
+                  setUnreadSupportCount(prev => (typeof prev === 'number' ? prev + 1 : 1));
                 }
-              } else if (userRole === 'user' && mappedMessage.from.role === 'admin') {
-                setUnreadSupportCount(prev => (typeof prev === 'number' ? prev + 1 : 1));
-              }
 
-              if ("Notification" in window && Notification.permission === "granted") {
-                new Notification(`Nova mensagem de ${senderName}`, { 
-                  body: mappedMessage.text,
-                  icon: '/favicon.ico'
-                });
-              }
-
-              toast.info(`Mensagem de ${senderName}`, {
-                description: mappedMessage.text,
-                duration: 8000,
-                action: {
-                  label: 'Responder',
-                  onClick: () => {
-                    useStore.getState().setSupportChatOpen(true);
-                    if (userRole === 'admin' && mappedMessage.from.cnpj) {
-                      useStore.getState().setSelectedUserCnpj(mappedMessage.from.cnpj);
+                if ("Notification" in window) {
+                  if (Notification.permission === "granted") {
+                    try {
+                      const n = new Notification(`Nova mensagem de ${senderName}`, { 
+                        body: mappedMessage.text,
+                        icon: '/favicon.ico',
+                        tag: 'support-msg',
+                        renotify: true
+                      } as any);
+                      n.onclick = () => {
+                        window.focus();
+                        useStore.getState().setSupportChatOpen(true);
+                        if (userRole === 'admin' && mappedMessage.from.cnpj) {
+                          useStore.getState().setSelectedUserCnpj(mappedMessage.from.cnpj);
+                        }
+                      };
+                    } catch (e) {
+                      console.error('Error showing notification:', e);
                     }
                   }
                 }
-              });
+
+                toast.info(`Mensagem de ${senderName}`, {
+                  description: mappedMessage.text,
+                  duration: 8000,
+                  action: {
+                    label: 'Responder',
+                    onClick: () => {
+                      useStore.getState().setSupportChatOpen(true);
+                      if (userRole === 'admin' && mappedMessage.from.cnpj) {
+                        useStore.getState().setSelectedUserCnpj(mappedMessage.from.cnpj);
+                      }
+                    }
+                  }
+                });
+              }
             }
+          } else if (payload.event === 'DELETE') {
+            const deletedId = payload.old.id;
+            setMessages(prev => prev.filter(m => m.id !== deletedId));
+          } else if (payload.event === 'UPDATE') {
+            const updatedMessage = payload.new;
+            setMessages(prev => prev.map(m => m.id === updatedMessage.id ? {
+              ...m,
+              text: updatedMessage.text,
+              timestamp: updatedMessage.created_at
+            } : m));
           }
-        }
-      )
-      .on(
-        'postgres_changes',
-        { event: 'DELETE', schema: 'public', table: 'chat_messages' },
-        (payload) => {
-          const deletedId = payload.old.id;
-          setMessages(prev => prev.filter(m => m.id !== deletedId));
         }
       )
       .subscribe((status) => {

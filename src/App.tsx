@@ -23,7 +23,7 @@ import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import { Toaster } from 'sonner';
 import { useSupportSocket } from './hooks/useSupportSocket';
-import { isSupabaseConfigured } from './lib/supabase';
+import { supabase, isSupabaseConfigured } from './lib/supabase';
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -154,6 +154,38 @@ export default function App() {
     loadLayout();
     loadUsersAndFlags();
 
+    // Subscribe to settings changes for real-time announcements
+    let settingsChannel: any;
+    if (isSupabaseConfigured) {
+      settingsChannel = supabase
+        .channel('settings_changes')
+        .on(
+          'postgres_changes',
+          { 
+            event: 'UPDATE', 
+            schema: 'public', 
+            table: 'settings',
+            filter: "id=eq.users_and_flags"
+          },
+          (payload) => {
+            if (payload.new && payload.new.value) {
+              // Update store with new settings
+              const newValue = payload.new.value;
+              useStore.setState({
+                allowedStores: newValue.allowedStores || [],
+                flags: newValue.flags || useStore.getState().flags,
+                userGroups: newValue.userGroups || [],
+                encartes: newValue.encartes || useStore.getState().encartes,
+                selectedEncarteModel: newValue.selectedEncarteModel || useStore.getState().selectedEncarteModel,
+                layouts: newValue.layouts || useStore.getState().layouts,
+                announcements: newValue.announcements || []
+              });
+            }
+          }
+        )
+        .subscribe();
+    }
+
     const handleBeforePrint = () => setPrinting(true);
     const handleAfterPrint = () => setPrinting(false);
 
@@ -163,6 +195,9 @@ export default function App() {
     return () => {
       window.removeEventListener('beforeprint', handleBeforePrint);
       window.removeEventListener('afterprint', handleAfterPrint);
+      if (settingsChannel) {
+        supabase.removeChannel(settingsChannel);
+      }
     };
   }, []);
 
@@ -448,7 +483,12 @@ export default function App() {
               )}
 
               <button 
-                onClick={() => setSupportChatOpen(true)}
+                onClick={() => {
+                  setSupportChatOpen(true);
+                  if ("Notification" in window && Notification.permission === "default") {
+                    Notification.requestPermission();
+                  }
+                }}
                 className={cn(
                   "relative flex items-center gap-2 px-4 py-2 rounded-xl transition-all text-xs font-black uppercase tracking-tighter shadow-lg hover:scale-105 active:scale-95",
                   userRole === 'admin' 

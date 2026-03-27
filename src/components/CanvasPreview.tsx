@@ -95,9 +95,47 @@ const CanvasPreview = ({ id = "placa" }: { id?: string }) => {
 
   // Price formatting logic
   const renderPrice = (slot: 1 | 2 | 3, el: any, key: string) => {
+    if (!el.visible) return null;
     if (slot === 3 && !productImage3.visible) return null;
     const priceStr = (el.text || '0,00').trim();
     
+    // Check if it's a discount percentage
+    if (priceStr.includes('%')) {
+      return (
+        <Group 
+          key={key}
+          id={`text-${slot}-price`}
+          x={el.x} 
+          y={el.y} 
+          draggable 
+          onClick={() => setSelectedId(`text-${slot}-price`)}
+          onTap={() => setSelectedId(`text-${slot}-price`)}
+          onDragEnd={(e) => setElement(slot, 'price', { x: e.target.x(), y: e.target.y() })}
+          onTransformEnd={(e) => {
+            const node = e.target;
+            const scaleX = node.scaleX();
+            node.scaleX(1);
+            node.scaleY(1);
+            setElement(slot, 'price', {
+              x: node.x(),
+              y: node.y(),
+              fontSize: Math.max(10, el.fontSize * scaleX),
+            });
+          }}
+        >
+          <Text
+            text={priceStr}
+            fontSize={el.fontSize}
+            fill={el.color}
+            fontStyle="bold"
+            fontFamily="Inter"
+            align="center"
+            width={el.width || 200}
+          />
+        </Group>
+      );
+    }
+
     // Improved regex to handle thousands separators and different formats
     // Matches: "R$ 1.250,00", "1250.00", "1,250.00", "10", etc.
     const cleanPrice = priceStr.replace(/[^\d,.]/g, '');

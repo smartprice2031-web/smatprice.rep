@@ -11,6 +11,9 @@ const ProductSelector: React.FC<{ onSelect?: (product: Product) => void }> = ({ 
     optionalText1, optionalText2, optionalText3, setOptionalText
   } = useStore();
 
+  const currentLayoutName = layouts[activeLayoutIndex]?.name || '';
+  const isIdosoLayout = currentLayoutName === 'DIA DO IDOSO PL (PI)';
+
   const showThirdProduct = productImage3.visible;
   const [searchTerm1, setSearchTerm1] = useState('');
   const [searchTerm2, setSearchTerm2] = useState('');
@@ -110,6 +113,9 @@ const ProductSelector: React.FC<{ onSelect?: (product: Product) => void }> = ({ 
         optionalText={optionalText1}
         setOptionalText={(updates) => setOptionalText(1, updates)}
         showOptionalText={activeLayoutIndex === 11 || activeLayoutIndex === 12}
+        isIdosoLayout={isIdosoLayout}
+        layouts={layouts}
+        activeLayoutIndex={activeLayoutIndex}
       />
       
       <div className="h-px bg-zinc-200 dark:bg-zinc-800" />
@@ -129,6 +135,9 @@ const ProductSelector: React.FC<{ onSelect?: (product: Product) => void }> = ({ 
         optionalText={optionalText2}
         setOptionalText={(updates) => setOptionalText(2, updates)}
         showOptionalText={activeLayoutIndex === 11 || activeLayoutIndex === 12}
+        isIdosoLayout={isIdosoLayout}
+        layouts={layouts}
+        activeLayoutIndex={activeLayoutIndex}
       />
 
       {showThirdProduct && (
@@ -150,6 +159,9 @@ const ProductSelector: React.FC<{ onSelect?: (product: Product) => void }> = ({ 
             optionalText={optionalText3}
             setOptionalText={(updates) => setOptionalText(3, updates)}
             showOptionalText={activeLayoutIndex === 12}
+            isIdosoLayout={isIdosoLayout}
+            layouts={layouts}
+            activeLayoutIndex={activeLayoutIndex}
           />
         </>
       )}
@@ -171,7 +183,10 @@ const ProductSlot = ({
   handleSync,
   optionalText,
   setOptionalText,
-  showOptionalText
+  showOptionalText,
+  isIdosoLayout,
+  layouts,
+  activeLayoutIndex
 }: { 
   slot: 1 | 2 | 3, 
   searchTerm: string, 
@@ -186,7 +201,10 @@ const ProductSlot = ({
   handleSync: () => void,
   optionalText?: any,
   setOptionalText?: (updates: any) => void,
-  showOptionalText?: boolean
+  showOptionalText?: boolean,
+  isIdosoLayout?: boolean,
+  layouts?: any[],
+  activeLayoutIndex?: number
 }) => (
   <div className="space-y-4 p-4 bg-zinc-50 dark:bg-zinc-800/30 rounded-2xl border border-zinc-200 dark:border-zinc-800">
     <div className="flex items-center justify-between">
@@ -262,16 +280,53 @@ const ProductSlot = ({
       </div>
 
       <div className="space-y-1">
-        <label className="text-[10px] font-black text-black dark:text-white opacity-60 uppercase tracking-widest">
-          Preço
-        </label>
-        <input
-          type="text"
-          placeholder="Ex: R$ 9,99"
-          className="w-full px-3 py-1.5 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg text-xs font-bold text-blue-600 focus:ring-2 focus:ring-blue-500 outline-none"
-          value={currentPrice}
-          onChange={(e) => setElement(slot, 'price', { text: e.target.value })}
-        />
+        <div className="flex items-center justify-between">
+          <label className="text-[10px] font-black text-black dark:text-white opacity-60 uppercase tracking-widest">
+            {currentPrice.includes('%') ? 'Valor do Desconto' : 'Preço do Produto'}
+          </label>
+          
+          {isIdosoLayout && (
+            <div className="flex items-center gap-2 bg-blue-50 dark:bg-blue-900/20 px-2 py-1 rounded-lg border border-blue-100 dark:border-blue-800">
+              <span className="text-[9px] font-black text-blue-600 uppercase tracking-tight">Ativar Desconto</span>
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input 
+                  type="checkbox" 
+                  className="sr-only peer"
+                  checked={currentPrice.includes('%')}
+                  onChange={(e) => {
+                    if (e.target.checked) {
+                      setElement(slot, 'price', { text: '0%', visible: true });
+                    } else {
+                      setElement(slot, 'price', { text: 'R$ 0,00', visible: true });
+                    }
+                  }}
+                />
+                <div className="w-8 h-4 bg-zinc-200 peer-focus:outline-none rounded-full peer dark:bg-zinc-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
+              </label>
+            </div>
+          )}
+        </div>
+        <div className="relative">
+          <input
+            type="text"
+            placeholder={currentPrice.includes('%') ? "Ex: 15" : "Ex: R$ 9,99"}
+            className="w-full px-3 py-2 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl text-sm font-black text-blue-600 focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+            value={currentPrice.includes('%') ? currentPrice.replace('%', '') : currentPrice}
+            onChange={(e) => {
+              const val = e.target.value;
+              if (currentPrice.includes('%')) {
+                // Ensure it always has the % suffix
+                const cleanVal = val.replace('%', '');
+                setElement(slot, 'price', { text: cleanVal + '%' });
+              } else {
+                setElement(slot, 'price', { text: val });
+              }
+            }}
+          />
+          {currentPrice.includes('%') && (
+            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-blue-600 font-black text-sm">%</span>
+          )}
+        </div>
       </div>
     </div>
 
