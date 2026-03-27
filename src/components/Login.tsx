@@ -40,7 +40,7 @@ export default function Login() {
         const normalizedInputCnpj = formData.cnpj.replace(/[^\d]/g, '');
         
         // Check if CNPJ is allowed
-        const isAllowed = allowedStores.some(store => store.cnpj.replace(/[^\d]/g, '') === normalizedInputCnpj);
+        const isAllowed = allowedStores.some(store => store.cnpj?.replace(/[^\d]/g, '') === normalizedInputCnpj);
         
         if (isAllowed) {
           login('user', {

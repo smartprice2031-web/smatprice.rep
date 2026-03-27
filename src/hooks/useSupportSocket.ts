@@ -1,21 +1,17 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import { useStore } from '../store';
 import { toast } from 'sonner';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 
 export interface Message {
   id: string;
-  from: {
-    username: string;
-    cnpj: string;
-    role: 'user' | 'admin';
-  };
-  to?: {
-    cnpj: string;
-    username?: string;
-  };
+  conversation_id: string;
+  sender_id: string;
+  sender_name: string;
+  sender_type: 'user' | 'admin';
   text: string;
   timestamp: string;
+  pending?: boolean;
 }
 
 export function useSupportSocket() {
@@ -23,38 +19,84 @@ export function useSupportSocket() {
     currentUser, userRole, 
     setUnreadSupportCount, setUnreadPerUser,
     messages, setMessages,
-    setIsChatConnected, isChatConnected
+    setIsChatConnected, isChatConnected,
+    selectedUserCnpj,
+    activeConversationId, setActiveConversationId,
+    conversations, setConversations,
+    isChatLoading: isLoading, setIsChatLoading: setIsLoading
   } = useStore();
 
-  const cleanupOldMessages = async () => {
-    if (!isSupabaseConfigured) return;
-    const sixHoursAgo = new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString();
-    
-    try {
-      const { error } = await supabase
-        .from('chat_messages')
-        .delete()
-        .lt('created_at', sixHoursAgo);
-      
-      if (error) console.error('Error cleaning up old messages:', error);
-    } catch (err) {
-      console.error('Failed to cleanup messages:', err);
-    }
-  };
+  const activeConversationIdRef = useRef<string | null>(null);
 
-  const fetchMessages = async () => {
-    if (!isSupabaseConfigured || !currentUser) return;
-    
-    // Cleanup first
-    await cleanupOldMessages();
+  // Keep ref in sync
+  useEffect(() => {
+    activeConversationIdRef.current = activeConversationId;
+  }, [activeConversationId]);
 
-    const sixHoursAgo = new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString();
+  const fetchConversations = async () => {
+    if (!isSupabaseConfigured || userRole !== 'admin') return;
     
     try {
       const { data, error } = await supabase
-        .from('chat_messages')
+        .from('support_conversations')
         .select('*')
-        .gt('created_at', sixHoursAgo)
+        .eq('status', 'open')
+        .order('updated_at', { ascending: false });
+
+      if (error) throw error;
+      setConversations(data || []);
+    } catch (err) {
+      console.error('Error fetching conversations:', err);
+    }
+  };
+
+  const getOrCreateConversation = async (cnpj: string, name: string) => {
+    if (!isSupabaseConfigured) return null;
+    
+    const normalizedCnpj = cnpj?.replace(/[^\d]/g, '');
+    
+    try {
+      // Try to find existing open conversation
+      const { data: existing, error: findError } = await supabase
+        .from('support_conversations')
+        .select('id')
+        .eq('user_id', normalizedCnpj)
+        .eq('status', 'open')
+        .single();
+
+      if (existing) return existing.id;
+
+      // Create new one if not found
+      const { data: created, error: createError } = await supabase
+        .from('support_conversations')
+        .insert({
+          user_id: normalizedCnpj,
+          user_name: name,
+          status: 'open'
+        })
+        .select('id')
+        .single();
+
+      if (createError) throw createError;
+      
+      // Refresh conversations list for admin
+      if (userRole === 'admin') fetchConversations();
+      
+      return created.id;
+    } catch (err) {
+      console.error('Error in getOrCreateConversation:', err);
+      return null;
+    }
+  };
+
+  const fetchMessages = async (conversationId: string) => {
+    if (!isSupabaseConfigured) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('support_messages')
+        .select('*')
+        .eq('conversation_id', conversationId)
         .order('created_at', { ascending: true });
 
       if (error) throw error;
@@ -62,16 +104,11 @@ export function useSupportSocket() {
       if (data) {
         const mappedMessages: Message[] = data.map(m => ({
           id: m.id,
-          from: {
-            username: m.from_username,
-            cnpj: m.from_cnpj,
-            role: m.from_role as 'user' | 'admin'
-          },
-          to: m.to_cnpj ? {
-            cnpj: m.to_cnpj,
-            username: m.to_username
-          } : undefined,
-          text: m.text,
+          conversation_id: m.conversation_id,
+          sender_id: m.sender_id,
+          sender_name: m.sender_name,
+          sender_type: m.sender_type as 'user' | 'admin',
+          text: m.message,
           timestamp: m.created_at
         }));
         setMessages(mappedMessages);
@@ -84,200 +121,217 @@ export function useSupportSocket() {
   useEffect(() => {
     if (!currentUser || !isSupabaseConfigured) return;
 
-    fetchMessages();
-    setIsChatConnected(true);
+    const initChat = async () => {
+      setIsLoading(true);
+      
+      if (userRole === 'admin') {
+        await fetchConversations();
+        if (selectedUserCnpj) {
+          const convId = await getOrCreateConversation(selectedUserCnpj, selectedUserCnpj);
+          if (convId) {
+            setActiveConversationId(convId);
+            activeConversationIdRef.current = convId;
+            await fetchMessages(convId);
+          }
+        } else {
+          setActiveConversationId(null);
+          activeConversationIdRef.current = null;
+          setMessages([]);
+        }
+      } else {
+        const convId = await getOrCreateConversation(currentUser.cnpj, currentUser.username);
+        if (convId) {
+          setActiveConversationId(convId);
+          activeConversationIdRef.current = convId;
+          await fetchMessages(convId);
+        }
+      }
+      
+      setIsLoading(false);
+      setIsChatConnected(true);
+    };
+
+    initChat();
 
     const channel = supabase
-      .channel('chat_messages_realtime')
+      .channel('support_realtime')
       .on(
         'postgres_changes',
-        { event: '*', schema: 'public', table: 'chat_messages' },
+        { event: '*', schema: 'public', table: 'support_messages' },
         (payload: any) => {
           if (payload.event === 'INSERT') {
             const newMessage = payload.new;
-            const mappedMessage: Message = {
-              id: newMessage.id,
-              from: {
-                username: newMessage.from_username,
-                cnpj: newMessage.from_cnpj,
-                role: newMessage.from_role as 'user' | 'admin'
-              },
-              to: newMessage.to_cnpj ? {
-                cnpj: newMessage.to_cnpj,
-                username: newMessage.to_username
-              } : undefined,
-              text: newMessage.text,
-              timestamp: newMessage.created_at
-            };
-
-            setMessages(prev => {
-              if (prev.some(existing => existing.id === mappedMessage.id)) return prev;
-              return [...prev, mappedMessage];
-            });
-
-            // Handle notifications
-            const state = useStore.getState();
-            const normalizedUserCnpj = currentUser.cnpj.replace(/[^\d]/g, '');
-            const normalizedFromCnpj = mappedMessage.from.cnpj.replace(/[^\d]/g, '');
-            const isFromMe = normalizedFromCnpj === normalizedUserCnpj && mappedMessage.from.username === currentUser.username;
             
-            if (!isFromMe) {
-              // Play sound
-              const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3');
-              audio.play().catch(e => console.log('Audio play blocked'));
-
-              let shouldNotify = false;
-              if (!state.isSupportChatOpen) {
-                shouldNotify = true;
-              } else if (userRole === 'admin') {
-                if (mappedMessage.from.cnpj !== state.selectedUserCnpj) {
-                  shouldNotify = true;
-                }
-              } else if (document.hidden) {
-                shouldNotify = true;
-              }
-
-              if (shouldNotify) {
-                const senderName = mappedMessage.from.role === 'admin' ? 'Suporte SmartPrice' : mappedMessage.from.username;
-                
-                if (userRole === 'admin' && mappedMessage.from.role === 'user') {
-                  if (mappedMessage.from.cnpj !== state.selectedUserCnpj) {
-                    setUnreadPerUser(mappedMessage.from.cnpj, prev => {
-                      const newCount = typeof prev === 'number' ? prev + 1 : 1;
-                      setUnreadSupportCount(current => (typeof current === 'number' ? current + 1 : 1));
-                      return newCount;
-                    });
-                  }
-                } else if (userRole === 'user' && mappedMessage.from.role === 'admin') {
-                  setUnreadSupportCount(prev => (typeof prev === 'number' ? prev + 1 : 1));
-                }
-
-                if ("Notification" in window) {
-                  if (Notification.permission === "granted") {
-                    try {
-                      const n = new Notification(`Nova mensagem de ${senderName}`, { 
-                        body: mappedMessage.text,
-                        icon: '/favicon.ico',
-                        tag: 'support-msg',
-                        renotify: true
-                      } as any);
-                      n.onclick = () => {
-                        window.focus();
-                        useStore.getState().setSupportChatOpen(true);
-                        if (userRole === 'admin' && mappedMessage.from.cnpj) {
-                          useStore.getState().setSelectedUserCnpj(mappedMessage.from.cnpj);
-                        }
-                      };
-                    } catch (e) {
-                      console.error('Error showing notification:', e);
-                    }
-                  }
-                }
-
-                toast.info(`Mensagem de ${senderName}`, {
-                  description: mappedMessage.text,
-                  duration: 8000,
-                  action: {
-                    label: 'Responder',
-                    onClick: () => {
-                      useStore.getState().setSupportChatOpen(true);
-                      if (userRole === 'admin' && mappedMessage.from.cnpj) {
-                        useStore.getState().setSelectedUserCnpj(mappedMessage.from.cnpj);
-                      }
-                    }
-                  }
-                });
-              }
+            // Update conversations list for admin to show last message
+            if (userRole === 'admin') {
+              fetchConversations();
             }
+
+            // Only add if it belongs to the active conversation
+            if (activeConversationIdRef.current && String(newMessage.conversation_id) === String(activeConversationIdRef.current)) {
+              const mappedMessage: Message = {
+                id: newMessage.id,
+                conversation_id: newMessage.conversation_id,
+                sender_id: newMessage.sender_id,
+                sender_name: newMessage.sender_name,
+                sender_type: newMessage.sender_type as 'user' | 'admin',
+                text: newMessage.message,
+                timestamp: newMessage.created_at
+              };
+
+              setMessages(prev => {
+                if (prev.some(existing => existing.id === mappedMessage.id)) return prev;
+                return [...prev, mappedMessage];
+              });
+            }
+
+            handleNewMessageNotification(newMessage);
           } else if (payload.event === 'DELETE') {
-            const deletedId = payload.old.id;
-            setMessages(prev => prev.filter(m => m.id !== deletedId));
-          } else if (payload.event === 'UPDATE') {
-            const updatedMessage = payload.new;
-            setMessages(prev => prev.map(m => m.id === updatedMessage.id ? {
-              ...m,
-              text: updatedMessage.text,
-              timestamp: updatedMessage.created_at
-            } : m));
+            setMessages(prev => prev.filter(m => m.id !== payload.old.id));
           }
         }
       )
-      .subscribe((status) => {
-        if (status === 'SUBSCRIBED') {
-          setIsChatConnected(true);
-        } else if (status === 'CLOSED' || status === 'CHANNEL_ERROR') {
-          setIsChatConnected(false);
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'support_conversations' },
+        () => {
+          if (userRole === 'admin') fetchConversations();
         }
+      )
+      .subscribe((status) => {
+        if (status === 'SUBSCRIBED') setIsChatConnected(true);
+        else setIsChatConnected(false);
       });
-
-    // Request notification permission
-    if ("Notification" in window && Notification.permission === "default") {
-      Notification.requestPermission();
-    }
-
-    // Set up periodic cleanup (every 30 minutes)
-    const cleanupInterval = setInterval(cleanupOldMessages, 30 * 60 * 1000);
 
     return () => {
       supabase.removeChannel(channel);
-      clearInterval(cleanupInterval);
     };
-  }, [currentUser, userRole, setMessages, setUnreadPerUser, setUnreadSupportCount, setIsChatConnected]);
+  }, [currentUser?.cnpj, userRole, selectedUserCnpj]); // Re-init when user or selection changes
 
+  const handleNewMessageNotification = (msg: any) => {
+    const state = useStore.getState();
+    const isFromMe = msg.sender_id === (userRole === 'admin' ? 'admin' : currentUser?.cnpj?.replace(/[^\d]/g, ''));
+    
+    if (isFromMe) return;
+
+    // Play sound
+    const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3');
+    audio.play().catch(() => {});
+
+    if (!state.isSupportChatOpen || (userRole === 'admin' && msg.sender_id !== state.selectedUserCnpj?.replace(/[^\d]/g, ''))) {
+      if (userRole === 'admin') {
+        setUnreadPerUser(msg.sender_id, prev => (typeof prev === 'number' ? prev + 1 : 1));
+      }
+      setUnreadSupportCount(prev => (typeof prev === 'number' ? prev + 1 : 1));
+      
+      toast.info(`Nova mensagem de ${msg.sender_name}`, {
+        description: msg.message,
+        action: {
+          label: 'Ver',
+          onClick: () => state.setSupportChatOpen(true)
+        }
+      });
+    }
+  };
 
   const sendMessage = async (text: string, toCnpj?: string) => {
-    if (!isSupabaseConfigured || !currentUser || !userRole) return;
+    if (!isSupabaseConfigured || !currentUser || !activeConversationId) return;
 
-    const normalizedToCnpj = toCnpj ? toCnpj.replace(/[^\d]/g, '') : undefined;
-    const normalizedFromCnpj = currentUser.cnpj.replace(/[^\d]/g, '');
-    const targetStore = toCnpj ? useStore.getState().allowedStores.find(s => s.cnpj.replace(/[^\d]/g, '') === normalizedToCnpj) : null;
-    const toUsername = userRole === 'user' ? 'Suporte SmartPrice' : (targetStore?.bandeira || null);
+    const tempId = `temp-${crypto.randomUUID()}`;
+    const senderId = userRole === 'admin' ? 'admin' : currentUser?.cnpj?.replace(/[^\d]/g, '') || '';
+    const tempMsg: Message = {
+      id: tempId,
+      conversation_id: activeConversationId,
+      sender_id: senderId,
+      sender_name: currentUser.username || 'Usuário',
+      sender_type: userRole as 'user' | 'admin',
+      text: text.trim(),
+      timestamp: new Date().toISOString(),
+      pending: true
+    };
+
+    // Optimistic update
+    setMessages(prev => [...prev, tempMsg]);
 
     try {
-      const messageId = `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-      const { error } = await supabase
-        .from('chat_messages')
+      const { data, error } = await supabase
+        .from('support_messages')
         .insert({
-          id: messageId,
-          from_username: currentUser.username || 'Usuário',
-          from_cnpj: normalizedFromCnpj,
-          from_role: userRole,
-          to_cnpj: normalizedToCnpj || null,
-          to_username: toUsername,
-          text: text
-        });
+          conversation_id: activeConversationId,
+          sender_id: senderId,
+          sender_name: tempMsg.sender_name,
+          sender_type: tempMsg.sender_type,
+          message: text.trim()
+        })
+        .select()
+        .single();
 
       if (error) throw error;
+      
+      if (data) {
+        const realMsg: Message = {
+          id: data.id,
+          conversation_id: data.conversation_id,
+          sender_id: data.sender_id,
+          sender_name: data.sender_name,
+          sender_type: data.sender_type as 'user' | 'admin',
+          text: data.message,
+          timestamp: data.created_at
+        };
+
+        setMessages(prev => {
+          // If Realtime already added it, just remove temp
+          if (prev.some(m => m.id === realMsg.id)) {
+            return prev.filter(m => m.id !== tempId);
+          }
+          // Otherwise replace temp with real
+          return prev.map(m => m.id === tempId ? realMsg : m);
+        });
+      }
+
+      // Update conversation updated_at
+      await supabase
+        .from('support_conversations')
+        .update({ updated_at: new Date().toISOString() })
+        .eq('id', activeConversationId);
+
+      if (userRole === 'admin') fetchConversations();
     } catch (err) {
+      // Rollback on error
+      setMessages(prev => prev.filter(m => m.id !== tempId));
       console.error('Error sending message:', err);
       toast.error('Erro ao enviar mensagem');
     }
   };
 
   const clearMessages = async (cnpj: string) => {
-    if (!isSupabaseConfigured) return;
-    
-    const normalizedCnpj = cnpj.replace(/[^\d]/g, '');
+    // In the new structure, we might just close the conversation
+    if (!isSupabaseConfigured || !activeConversationId) return;
     
     try {
-      // Delete messages from/to this CNPJ
       const { error } = await supabase
-        .from('chat_messages')
-        .delete()
-        .or(`from_cnpj.eq.${normalizedCnpj},to_cnpj.eq.${normalizedCnpj}`);
+        .from('support_conversations')
+        .update({ status: 'closed' })
+        .eq('id', activeConversationId);
 
       if (error) throw error;
       
-      setMessages(prev => prev.filter(m => 
-        m.from.cnpj.replace(/[^\d]/g, '') !== normalizedCnpj && 
-        m.to?.cnpj?.replace(/[^\d]/g, '') !== normalizedCnpj
-      ));
+      setMessages([]);
+      setActiveConversationId(null);
+      toast.success('Conversa encerrada');
     } catch (err) {
-      console.error('Error clearing messages:', err);
-      toast.error('Erro ao limpar mensagens');
+      console.error('Error closing conversation:', err);
     }
   };
 
-  return { messages, setMessages, sendMessage, clearMessages, isConnected: isChatConnected };
+  return { 
+    messages, 
+    sendMessage, 
+    clearMessages, 
+    isConnected: isChatConnected,
+    isLoading,
+    activeConversationId,
+    conversations
+  };
 }
 

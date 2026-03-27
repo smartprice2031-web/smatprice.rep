@@ -9,6 +9,7 @@ import UserManagement from './components/UserManagement';
 import AnnouncementManager from './components/AnnouncementManager';
 import UserAnnouncementModal from './components/UserAnnouncementModal';
 import SupportChat from './components/SupportChat';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import Login from './components/Login';
 import EncarteCreator from './components/EncarteCreator';
 import { 
@@ -53,8 +54,8 @@ export default function App() {
     if (userRole === 'admin') return layouts.map((l, i) => ({ ...l, originalIndex: i }));
     
     // Normalize CNPJ for comparison
-    const normalizedUserCnpj = currentUser?.cnpj.replace(/[^\d]/g, '');
-    const store = allowedStores.find(s => s.cnpj.replace(/[^\d]/g, '') === normalizedUserCnpj);
+    const normalizedUserCnpj = currentUser?.cnpj?.replace(/[^\d]/g, '') || '';
+    const store = allowedStores.find(s => s.cnpj?.replace(/[^\d]/g, '') === normalizedUserCnpj);
     
     // If no store found or allowedLayouts is undefined/empty, show NOTHING (Total Control)
     if (!store || !store.allowedLayouts || store.allowedLayouts.length === 0) {
@@ -95,9 +96,9 @@ export default function App() {
   }, [userRole, activeTab]);
 
   useEffect(() => {
-    if (isAuthenticated && userRole !== 'admin' && announcements.length > 0 && currentUser) {
-      const userCnpj = currentUser.cnpj.replace(/[^\d]/g, '');
-      const store = allowedStores.find(s => s.cnpj.replace(/[^\d]/g, '') === userCnpj);
+    if (isAuthenticated && userRole !== 'admin' && currentUser) {
+      const userCnpj = currentUser?.cnpj?.replace(/[^\d]/g, '') || '';
+      const store = allowedStores.find(s => s.cnpj?.replace(/[^\d]/g, '') === userCnpj);
       const userGroupId = store?.groupId;
 
       const relevantAnnouncements = announcements.filter(ann => {
@@ -110,11 +111,18 @@ export default function App() {
         return false;
       });
 
-      if (relevantAnnouncements.length > 0) {
+      // Only update if the list of relevant announcements has changed
+      // This prevents unnecessary re-renders or flickering
+      const currentIds = pendingAnnouncements.map(a => a.id).sort().join(',');
+      const relevantIds = relevantAnnouncements.map(a => a.id).sort().join(',');
+      
+      if (currentIds !== relevantIds) {
         setPendingAnnouncements(relevantAnnouncements);
       }
+    } else if (pendingAnnouncements.length > 0) {
+      setPendingAnnouncements([]);
     }
-  }, [isAuthenticated, announcements, currentUser, allowedStores, seenAnnouncements]);
+  }, [isAuthenticated, userRole, announcements, currentUser, allowedStores, seenAnnouncements, pendingAnnouncements]);
 
   const handleCloseAnnouncements = () => {
     if (pendingAnnouncements.length > 0) {
@@ -435,7 +443,7 @@ export default function App() {
               </div>
 
               {/* Encarte Online Button */}
-              {(userRole === 'admin' || allowedStores.find(s => s.cnpj.replace(/[^\d]/g, '') === currentUser?.cnpj.replace(/[^\d]/g, ''))?.hasEncarteAccess) && (
+              {(userRole === 'admin' || allowedStores.find(s => s.cnpj?.replace(/[^\d]/g, '') === currentUser?.cnpj?.replace(/[^\d]/g, ''))?.hasEncarteAccess) && (
                 <button 
                   onClick={() => setView('encarte')}
                   className={cn(
@@ -727,7 +735,9 @@ export default function App() {
           </div>
         </div>
       )}
-      <SupportChat />
+      <ErrorBoundary>
+        <SupportChat />
+      </ErrorBoundary>
       
       {/* User Announcement Modal */}
       {pendingAnnouncements.length > 0 && (

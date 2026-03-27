@@ -56,8 +56,8 @@ export default function UserManagement() {
   };
 
   const toggleStoreLayout = (cnpj: string, index: number) => {
-    const normalizedCnpj = cnpj.replace(/[^\d]/g, '');
-    const store = allowedStores.find(s => s.cnpj.replace(/[^\d]/g, '') === normalizedCnpj);
+    const normalizedCnpj = cnpj?.replace(/[^\d]/g, '') || '';
+    const store = allowedStores.find(s => s.cnpj?.replace(/[^\d]/g, '') === normalizedCnpj);
     if (!store) return;
 
     // If allowedLayouts is undefined, it means ALL are allowed. 
@@ -132,8 +132,8 @@ export default function UserManagement() {
   };
 
   const filteredStores = allowedStores.filter(store => {
-    const normalizedSearch = searchTerm.replace(/[^\d]/g, '');
-    const normalizedCnpj = store.cnpj.replace(/[^\d]/g, '');
+    const normalizedSearch = searchTerm?.replace(/[^\d]/g, '') || '';
+    const normalizedCnpj = store.cnpj?.replace(/[^\d]/g, '') || '';
     return normalizedCnpj.includes(normalizedSearch) || 
            store.cnpj.includes(searchTerm) ||
            store.bandeira.toLowerCase().includes(searchTerm.toLowerCase());

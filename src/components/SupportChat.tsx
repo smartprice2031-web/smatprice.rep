@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useStore } from '../store';
 import { useSupportSocket, Message } from '../hooks/useSupportSocket';
 import { MessageCircle, Send, X, User, Trash2, AlertCircle } from 'lucide-react';
@@ -17,34 +17,11 @@ export default function SupportChat() {
     setUnreadSupportCount, selectedUserCnpj, setSelectedUserCnpj,
     unreadPerUser, setUnreadPerUser, messages, allowedStores
   } = useStore();
-  const { sendMessage, clearMessages, isConnected } = useSupportSocket();
+  const { sendMessage, clearMessages, isConnected, isLoading, activeConversationId, conversations } = useSupportSocket();
   const [inputText, setInputText] = useState('');
   const [showScrollButton, setShowScrollButton] = useState(false);
+  const [isSending, setIsSending] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
-
-  const handleReconnect = () => {
-    toast.promise(
-      new Promise((resolve) => {
-        // Re-trigger socket connection logic if needed, but io() handles it.
-        // We can just wait for isConnected to become true.
-        const check = setInterval(() => {
-          if (useStore.getState().isChatConnected) {
-            clearInterval(check);
-            resolve(true);
-          }
-        }, 500);
-        setTimeout(() => {
-          clearInterval(check);
-          resolve(false);
-        }, 5000);
-      }),
-      {
-        loading: 'Tentando reconectar...',
-        success: 'Conectado!',
-        error: 'Não foi possível conectar. Tente novamente mais tarde.'
-      }
-    );
-  };
 
   const handleScroll = () => {
     if (scrollRef.current) {
@@ -60,12 +37,20 @@ export default function SupportChat() {
     }
   };
 
-  const handleSendMessage = (e: React.FormEvent) => {
+  const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!inputText.trim()) return;
+    if (!inputText.trim() || isSending) return;
 
-    sendMessage(inputText, selectedUserCnpj || undefined);
-    setInputText('');
+    setIsSending(true);
+    try {
+      await sendMessage(inputText, selectedUserCnpj || undefined);
+      setInputText('');
+      scrollToBottom();
+    } catch (err) {
+      console.error('Failed to send message:', err);
+    } finally {
+      setIsSending(false);
+    }
   };
 
   useEffect(() => {
@@ -88,42 +73,36 @@ export default function SupportChat() {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
-  }, [messages, isSupportChatOpen]);
+  }, [messages, isSupportChatOpen, isLoading]);
 
   const [confirmClear, setConfirmClear] = useState(false);
 
+  // For admin: get list of all authorized users based on active conversations
+  const chatUsers = useMemo(() => {
+    if (userRole !== 'admin') return [];
+    
+    // Map conversations to user list
+    return conversations.map(conv => {
+      const store = allowedStores.find(s => s.cnpj?.replace(/[^\d]/g, '') === conv.user_id);
+      return {
+        cnpj: conv.user_id,
+        name: store?.bandeira || conv.user_name || 'Usuário',
+        lastMessage: 'Conversa ativa',
+        timestamp: conv.updated_at,
+        unread: unreadPerUser[conv.user_id] || 0
+      };
+    }).sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+  }, [conversations, allowedStores, unreadPerUser, userRole]);
+
   const handleClearChat = () => {
-    clearMessages(userRole === 'admin' ? selectedUserCnpj! : currentUser?.cnpj!);
+    const target = userRole === 'admin' ? selectedUserCnpj : currentUser?.cnpj;
+    if (target) {
+      clearMessages(target);
+    }
     setConfirmClear(false);
   };
 
   if (!isSupportChatOpen) return null;
-
-  // Filter messages for the current view
-  // If user: only show messages between them and admin
-  // If admin: show all messages, but maybe group by user
-  const filteredMessages = userRole === 'admin' 
-    ? (selectedUserCnpj ? messages.filter(m => m.from.cnpj.replace(/[^\d]/g, '') === selectedUserCnpj.replace(/[^\d]/g, '') || m.to?.cnpj?.replace(/[^\d]/g, '') === selectedUserCnpj.replace(/[^\d]/g, '')) : [])
-    : messages;
-
-  // For admin: get list of all authorized users
-  const chatUsers = userRole === 'admin' 
-    ? allowedStores.map(store => {
-        const normalizedStoreCnpj = store.cnpj.replace(/[^\d]/g, '');
-        const lastMsg = [...messages].reverse().find(m => m.from.cnpj.replace(/[^\d]/g, '') === normalizedStoreCnpj || m.to?.cnpj?.replace(/[^\d]/g, '') === normalizedStoreCnpj);
-        return { 
-          cnpj: store.cnpj, 
-          username: store.cnpj, // Using CNPJ as username if not found in messages
-          bandeira: store.bandeira,
-          lastMessage: lastMsg?.text,
-          lastTimestamp: lastMsg?.timestamp
-        };
-      }).sort((a, b) => {
-        if (!a.lastTimestamp) return 1;
-        if (!b.lastTimestamp) return -1;
-        return new Date(b.lastTimestamp).getTime() - new Date(a.lastTimestamp).getTime();
-      })
-    : [];
 
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[100] p-2 md:p-4 no-print">
@@ -157,11 +136,6 @@ export default function SupportChat() {
               <p className="text-[9px] font-bold text-black dark:text-white uppercase tracking-widest">
                 {userRole === 'admin' ? 'Central de Atendimento' : 'Suporte Online'}
               </p>
-              {userRole === 'user' && (
-                <p className="text-[9px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-tighter mt-0.5">
-                  Adm: (99) 9 8470-1752 | (99) 9 8199-0035
-                </p>
-              )}
             </div>
           </div>
           <button 
@@ -197,18 +171,18 @@ export default function SupportChat() {
                     </div>
                     <div className="overflow-hidden flex-grow">
                       <div className="flex justify-between items-start">
-                        <p className="text-xs font-bold truncate text-black dark:text-white">{user.bandeira}</p>
-                        {user.lastTimestamp && (
+                        <p className="text-xs font-bold truncate text-black dark:text-white">{user.name}</p>
+                        {user.timestamp && !isNaN(new Date(user.timestamp).getTime()) && (
                           <span className="text-[7px] text-zinc-400 dark:text-zinc-500">
-                            {new Date(user.lastTimestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            {new Date(user.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                           </span>
                         )}
                       </div>
                       <p className="text-[9px] text-black dark:text-white truncate">{user.cnpj}</p>
                     </div>
-                    {unreadPerUser[user.cnpj.replace(/[^\d]/g, '')] > 0 && (
+                    {unreadPerUser[user.cnpj?.replace(/[^\d]/g, '') || ''] > 0 && (
                       <div className="bg-red-500 text-white text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center flex-shrink-0">
-                        {unreadPerUser[user.cnpj.replace(/[^\d]/g, '')]}
+                        {unreadPerUser[user.cnpj?.replace(/[^\d]/g, '') || '']}
                       </div>
                     )}
                   </button>
@@ -238,120 +212,131 @@ export default function SupportChat() {
                   className="flex-grow overflow-y-auto p-4 space-y-2 bg-[#e5ddd5] dark:bg-zinc-950 relative"
                   style={{ backgroundImage: 'url("https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png")', backgroundBlendMode: 'overlay' }}
                 >
-                  <div className="sticky top-0 right-0 z-10 flex justify-end p-2 pointer-events-none">
-                    <div className="pointer-events-auto">
-                      {confirmClear ? (
-                        <div className="flex items-center gap-2 bg-white dark:bg-zinc-800 p-1 rounded-full border border-red-200 dark:border-red-900/30 shadow-lg animate-in fade-in zoom-in duration-200">
-                          <span className="text-[8px] font-black uppercase tracking-widest text-red-500 px-2">Limpar?</span>
-                          <button 
-                            onClick={handleClearChat}
-                            className="px-3 py-1 bg-red-600 text-white rounded-full text-[9px] font-black uppercase tracking-widest hover:bg-red-700 transition-colors"
-                          >
-                            Sim
-                          </button>
-                          <button 
-                            onClick={() => setConfirmClear(false)}
-                            className="px-3 py-1 bg-zinc-100 dark:bg-zinc-700 text-zinc-600 dark:text-zinc-300 rounded-full text-[9px] font-black uppercase tracking-widest hover:bg-zinc-200 dark:hover:bg-zinc-600 transition-colors"
-                          >
-                            Não
-                          </button>
+                  {isLoading ? (
+                    <div className="flex items-center justify-center h-full">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="sticky top-0 right-0 z-10 flex justify-end p-2 pointer-events-none">
+                        <div className="pointer-events-auto">
+                          {confirmClear ? (
+                            <div className="flex items-center gap-2 bg-white dark:bg-zinc-800 p-1 rounded-full border border-red-200 dark:border-red-900/30 shadow-lg animate-in fade-in zoom-in duration-200">
+                              <span className="text-[8px] font-black uppercase tracking-widest text-red-500 px-2">Encerrar?</span>
+                              <button 
+                                onClick={handleClearChat}
+                                className="px-3 py-1 bg-red-600 text-white rounded-full text-[9px] font-black uppercase tracking-widest hover:bg-red-700 transition-colors"
+                              >
+                                Sim
+                              </button>
+                              <button 
+                                onClick={() => setConfirmClear(false)}
+                                className="px-3 py-1 bg-zinc-100 dark:bg-zinc-700 text-zinc-600 dark:text-zinc-300 rounded-full text-[9px] font-black uppercase tracking-widest hover:bg-zinc-200 dark:hover:bg-zinc-600 transition-colors"
+                              >
+                                Não
+                              </button>
+                            </div>
+                          ) : (
+                            <button 
+                              onClick={() => setConfirmClear(true)}
+                              className="flex items-center gap-1.5 px-3 py-1.5 bg-white/80 dark:bg-zinc-800/80 backdrop-blur-sm border border-zinc-200 dark:border-zinc-700 rounded-full text-[10px] font-black uppercase tracking-widest text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors shadow-sm"
+                            >
+                              <Trash2 className="w-3 h-3" />
+                            </button>
+                          )}
                         </div>
-                      ) : (
+                      </div>
+
+                      {showScrollButton && (
                         <button 
-                          onClick={() => setConfirmClear(true)}
-                          className="flex items-center gap-1.5 px-3 py-1.5 bg-white/80 dark:bg-zinc-800/80 backdrop-blur-sm border border-zinc-200 dark:border-zinc-700 rounded-full text-[10px] font-black uppercase tracking-widest text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors shadow-sm"
+                          onClick={scrollToBottom}
+                          className="fixed bottom-32 left-1/2 -translate-x-1/2 z-50 bg-blue-600 text-white px-4 py-2 rounded-full text-xs font-black uppercase tracking-widest shadow-xl animate-bounce flex items-center gap-2"
                         >
-                          <Trash2 className="w-3 h-3" />
+                          Novas Mensagens Abaixo
                         </button>
                       )}
-                    </div>
-                  </div>
 
-                  {showScrollButton && (
-                    <button 
-                      onClick={scrollToBottom}
-                      className="fixed bottom-32 left-1/2 -translate-x-1/2 z-50 bg-blue-600 text-white px-4 py-2 rounded-full text-xs font-black uppercase tracking-widest shadow-xl animate-bounce flex items-center gap-2"
-                    >
-                      Novas Mensagens Abaixo
-                    </button>
-                  )}
-
-                  {filteredMessages.length === 0 && (
-                    <div className="flex flex-col items-center justify-center h-full text-center space-y-4">
-                      <div className="p-4 bg-white/50 dark:bg-zinc-800/50 backdrop-blur-sm rounded-2xl">
-                        <AlertCircle className="w-8 h-8 text-blue-600" />
-                      </div>
-                      <div className="max-w-xs bg-white/80 dark:bg-zinc-800/80 backdrop-blur-sm p-4 rounded-2xl">
-                        <p className="text-sm font-bold text-black dark:text-white mb-1">Inicie uma conversa</p>
-                        <p className="text-xs text-black dark:text-white">
-                          {userRole === 'admin' 
-                            ? "Envie uma resposta para ajudar o usuário." 
-                            : "Descreva o problema ou o produto que está faltando. Nossa equipe responderá em breve."}
-                        </p>
-                      </div>
-                    </div>
-                  )}
-
-                  {filteredMessages.map((msg, idx) => {
-                    const normalizedUserCnpj = currentUser?.cnpj.replace(/[^\d]/g, '');
-                    const normalizedFromCnpj = msg.from.cnpj.replace(/[^\d]/g, '');
-                    const isMe = normalizedFromCnpj === normalizedUserCnpj && 
-                                 msg.from.username.toLowerCase().trim() === currentUser?.username.toLowerCase().trim();
-                    const prevMsg = idx > 0 ? filteredMessages[idx - 1] : null;
-                    const isFirstInGroup = !prevMsg || prevMsg.from.cnpj.replace(/[^\d]/g, '') !== normalizedFromCnpj;
-                    
-                    return (
-                      <div 
-                        key={msg.id}
-                        className={cn(
-                          "flex flex-col w-full",
-                          isMe ? "items-end" : "items-start",
-                          isFirstInGroup ? "mt-4" : "mt-1"
-                        )}
-                      >
-                        <div className={cn(
-                          "relative max-w-[85%] px-3 py-1.5 shadow-sm",
-                          isMe 
-                            ? "bg-[#dcf8c6] dark:bg-emerald-900/40 text-black dark:text-white rounded-lg rounded-tr-none" 
-                            : "bg-white dark:bg-zinc-800 text-black dark:text-white rounded-lg rounded-tl-none"
-                        )}>
-                          {/* Tail */}
-                          {isFirstInGroup && (
-                            <div className={cn(
-                              "absolute top-0 w-2 h-2",
-                              isMe 
-                                ? "right-[-8px] border-l-[8px] border-l-[#dcf8c6] dark:border-l-emerald-900/40 border-b-[8px] border-b-transparent" 
-                                : "left-[-8px] border-r-[8px] border-r-white dark:border-r-zinc-800 border-b-[8px] border-b-transparent"
-                            )} />
-                          )}
-                          
-                          {!isMe && isFirstInGroup && userRole === 'admin' && (
-                            <p className="text-[10px] font-bold text-blue-600 dark:text-blue-400 mb-0.5">
-                              {msg.from.username}
+                      {messages.length === 0 && (
+                        <div className="flex flex-col items-center justify-center h-full text-center space-y-4">
+                          <div className="p-4 bg-white/50 dark:bg-zinc-800/50 backdrop-blur-sm rounded-2xl">
+                            <AlertCircle className="w-8 h-8 text-blue-600" />
+                          </div>
+                          <div className="max-w-xs bg-white/80 dark:bg-zinc-800/80 backdrop-blur-sm p-4 rounded-2xl">
+                            <p className="text-sm font-bold text-black dark:text-white mb-1">Inicie uma conversa</p>
+                            <p className="text-xs text-black dark:text-white">
+                              {userRole === 'admin' 
+                                ? "Envie uma resposta para ajudar o usuário." 
+                                : "Descreva o problema ou o produto que está faltando. Nossa equipe responderá em breve."}
                             </p>
-                          )}
-                          
-                          <div className="flex flex-wrap items-end gap-2">
-                            <p className="text-sm leading-relaxed break-words max-w-full text-black dark:text-white">
-                              {msg.text}
-                            </p>
-                            <div className="flex items-center gap-1 ml-auto pt-1">
-                              <span className="text-[9px] text-black dark:text-white font-medium">
-                                {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                              </span>
-                              {isMe && (
-                                <div className="flex items-center -space-x-1">
-                                  <svg viewBox="0 0 16 15" width="12" height="11" className="text-blue-500 fill-current">
-                                    <path d="M15.01 3.316l-.478-.372a.365.365 0 0 0-.51.063L8.666 9.879a.32.32 0 0 1-.484.033l-.358-.325a.319.319 0 0 0-.484.032l-.378.483a.418.418 0 0 0 .036.541l1.32 1.266c.143.14.361.125.484-.033l6.272-8.048a.366.366 0 0 0-.064-.512zm-4.1 0l-.478-.372a.365.365 0 0 0-.51.063L5.066 9.879a.32.32 0 0 1-.484.033L1.582 7.13a.32.32 0 0 0-.484.032l-.378.483a.418.418 0 0 0 .036.541l3.413 3.274c.143.14.361.125.484-.033l6.272-8.048a.366.366 0 0 0-.064-.512z"></path>
-                                  </svg>
-                                </div>
-                              )}
-                            </div>
                           </div>
                         </div>
-                      </div>
-                    );
-                  })}
+                      )}
+
+                      {messages.map((msg, idx) => {
+                        const isMe = userRole === 'admin' ? msg.sender_type === 'admin' : msg.sender_type === 'user';
+                        const prevMsg = idx > 0 ? messages[idx - 1] : null;
+                        const isFirstInGroup = !prevMsg || prevMsg.sender_id !== msg.sender_id;
+                        
+                        return (
+                          <div 
+                            key={msg.id}
+                            className={cn(
+                              "flex flex-col w-full",
+                              isMe ? "items-end" : "items-start",
+                              isFirstInGroup ? "mt-4" : "mt-1"
+                            )}
+                          >
+                            <div className={cn(
+                              "relative max-w-[85%] px-3 py-1.5 shadow-sm",
+                              isMe 
+                                ? "bg-[#dcf8c6] dark:bg-emerald-900/40 text-black dark:text-white rounded-lg rounded-tr-none" 
+                                : "bg-white dark:bg-zinc-800 text-black dark:text-white rounded-lg rounded-tl-none"
+                            )}>
+                              {/* Tail */}
+                              {isFirstInGroup && (
+                                <div className={cn(
+                                  "absolute top-0 w-2 h-2",
+                                  isMe 
+                                    ? "right-[-8px] border-l-[8px] border-l-[#dcf8c6] dark:border-l-emerald-900/40 border-b-[8px] border-b-transparent" 
+                                    : "left-[-8px] border-r-[8px] border-r-white dark:border-r-zinc-800 border-b-[8px] border-b-transparent"
+                                )} />
+                              )}
+                              
+                              {!isMe && isFirstInGroup && (
+                                <p className="text-[10px] font-bold text-blue-600 dark:text-blue-400 mb-0.5">
+                                  {msg.sender_name}
+                                </p>
+                              )}
+                              
+                              <div className="flex flex-wrap items-end gap-2">
+                                <p className="text-sm leading-relaxed break-words max-w-full text-black dark:text-white">
+                                  {msg.text}
+                                </p>
+                                <div className="flex items-center gap-1 ml-auto pt-1">
+                                  <span className="text-[9px] text-black dark:text-white font-medium opacity-60">
+                                    {msg.timestamp && !isNaN(new Date(msg.timestamp).getTime()) 
+                                      ? new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                                      : '--:--'}
+                                  </span>
+                                  {isMe && (
+                                    <div className="flex items-center -space-x-1">
+                                      {msg.pending ? (
+                                        <div className="w-3 h-3 border border-zinc-400 border-t-transparent rounded-full animate-spin" />
+                                      ) : (
+                                        <svg viewBox="0 0 16 15" width="12" height="11" className="text-blue-500 fill-current">
+                                          <path d="M15.01 3.316l-.478-.372a.365.365 0 0 0-.51.063L8.666 9.879a.32.32 0 0 1-.484.033l-.358-.325a.319.319 0 0 0-.484.032l-.378.483a.418.418 0 0 0 .036.541l1.32 1.266c.143.14.361.125.484-.033l6.272-8.048a.366.366 0 0 0-.064-.512zm-4.1 0l-.478-.372a.365.365 0 0 0-.51.063L5.066 9.879a.32.32 0 0 1-.484.033L1.582 7.13a.32.32 0 0 0-.484.032l-.378.483a.418.418 0 0 0 .036.541l3.413 3.274c.143.14.361.125.484-.033l6.272-8.048a.366.366 0 0 0-.064-.512z"></path>
+                                        </svg>
+                                      )}
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </>
+                  )}
                 </div>
 
                 {/* Input Area */}
@@ -366,13 +351,18 @@ export default function SupportChat() {
                       className="flex-grow bg-zinc-100 dark:bg-zinc-800 border-none rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none transition-all text-black dark:text-white"
                       value={inputText}
                       onChange={(e) => setInputText(e.target.value)}
+                      disabled={isSending || !activeConversationId}
                     />
                     <button
                       type="submit"
-                      disabled={!inputText.trim()}
-                      className="bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white p-2.5 rounded-xl shadow-lg shadow-blue-500/20 transition-all active:scale-95"
+                      disabled={!inputText.trim() || isSending || !activeConversationId}
+                      className="bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white p-2.5 rounded-xl shadow-lg shadow-blue-500/20 transition-all active:scale-95 flex items-center justify-center min-w-[44px]"
                     >
-                      <Send className="w-5 h-5" />
+                      {isSending ? (
+                        <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      ) : (
+                        <Send className="w-5 h-5" />
+                      )}
                     </button>
                   </form>
                 </div>

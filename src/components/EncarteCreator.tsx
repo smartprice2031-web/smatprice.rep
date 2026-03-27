@@ -67,8 +67,16 @@ export default function EncarteCreator() {
   const selectedModel = selectedEncarteModel || ENCARTE_MODELS[0];
   const setSelectedModel = setSelectedEncarteModel;
 
-  const currentEncarte = encartes[activeEncarteIndex];
-  const currentProducts = (currentSide === 'frente' ? currentEncarte.frontProducts : currentEncarte.backProducts).slice(0, currentEncarte.productCount);
+  const currentEncarte = encartes[activeEncarteIndex] || {
+    name: 'Modelo',
+    frontBgUrl: '',
+    backBgUrl: '',
+    frontProducts: [],
+    backProducts: [],
+    productCount: 12,
+    extraProducts: []
+  };
+  const currentProducts = (currentSide === 'frente' ? currentEncarte.frontProducts : currentEncarte.backProducts)?.slice(0, currentEncarte.productCount) || [];
 
   const getAdaptiveStyles = (count: number) => {
     switch (count) {
@@ -82,7 +90,7 @@ export default function EncarteCreator() {
   };
 
   const formatPrice = (price: string) => {
-    const cleanPrice = price.replace('R$', '').replace(',', '.').trim();
+    const cleanPrice = (price || '').replace('R$', '').replace(',', '.').trim();
     const parts = cleanPrice.split('.');
     return {
       integer: parts[0] || '0',
@@ -223,7 +231,7 @@ export default function EncarteCreator() {
       if (frente) {
         const canvas = await html2canvas(frente, options);
         const link = document.createElement('a');
-        link.download = `encarte-${currentEncarte.name.replace(/\s+/g, '-')}-frente-${Date.now()}.png`;
+        link.download = `encarte-${(currentEncarte.name || 'modelo').replace(/\s+/g, '-')}-frente-${Date.now()}.png`;
         link.href = canvas.toDataURL('image/png');
         link.click();
       }
@@ -231,7 +239,7 @@ export default function EncarteCreator() {
       if (verso) {
         const canvas = await html2canvas(verso, options);
         const link = document.createElement('a');
-        link.download = `encarte-${currentEncarte.name.replace(/\s+/g, '-')}-verso-${Date.now()}.png`;
+        link.download = `encarte-${(currentEncarte.name || 'modelo').replace(/\s+/g, '-')}-verso-${Date.now()}.png`;
         link.href = canvas.toDataURL('image/png');
         link.click();
       }
@@ -273,7 +281,7 @@ export default function EncarteCreator() {
       const canvasVerso = await html2canvas(verso, options);
       pdf.addImage(canvasVerso.toDataURL('image/jpeg', 0.95), 'JPEG', 0, 0, 210, 297);
 
-      pdf.save(`encarte-${currentEncarte.name.replace(/\s+/g, '-')}-${Date.now()}.pdf`);
+      pdf.save(`encarte-${(currentEncarte.name || 'modelo').replace(/\s+/g, '-')}-${Date.now()}.pdf`);
       toast.success('PDF gerado com sucesso!', { id: toastId });
     } catch (error) {
       console.error('Erro ao exportar PDF:', error);

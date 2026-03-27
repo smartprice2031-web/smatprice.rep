@@ -276,6 +276,12 @@ interface AppState {
   setUnreadPerUser: (cnpj: string, count: number | ((prev: number) => number)) => void;
   messages: any[];
   setMessages: (messages: any[] | ((prev: any[]) => any[])) => void;
+  activeConversationId: string | null;
+  setActiveConversationId: (id: string | null) => void;
+  conversations: any[];
+  setConversations: (conversations: any[]) => void;
+  isChatLoading: boolean;
+  setIsChatLoading: (loading: boolean) => void;
   
   // Announcements
   announcements: Announcement[];
@@ -1017,9 +1023,9 @@ export const useStore = create<AppState>()(
         return newState;
       }),
       setUserGroup: (cnpj, groupId) => set((state) => {
-        const normalizedCnpj = cnpj.replace(/[^\d]/g, '');
+        const normalizedCnpj = cnpj?.replace(/[^\d]/g, '') || '';
         const newAllowedStores = state.allowedStores.map(s => 
-          s.cnpj.replace(/[^\d]/g, '') === normalizedCnpj 
+          s.cnpj?.replace(/[^\d]/g, '') === normalizedCnpj 
             ? { ...s, groupId }
             : s
         );
@@ -1029,8 +1035,8 @@ export const useStore = create<AppState>()(
 
       allowedStores: [],
       addAllowedStore: (store) => set((state) => {
-        const normalizedCnpj = store.cnpj.replace(/[^\d]/g, '');
-        const existingIndex = state.allowedStores.findIndex(s => s.cnpj.replace(/[^\d]/g, '') === normalizedCnpj);
+        const normalizedCnpj = store.cnpj?.replace(/[^\d]/g, '') || '';
+        const existingIndex = state.allowedStores.findIndex(s => s.cnpj?.replace(/[^\d]/g, '') === normalizedCnpj);
         
         const updatedStore = {
           ...store,
@@ -1051,18 +1057,18 @@ export const useStore = create<AppState>()(
         return { allowedStores: newAllowedStores };
       }),
       removeAllowedStore: (cnpj) => set((state) => {
-        const normalizedCnpj = cnpj.replace(/[^\d]/g, '');
+        const normalizedCnpj = cnpj?.replace(/[^\d]/g, '') || '';
         const newState = { 
-          allowedStores: state.allowedStores.filter(s => s.cnpj.replace(/[^\d]/g, '') !== normalizedCnpj) 
+          allowedStores: state.allowedStores.filter(s => s.cnpj?.replace(/[^\d]/g, '') !== normalizedCnpj) 
         };
         setTimeout(() => get().saveUsersAndFlags(), 0);
         return newState;
       }),
 
       toggleEncarteAccess: (cnpj) => set((state) => {
-        const normalizedCnpj = cnpj.replace(/[^\d]/g, '');
+        const normalizedCnpj = cnpj?.replace(/[^\d]/g, '') || '';
         const newAllowedStores = state.allowedStores.map(s => 
-          s.cnpj.replace(/[^\d]/g, '') === normalizedCnpj 
+          s.cnpj?.replace(/[^\d]/g, '') === normalizedCnpj 
             ? { ...s, hasEncarteAccess: !s.hasEncarteAccess }
             : s
         );
@@ -1148,6 +1154,12 @@ export const useStore = create<AppState>()(
       setMessages: (messages) => set((state) => ({ 
         messages: typeof messages === 'function' ? messages(state.messages) : messages 
       })),
+      activeConversationId: null,
+      setActiveConversationId: (id) => set({ activeConversationId: id }),
+      conversations: [],
+      setConversations: (conversations) => set({ conversations }),
+      isChatLoading: false,
+      setIsChatLoading: (loading) => set({ isChatLoading: loading }),
 
       encartes: Array(10).fill(null).map((_, i) => ({
         name: `Modelo ${i + 1}`,
