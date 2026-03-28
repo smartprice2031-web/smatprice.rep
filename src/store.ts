@@ -115,16 +115,21 @@ export interface SelectedProduct extends Product {
   textOffsetY?: number;
   displayType?: 'price' | 'discount';
   discountValue?: string;
+  priceColor?: string;
+  textColor?: string;
 }
 
 export interface EncarteSlot {
   name: string;
   date?: string;
+  dateOffsetX?: number;
+  dateOffsetY?: number;
   frontBgUrl: string;
   backBgUrl: string;
   frontProducts: (SelectedProduct | null)[];
   backProducts: (SelectedProduct | null)[];
   productCount: number;
+  bubbleShape?: 'rounded' | 'square' | 'circle' | 'pill' | 'burst' | 'badge' | 'diamond' | 'hexagon' | 'star' | 'oval';
   extraProducts?: (SelectedProduct | null)[];
 }
 
@@ -259,6 +264,7 @@ interface AppState {
   addAllowedStore: (store: { cnpj: string; bandeira: string; allowedLayouts?: number[]; hasEncarteAccess?: boolean; groupId?: string }) => void;
   removeAllowedStore: (cnpj: string) => void;
   saveUsersAndFlags: () => Promise<void>;
+  saveUsersAndFlagsDebounced: () => void;
   loadUsersAndFlags: () => Promise<void>;
   isAuthenticated: boolean;
   lastLoginTimestamp: number | null;
@@ -1076,6 +1082,13 @@ export const useStore = create<AppState>()(
         return { allowedStores: newAllowedStores };
       }),
 
+      saveUsersAndFlagsDebounced: () => {
+        if (saveTimeout) clearTimeout(saveTimeout);
+        saveTimeout = setTimeout(() => {
+          get().saveUsersAndFlags();
+        }, 1000);
+      },
+
       saveUsersAndFlags: async () => {
         if (!isSupabaseConfigured) return;
         const state = get();
@@ -1170,9 +1183,15 @@ export const useStore = create<AppState>()(
         productCount: 12,
         extraProducts: [null, null],
       })),
-      setEncartes: (encartes) => set({ encartes }),
+      setEncartes: (encartes) => {
+        set({ encartes });
+        get().saveUsersAndFlagsDebounced();
+      },
       selectedEncarteModel: null,
-      setSelectedEncarteModel: (model) => set({ selectedEncarteModel: model }),
+      setSelectedEncarteModel: (model) => {
+        set({ selectedEncarteModel: model });
+        get().saveUsersAndFlagsDebounced();
+      },
 
       login: (role, user) => set({ 
         isAuthenticated: true, 

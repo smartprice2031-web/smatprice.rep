@@ -46,6 +46,48 @@ const ENCARTE_MODELS: EncarteModel[] = [
   { id: 'cyber-neon', name: 'Cyber Neon', primaryColor: '#000000', secondaryColor: '#00ff00', accentColor: '#00ff00', textColor: '#00ff00', bgClass: 'bg-black', borderClass: 'border-green-500' },
 ];
 
+const BUBBLE_SHAPES = [
+  { id: 'rounded', name: 'Arredondado' },
+  { id: 'square', name: 'Quadrado' },
+  { id: 'circle', name: 'Círculo' },
+  { id: 'pill', name: 'Pílula' },
+  { id: 'burst', name: 'Explosão' },
+  { id: 'badge', name: 'Crachá' },
+  { id: 'diamond', name: 'Diamante' },
+  { id: 'hexagon', name: 'Hexágono' },
+  { id: 'star', name: 'Estrela' },
+  { id: 'oval', name: 'Oval' },
+];
+
+const getBubbleClass = (shape?: string) => {
+  switch (shape) {
+    case 'square': return 'rounded-none px-3';
+    case 'circle': return 'rounded-full aspect-square w-16 h-16';
+    case 'pill': return 'rounded-full px-6';
+    case 'burst': return '';
+    case 'badge': return 'rounded-tr-3xl rounded-bl-3xl rounded-tl-lg rounded-br-lg px-4';
+    case 'diamond': return 'rotate-45 w-12 h-12 flex items-center justify-center';
+    case 'hexagon': return 'w-14 h-14 flex items-center justify-center';
+    case 'star': return 'w-16 h-16 flex items-center justify-center';
+    case 'oval': return 'rounded-[100%] px-5 py-2';
+    case 'rounded':
+    default: return 'rounded-2xl px-3';
+  }
+};
+
+const getBubbleStyle = (shape?: string) => {
+  switch (shape) {
+    case 'burst':
+      return { clipPath: 'polygon(50% 0%, 61% 14%, 75% 14%, 81% 28%, 93% 33%, 93% 47%, 100% 61%, 89% 72%, 89% 86%, 75% 86%, 67% 100%, 50% 89%, 33% 100%, 25% 86%, 11% 86%, 11% 72%, 0% 61%, 7% 47%, 7% 33%, 19% 28%, 25% 14%, 39% 14%)' };
+    case 'hexagon':
+      return { clipPath: 'polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%)' };
+    case 'star':
+      return { clipPath: 'polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%)' };
+    default:
+      return {};
+  }
+};
+
 export default function EncarteCreator() {
   const { 
     setView, 
@@ -61,8 +103,11 @@ export default function EncarteCreator() {
   const [activeSlot, setActiveSlot] = useState<number | null>(null);
   const [activeTab, setActiveTab] = useState<'products' | 'adjustments'>('products');
   const [isExporting, setIsExporting] = useState(false);
-  const [showRuler, setShowRuler] = useState(false);
-  const [rulerY, setRulerY] = useState(150);
+  const [hRulers, setHRulers] = useState([150, 300, 450, 600]);
+  const [vRulers, setVRulers] = useState([150, 300, 450]);
+  const [showHRulers, setShowHRulers] = useState([false, false, false, false]);
+  const [showVRulers, setShowVRulers] = useState([false, false, false]);
+  const [zoom, setZoom] = useState(100);
 
   const selectedModel = selectedEncarteModel || ENCARTE_MODELS[0];
   const setSelectedModel = setSelectedEncarteModel;
@@ -80,12 +125,12 @@ export default function EncarteCreator() {
 
   const getAdaptiveStyles = (count: number) => {
     switch (count) {
-      case 4: return { title: 'text-[18px]', subtitle: 'text-[12px]', price: 'text-5xl', cents: 'text-2xl', box: 'min-w-[120px] h-20', gap: 'gap-6', img: 'h-32' };
-      case 6: return { title: 'text-[16px]', subtitle: 'text-[10px]', price: 'text-4xl', cents: 'text-xl', box: 'min-w-[100px] h-16', gap: 'gap-4', img: 'h-28' };
-      case 8: return { title: 'text-[14px]', subtitle: 'text-[9px]', price: 'text-3xl', cents: 'text-lg', box: 'min-w-[90px] h-14', gap: 'gap-3', img: 'h-24' };
-      case 10: return { title: 'text-[12px]', subtitle: 'text-[8px]', price: 'text-2xl', cents: 'text-base', box: 'min-w-[80px] h-12', gap: 'gap-2', img: 'h-20' };
-      case 12: return { title: 'text-[10px]', subtitle: 'text-[7px]', price: 'text-xl', cents: 'text-sm', box: 'min-w-[70px] h-10', gap: 'gap-2', img: 'h-16' };
-      default: return { title: 'text-[10px]', subtitle: 'text-[7px]', price: 'text-xl', cents: 'text-sm', box: 'min-w-[70px] h-10', gap: 'gap-2', img: 'h-16' };
+      case 4: return { title: 'text-[18px]', subtitle: 'text-[12px]', price: 'text-5xl', cents: 'text-2xl', box: 'px-6 py-4', gap: 'gap-6', img: 'h-32' };
+      case 6: return { title: 'text-[16px]', subtitle: 'text-[10px]', price: 'text-4xl', cents: 'text-xl', box: 'px-5 py-3', gap: 'gap-4', img: 'h-28' };
+      case 8: return { title: 'text-[14px]', subtitle: 'text-[9px]', price: 'text-3xl', cents: 'text-lg', box: 'px-4 py-2', gap: 'gap-3', img: 'h-24' };
+      case 10: return { title: 'text-[12px]', subtitle: 'text-[8px]', price: 'text-2xl', cents: 'text-base', box: 'px-3 py-1.5', gap: 'gap-2', img: 'h-20' };
+      case 12: return { title: 'text-[10px]', subtitle: 'text-[7px]', price: 'text-xl', cents: 'text-sm', box: 'px-3 py-1', gap: 'gap-2', img: 'h-16' };
+      default: return { title: 'text-[10px]', subtitle: 'text-[7px]', price: 'text-xl', cents: 'text-sm', box: 'px-3 py-1', gap: 'gap-2', img: 'h-16' };
     }
   };
 
@@ -115,6 +160,8 @@ export default function EncarteCreator() {
     const newEncartes = [...encartes];
     newEncartes[activeEncarteIndex] = { ...newEncartes[activeEncarteIndex], ...updates };
     setEncartes(newEncartes);
+    // Trigger save to database
+    useStore.getState().saveUsersAndFlagsDebounced();
   };
 
   const handleAddProduct = (product: Product) => {
@@ -191,6 +238,16 @@ export default function EncarteCreator() {
         updateActiveEncarte({ backProducts: fullProducts });
       }
     }
+  };
+
+  const handleApplyColorToAll = (color: string, field: 'priceColor' | 'textColor') => {
+    const newFrontProducts = currentEncarte.frontProducts.map(p => p ? { ...p, [field]: color } : null);
+    const newBackProducts = currentEncarte.backProducts.map(p => p ? { ...p, [field]: color } : null);
+    updateActiveEncarte({ 
+      frontProducts: newFrontProducts,
+      backProducts: newBackProducts
+    });
+    toast.success(`Cor aplicada a todos os produtos!`);
   };
 
   const handleMove = (index: number, direction: 'up' | 'down' | 'left' | 'right', target: 'card' | 'text' = 'card') => {
@@ -345,6 +402,22 @@ export default function EncarteCreator() {
             </button>
           </div>
 
+          <div className="flex items-center gap-2 bg-zinc-100 dark:bg-zinc-800 p-1 rounded-xl">
+            <button 
+              onClick={() => setZoom(Math.max(25, zoom - 25))}
+              className="p-1.5 hover:bg-white dark:hover:bg-zinc-700 rounded-lg text-zinc-500 transition-all"
+            >
+              <MoveDown className="w-3 h-3 rotate-90" />
+            </button>
+            <span className="text-[10px] font-black w-10 text-center">{zoom}%</span>
+            <button 
+              onClick={() => setZoom(Math.min(200, zoom + 25))}
+              className="p-1.5 hover:bg-white dark:hover:bg-zinc-700 rounded-lg text-zinc-500 transition-all"
+            >
+              <MoveUp className="w-3 h-3 rotate-90" />
+            </button>
+          </div>
+
           <div className="flex items-center gap-2">
             <button 
               onClick={handleExportPNG}
@@ -421,27 +494,6 @@ export default function EncarteCreator() {
                       onChange={(e) => updateActiveEncarte({ date: e.target.value })}
                       className="w-full px-4 py-2.5 bg-zinc-50 dark:bg-zinc-800 border-none rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none transition-all font-bold text-black dark:text-white"
                     />
-                  </div>
-
-                  <div className="space-y-1">
-                    <h4 className="text-[10px] font-black uppercase tracking-widest text-black dark:text-white opacity-40 mb-2">Modelos de Encarte</h4>
-                    <div className="grid grid-cols-2 gap-2">
-                      {encartes.map((encarte, index) => (
-                        <button
-                          key={index}
-                          onClick={() => setActiveEncarteIndex(index)}
-                          className={cn(
-                            "py-2 px-3 rounded-xl text-[10px] font-black uppercase transition-all border-2 truncate",
-                            activeEncarteIndex === index
-                              ? "bg-emerald-600 border-emerald-600 text-white shadow-lg scale-105"
-                              : "bg-zinc-100 dark:bg-zinc-800 border-transparent text-black dark:text-white opacity-40 hover:opacity-100"
-                          )}
-                          title={encarte.name}
-                        >
-                          {encarte.name}
-                        </button>
-                      ))}
-                    </div>
                   </div>
                 </div>
                 <p className="mt-3 text-[10px] font-bold text-black dark:text-white opacity-40 uppercase text-center">
@@ -530,14 +582,54 @@ export default function EncarteCreator() {
                           </div>
                           
                           <div className="flex items-center justify-between gap-4">
-                            <div className="flex items-center gap-2">
-                              <span className="text-[10px] font-black text-black dark:text-white opacity-40 uppercase">Preço:</span>
-                              <input 
-                                type="text"
-                                value={product.price}
-                                onChange={(e) => handleUpdateProduct(index, 'price', e.target.value)}
-                                className="w-24 bg-white dark:bg-zinc-900 px-3 py-1.5 rounded-lg text-xs font-black text-emerald-600 outline-none border border-zinc-200 dark:border-zinc-700 focus:border-emerald-500"
-                              />
+                            <div className="flex flex-col gap-2">
+                              <div className="flex items-center gap-2">
+                                <span className="text-[10px] font-black text-black dark:text-white opacity-40 uppercase">Preço:</span>
+                                <input 
+                                  type="text"
+                                  value={product.price}
+                                  onChange={(e) => handleUpdateProduct(index, 'price', e.target.value)}
+                                  className="w-24 bg-white dark:bg-zinc-900 px-3 py-1.5 rounded-lg text-xs font-black text-emerald-600 outline-none border border-zinc-200 dark:border-zinc-700 focus:border-emerald-500"
+                                />
+                              </div>
+                              <div className="flex items-center gap-4">
+                                <div className="flex flex-col gap-1">
+                                  <span className="text-[8px] font-black text-black dark:text-white opacity-40 uppercase">Cor Texto:</span>
+                                  <div className="flex items-center gap-2">
+                                    <input 
+                                      type="color"
+                                      value={product.textColor || '#dc2626'}
+                                      onChange={(e) => handleUpdateProduct(index, 'textColor', e.target.value)}
+                                      className="w-8 h-8 rounded-lg cursor-pointer border-none bg-transparent"
+                                    />
+                                    <button 
+                                      onClick={() => handleApplyColorToAll(product.textColor || '#dc2626', 'textColor')}
+                                      title="Aplicar a todos"
+                                      className="p-1.5 hover:bg-zinc-200 dark:hover:bg-zinc-700 rounded-lg transition-colors text-zinc-500"
+                                    >
+                                      <Copy className="w-3 h-3" />
+                                    </button>
+                                  </div>
+                                </div>
+                                <div className="flex flex-col gap-1">
+                                  <span className="text-[8px] font-black text-black dark:text-white opacity-40 uppercase">Cor Bolha:</span>
+                                  <div className="flex items-center gap-2">
+                                    <input 
+                                      type="color"
+                                      value={product.priceColor || '#dc2626'}
+                                      onChange={(e) => handleUpdateProduct(index, 'priceColor', e.target.value)}
+                                      className="w-8 h-8 rounded-lg cursor-pointer border-none bg-transparent"
+                                    />
+                                    <button 
+                                      onClick={() => handleApplyColorToAll(product.priceColor || '#dc2626', 'priceColor')}
+                                      title="Aplicar a todos"
+                                      className="p-1.5 hover:bg-zinc-200 dark:hover:bg-zinc-700 rounded-lg transition-colors text-zinc-500"
+                                    >
+                                      <Copy className="w-3 h-3" />
+                                    </button>
+                                  </div>
+                                </div>
+                              </div>
                             </div>
 
                           <div className="flex items-center justify-between gap-2">
@@ -601,47 +693,109 @@ export default function EncarteCreator() {
                     />
                   </div>
 
-                  <div className="pt-4 border-t border-zinc-100 dark:border-zinc-800">
-                    <div className="flex items-center justify-between mb-4">
-                      <div className="flex items-center gap-2">
-                        <div className="p-1.5 bg-emerald-100 dark:bg-emerald-900/30 rounded-lg">
-                          <LayoutIcon className="w-4 h-4 text-emerald-600" />
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 ml-1">Data do Encarte</label>
+                    <div className="flex gap-2">
+                      <input 
+                        type="text"
+                        placeholder="Ex: Ofertas válidas até 25/03"
+                        value={currentEncarte.date || ''}
+                        onChange={(e) => updateActiveEncarte({ date: e.target.value })}
+                        className="flex-grow px-4 py-2.5 bg-zinc-50 dark:bg-zinc-800 border-none rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none transition-all font-bold text-zinc-900 dark:text-white"
+                      />
+                      <div className="flex items-center gap-1 bg-zinc-100 dark:bg-zinc-900 p-1 rounded-lg">
+                        <button onClick={() => updateActiveEncarte({ dateOffsetX: (currentEncarte.dateOffsetX || 0) - 5 })} className="p-1 hover:bg-white dark:hover:bg-zinc-800 rounded shadow-sm transition-all text-black dark:text-white"><MoveLeft className="w-3 h-3" /></button>
+                        <div className="flex flex-col gap-1">
+                          <button onClick={() => updateActiveEncarte({ dateOffsetY: (currentEncarte.dateOffsetY || 0) - 5 })} className="p-1 hover:bg-white dark:hover:bg-zinc-800 rounded shadow-sm transition-all text-black dark:text-white"><MoveUp className="w-3 h-3" /></button>
+                          <button onClick={() => updateActiveEncarte({ dateOffsetY: (currentEncarte.dateOffsetY || 0) + 5 })} className="p-1 hover:bg-white dark:hover:bg-zinc-800 rounded shadow-sm transition-all text-black dark:text-white"><MoveDown className="w-3 h-3" /></button>
                         </div>
-                        <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Régua de Alinhamento</label>
+                        <button onClick={() => updateActiveEncarte({ dateOffsetX: (currentEncarte.dateOffsetX || 0) + 5 })} className="p-1 hover:bg-white dark:hover:bg-zinc-800 rounded shadow-sm transition-all text-black dark:text-white"><MoveRight className="w-3 h-3" /></button>
                       </div>
-                      <button
-                        onClick={() => setShowRuler(!showRuler)}
-                        className={cn(
-                          "w-10 h-5 rounded-full transition-all relative",
-                          showRuler ? "bg-emerald-600" : "bg-zinc-300 dark:bg-zinc-700"
-                        )}
-                      >
-                        <div className={cn(
-                          "absolute top-1 w-3 h-3 rounded-full bg-white transition-all",
-                          showRuler ? "right-1" : "left-1"
-                        )} />
-                      </button>
                     </div>
-                    
-                    {showRuler && (
-                      <div className="space-y-2">
-                        <div className="flex justify-between text-[8px] font-black uppercase text-zinc-400">
-                          <span>Posição Vertical</span>
-                          <span>{rulerY}px</span>
+                  </div>
+
+                  <div className="space-y-2 pt-4 border-t border-zinc-100 dark:border-zinc-800">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 ml-1">Formato da Bolha de Preço</label>
+                    <div className="grid grid-cols-3 gap-2">
+                      {BUBBLE_SHAPES.map((shape) => (
+                        <button
+                          key={shape.id}
+                          onClick={() => updateActiveEncarte({ bubbleShape: shape.id as any })}
+                          className={cn(
+                            "p-2 rounded-xl border-2 transition-all flex flex-col items-center gap-1",
+                            currentEncarte.bubbleShape === shape.id || (!currentEncarte.bubbleShape && shape.id === 'rounded')
+                              ? "border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20"
+                              : "border-zinc-100 dark:border-zinc-800 hover:border-zinc-200 dark:hover:border-zinc-700"
+                          )}
+                        >
+                          <div 
+                            className={cn("w-8 h-8 bg-red-600 shadow-sm", getBubbleClass(shape.id))} 
+                            style={getBubbleStyle(shape.id)}
+                          />
+                          <span className="text-[8px] font-black uppercase text-zinc-500">{shape.name}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="pt-4 border-t border-zinc-100 dark:border-zinc-800">
+                    <div className="space-y-6">
+                      {/* Horizontal Rulers */}
+                      <div className="space-y-3">
+                        <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 ml-1">Réguas Horizontais (4)</label>
+                        <div className="grid grid-cols-4 gap-2">
+                          {showHRulers.map((show, idx) => (
+                            <button 
+                              key={`h-btn-${idx}`}
+                              onClick={() => {
+                                const newShow = [...showHRulers];
+                                newShow[idx] = !newShow[idx];
+                                setShowHRulers(newShow);
+                              }}
+                              className={cn(
+                                "py-2 rounded-xl text-[10px] font-black transition-all border-2",
+                                show 
+                                  ? "bg-magenta-500 border-magenta-500 text-white shadow-lg shadow-magenta-500/20" 
+                                  : "bg-zinc-100 dark:bg-zinc-800 border-transparent text-zinc-400"
+                              )}
+                              style={{ backgroundColor: show ? '#ff00ff' : undefined, borderColor: show ? '#ff00ff' : undefined }}
+                            >
+                              H{idx + 1}
+                            </button>
+                          ))}
                         </div>
-                        <input 
-                          type="range"
-                          min="0"
-                          max="1000"
-                          value={rulerY}
-                          onChange={(e) => setRulerY(parseInt(e.target.value))}
-                          className="w-full accent-emerald-600"
-                        />
-                        <p className="text-[9px] text-zinc-400 font-medium leading-tight">
-                          Dica: Arraste a linha verde no encarte para ajustar manualmente.
-                        </p>
                       </div>
-                    )}
+
+                      {/* Vertical Rulers */}
+                      <div className="space-y-3">
+                        <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 ml-1">Réguas Verticais (3)</label>
+                        <div className="grid grid-cols-3 gap-2">
+                          {showVRulers.map((show, idx) => (
+                            <button 
+                              key={`v-btn-${idx}`}
+                              onClick={() => {
+                                const newShow = [...showVRulers];
+                                newShow[idx] = !newShow[idx];
+                                setShowVRulers(newShow);
+                              }}
+                              className={cn(
+                                "py-2 rounded-xl text-[10px] font-black transition-all border-2",
+                                show 
+                                  ? "bg-cyan-500 border-cyan-500 text-white shadow-lg shadow-cyan-500/20" 
+                                  : "bg-zinc-100 dark:bg-zinc-800 border-transparent text-zinc-400"
+                              )}
+                              style={{ backgroundColor: show ? '#00ffff' : undefined, borderColor: show ? '#00ffff' : undefined }}
+                            >
+                              V{idx + 1}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      <p className="text-[9px] text-zinc-400 font-medium leading-tight">
+                        Dica: Arraste as linhas coloridas no encarte para ajustar manualmente.
+                      </p>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -673,36 +827,6 @@ export default function EncarteCreator() {
                       className="w-full px-4 py-2.5 bg-zinc-50 dark:bg-zinc-800 border-none rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none transition-all font-bold text-zinc-900 dark:text-white"
                     />
                   </div>
-                </div>
-              </div>
-
-              {/* Models Selection */}
-              <div className="bg-white dark:bg-zinc-900 p-6 rounded-3xl border border-zinc-200 dark:border-zinc-800 shadow-sm">
-                <div className="flex items-center gap-2 mb-4">
-                  <LayoutIcon className="w-4 h-4 text-zinc-400" />
-                  <h3 className="text-xs font-black uppercase tracking-widest text-zinc-400">Modelos de Encarte</h3>
-                </div>
-                <div className="grid grid-cols-2 gap-2">
-                  {ENCARTE_MODELS.map((model) => (
-                    <button
-                      key={model.id}
-                      onClick={() => setSelectedModel(model)}
-                      className={cn(
-                        "p-3 rounded-2xl border-2 transition-all text-left group",
-                        selectedModel.id === model.id
-                          ? "border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20"
-                          : "border-zinc-100 dark:border-zinc-800 hover:border-zinc-200 dark:hover:border-zinc-700"
-                      )}
-                    >
-                      <div className={cn("w-full h-12 rounded-lg mb-2 shadow-inner", model.bgClass)} />
-                      <p className={cn(
-                        "text-[9px] font-black uppercase tracking-tighter leading-tight",
-                        selectedModel.id === model.id ? "text-emerald-600" : "text-zinc-500"
-                      )}>
-                        {model.name}
-                      </p>
-                    </button>
-                  ))}
                 </div>
               </div>
 
@@ -816,11 +940,15 @@ export default function EncarteCreator() {
         </div>
 
         {/* Preview Area */}
-        <div className="flex-grow bg-transparent rounded-[2.5rem] p-12 overflow-y-auto flex flex-col items-center gap-12 no-print">
+        <div className="flex-grow bg-transparent rounded-[2.5rem] p-12 overflow-auto flex flex-col items-center no-print">
           {/* A4 Page - Current Side */}
           <div 
-            className="w-[210mm] h-[297mm] bg-white shadow-2xl p-[10mm] flex flex-col print:shadow-none print:p-0 relative overflow-hidden flex-shrink-0" 
+            className="w-[210mm] h-[297mm] bg-white shadow-2xl p-[10mm] flex flex-col print:shadow-none print:p-0 relative overflow-hidden flex-shrink-0 origin-top" 
             id="encarte-page"
+            style={{ 
+              transform: `scale(${zoom / 100})`,
+              marginBottom: `${(zoom / 100 - 1) * 297}mm`
+            }}
           >
             {/* Background Image Layer */}
             {(currentSide === 'frente' ? currentEncarte.frontBgUrl : currentEncarte.backBgUrl) && (
@@ -838,11 +966,25 @@ export default function EncarteCreator() {
             <div className="p-4 flex-grow flex flex-col relative z-10">
               {/* Date Header */}
               {currentEncarte.date && (
-                <div className="absolute top-2 right-4 z-20">
+                <motion.div 
+                  drag
+                  dragMomentum={false}
+                  onDragEnd={(_, info) => {
+                    updateActiveEncarte({
+                      dateOffsetX: (currentEncarte.dateOffsetX || 0) + info.offset.x,
+                      dateOffsetY: (currentEncarte.dateOffsetY || 0) + info.offset.y
+                    });
+                  }}
+                  className="absolute top-2 right-4 z-20 cursor-move"
+                  style={{
+                    x: currentEncarte.dateOffsetX || 0,
+                    y: currentEncarte.dateOffsetY || 0
+                  }}
+                >
                   <span className="text-[10px] font-black uppercase tracking-widest text-red-600 bg-white/80 px-2 py-1 rounded-lg backdrop-blur-sm border border-red-100 shadow-sm">
                     {currentEncarte.date}
                   </span>
-                </div>
+                </motion.div>
               )}
 
               {/* Products Grid */}
@@ -862,10 +1004,16 @@ export default function EncarteCreator() {
                                 <span className="text-[8px] font-black uppercase ml-1">OFF</span>
                               </div>
                             ) : (
-                              <div className="text-red-600 font-black">
-                                <span className="text-xs">R$</span>
-                                <span className="text-xl leading-none">{formatPrice(extra.price).integer}</span>
-                                <span className="text-xs leading-none">{formatPrice(extra.price).cents}</span>
+                              <div className="text-red-600 font-black flex items-center gap-1">
+                                <div className="flex flex-col items-end leading-none">
+                                  <span className="text-[6px] font-black uppercase">POR</span>
+                                  <span className="text-[8px] font-black">R$</span>
+                                </div>
+                                <span className="text-xl leading-none tracking-tighter">{formatPrice(extra.price).integer}</span>
+                                <div className="flex flex-col items-start justify-between h-full py-0.5">
+                                  <span className="text-xs leading-none tracking-tighter">{formatPrice(extra.price).cents}</span>
+                                  <span className="text-[6px] font-black uppercase leading-none">UNI</span>
+                                </div>
                               </div>
                             )}
                           </div>
@@ -880,17 +1028,20 @@ export default function EncarteCreator() {
                   </div>
                 )}
 
-                {/* Horizontal Ruler */}
-                {showRuler && (
+                {/* Horizontal Rulers */}
+                {showHRulers.map((show, idx) => show && (
                   <div 
-                    className="absolute left-0 right-0 h-0.5 bg-emerald-500/20 z-50 cursor-ns-resize flex items-center justify-center pointer-events-auto"
-                    style={{ top: `${rulerY}px` }}
+                    key={`h-ruler-${idx}`}
+                    className="absolute left-0 right-0 h-1 z-50 cursor-ns-resize flex items-center justify-center pointer-events-auto"
+                    style={{ top: `${hRulers[idx]}px`, backgroundColor: '#ff00ff' }}
                     onMouseDown={(e) => {
                       const startY = e.clientY;
-                      const startRulerY = rulerY;
+                      const startRulerY = hRulers[idx];
                       const onMouseMove = (moveEvent: MouseEvent) => {
                         const deltaY = moveEvent.clientY - startY;
-                        setRulerY(Math.max(0, Math.min(1000, startRulerY + deltaY)));
+                        const newRulers = [...hRulers];
+                        newRulers[idx] = Math.max(0, Math.min(1000, startRulerY + deltaY));
+                        setHRulers(newRulers);
                       };
                       const onMouseUp = () => {
                         window.removeEventListener('mousemove', onMouseMove);
@@ -899,12 +1050,33 @@ export default function EncarteCreator() {
                       window.addEventListener('mousemove', onMouseMove);
                       window.addEventListener('mouseup', onMouseUp);
                     }}
-                  >
-                    <div className="px-2 py-0.5 bg-emerald-500/30 backdrop-blur-sm text-white text-[8px] font-black uppercase rounded-full shadow-lg">
-                      Régua Guia
-                    </div>
-                  </div>
-                )}
+                  />
+                ))}
+
+                {/* Vertical Rulers */}
+                {showVRulers.map((show, idx) => show && (
+                  <div 
+                    key={`v-ruler-${idx}`}
+                    className="absolute top-0 bottom-0 w-1 z-50 cursor-ew-resize flex items-center justify-center pointer-events-auto"
+                    style={{ left: `${vRulers[idx]}px`, backgroundColor: '#00ffff' }}
+                    onMouseDown={(e) => {
+                      const startX = e.clientX;
+                      const startRulerX = vRulers[idx];
+                      const onMouseMove = (moveEvent: MouseEvent) => {
+                        const deltaX = moveEvent.clientX - startX;
+                        const newRulers = [...vRulers];
+                        newRulers[idx] = Math.max(0, Math.min(800, startRulerX + deltaX));
+                        setVRulers(newRulers);
+                      };
+                      const onMouseUp = () => {
+                        window.removeEventListener('mousemove', onMouseMove);
+                        window.removeEventListener('mouseup', onMouseUp);
+                      };
+                      window.addEventListener('mousemove', onMouseMove);
+                      window.addEventListener('mouseup', onMouseUp);
+                    }}
+                  />
+                ))}
 
                 {currentProducts.map((product, index) => (
                   <div key={index} className="relative min-h-[180px] border border-dashed border-transparent rounded-2xl flex items-center justify-center group bg-transparent">
@@ -949,32 +1121,48 @@ export default function EncarteCreator() {
                           </button>
                         </div>
 
-                        <div className="flex flex-col h-full pointer-events-none bg-transparent">
-                          <div className="text-left mb-1 h-[2.8rem] flex flex-col justify-end bg-transparent">
-                            <h4 className={cn("font-black tracking-tight leading-tight uppercase text-red-600 line-clamp-2", adaptive.title)}>
+                        <div className="flex flex-col h-full pointer-events-none bg-transparent justify-end">
+                          <div className="text-left h-[2.5rem] flex flex-col justify-end bg-transparent">
+                            <h4 
+                              className={cn("font-black tracking-tight leading-tight uppercase line-clamp-2", adaptive.title)}
+                              style={{ color: product.textColor || '#dc2626' }}
+                            >
                               {product.name}
                             </h4>
-                            <p className={cn("font-bold text-red-600 uppercase leading-none truncate", adaptive.subtitle)}>
+                            <p 
+                              className={cn("font-bold uppercase leading-none truncate", adaptive.subtitle)}
+                              style={{ color: product.textColor || '#dc2626' }}
+                            >
                               {product.subtitle}
                             </p>
                           </div>
                           
-                          <div className={cn("flex items-center mt-auto bg-transparent", adaptive.gap)}>
+                          <div className={cn("flex items-center bg-transparent", adaptive.gap)}>
                             {/* Price Box */}
-                            <div className={cn("bg-red-600 text-white rounded-xl relative flex items-center justify-center px-3 shadow-lg", adaptive.box)}>
-                              <div className="absolute top-2 left-2.5 flex flex-col items-start leading-none">
-                                <span className="text-[8px] font-black uppercase opacity-80">POR</span>
-                                <span className="text-[10px] font-black">R$</span>
+                            <div 
+                              className={cn("text-white relative flex items-center justify-center shadow-lg", adaptive.box, getBubbleClass(currentEncarte.bubbleShape))}
+                              style={{ 
+                                backgroundColor: product.priceColor || '#dc2626',
+                                ...getBubbleStyle(currentEncarte.bubbleShape)
+                              }}
+                            >
+                              <div className={cn("flex items-center justify-center w-full h-full relative", currentEncarte.bubbleShape === 'diamond' && '-rotate-45')}>
+                                <div className="flex items-center gap-1">
+                                  <div className="flex flex-col items-end leading-none">
+                                    <span className="text-[8px] font-black uppercase">POR</span>
+                                    <span className="text-[10px] font-black">R$</span>
+                                  </div>
+                                  <span className={cn("font-black tracking-tighter leading-none", adaptive.price)}>
+                                    {formatPrice(product.price).integer}
+                                  </span>
+                                  <div className="flex flex-col items-start justify-between h-full py-1">
+                                    <span className={cn("font-black tracking-tighter leading-none", adaptive.cents)}>
+                                      {formatPrice(product.price).cents}
+                                    </span>
+                                    <span className="text-[7px] font-black uppercase leading-none">UNI</span>
+                                  </div>
+                                </div>
                               </div>
-                              <div className="flex items-baseline ml-5">
-                                <span className={cn("font-black tracking-tighter leading-none", adaptive.price)}>
-                                  {formatPrice(product.price).integer}
-                                </span>
-                              <span className={cn("font-black tracking-tighter leading-none", adaptive.cents)}>
-                                  {formatPrice(product.price).cents}
-                                </span>
-                              </div>
-                              <span className="absolute bottom-0.5 right-1 text-[7px] font-black uppercase opacity-80">UNI</span>
                             </div>
                             
                             {/* Product Image */}
@@ -1025,7 +1213,12 @@ export default function EncarteCreator() {
           )}
           <div className={cn("p-4 flex-grow flex flex-col relative z-10")}>
             {currentEncarte.date && (
-              <div className="absolute top-2 right-4 z-20">
+              <div 
+                className="absolute top-2 right-4 z-20"
+                style={{
+                  transform: `translate(${currentEncarte.dateOffsetX || 0}px, ${currentEncarte.dateOffsetY || 0}px)`
+                }}
+              >
                 <span className="text-[10px] font-black uppercase tracking-widest text-red-600 bg-white/80 px-2 py-1 rounded-lg backdrop-blur-sm border border-red-100 shadow-sm">
                   {currentEncarte.date}
                 </span>
@@ -1074,27 +1267,45 @@ export default function EncarteCreator() {
                   }}
                 >
                   {product && (
-                    <div className="flex flex-col h-full bg-transparent">
+                    <div className="flex flex-col h-full bg-transparent justify-end">
                       <div 
-                        className="text-left mb-1 h-[2.8rem] flex flex-col justify-end bg-transparent"
+                        className="text-left h-[2.5rem] flex flex-col justify-end bg-transparent"
                         style={{ 
                           transform: `translate(${product.textOffsetX || 0}px, ${product.textOffsetY || 0}px)`
                         }}
                       >
-                        <h4 className={cn("font-black tracking-tight leading-tight uppercase text-red-600 line-clamp-2", adaptive.title)}>{product.name}</h4>
-                        <p className={cn("font-bold text-red-600 uppercase leading-none truncate", adaptive.subtitle)}>{product.subtitle}</p>
+                        <h4 
+                          className={cn("font-black tracking-tight leading-tight uppercase line-clamp-2", adaptive.title)}
+                          style={{ color: product.textColor || '#dc2626' }}
+                        >
+                          {product.name}
+                        </h4>
+                        <p 
+                          className={cn("font-bold uppercase leading-none truncate", adaptive.subtitle)}
+                          style={{ color: product.textColor || '#dc2626' }}
+                        >
+                          {product.subtitle}
+                        </p>
                       </div>
-                      <div className={cn("flex items-center mt-auto bg-transparent", adaptive.gap)}>
-                        <div className={cn("bg-red-600 text-white rounded-lg relative flex items-center justify-center px-2", adaptive.box)}>
-                          <div className="absolute top-2 left-2 flex flex-col items-start leading-none">
-                            <span className="text-[8px] font-black uppercase">POR</span>
-                            <span className="text-[10px] font-black">R$</span>
+                      <div className={cn("flex items-center bg-transparent", adaptive.gap)}>
+                        <div 
+                          className={cn("text-white relative flex items-center justify-center shadow-lg", adaptive.box, getBubbleClass(currentEncarte.bubbleShape))}
+                          style={{ 
+                            backgroundColor: product.priceColor || '#dc2626',
+                            ...getBubbleStyle(currentEncarte.bubbleShape)
+                          }}
+                        >
+                          <div className={cn("flex items-center justify-center w-full h-full relative", currentEncarte.bubbleShape === 'diamond' && '-rotate-45')}>
+                            <div className="flex items-baseline gap-0.5">
+                              <div className="flex flex-col items-start leading-none">
+                                <span className="text-[8px] font-black uppercase">POR</span>
+                                <span className="text-[10px] font-black">R$</span>
+                              </div>
+                              <span className={cn("font-black tracking-tighter leading-none", adaptive.price)}>{formatPrice(product.price).integer}</span>
+                              <span className={cn("font-black tracking-tighter leading-none", adaptive.cents)}>{formatPrice(product.price).cents}</span>
+                            </div>
+                            <span className="absolute bottom-0.5 right-1 text-[7px] font-black uppercase opacity-80">UNI</span>
                           </div>
-                          <div className="flex items-baseline ml-4">
-                            <span className={cn("font-black tracking-tighter leading-none", adaptive.price)}>{formatPrice(product.price).integer}</span>
-                            <span className={cn("font-black tracking-tighter leading-none", adaptive.cents)}>{formatPrice(product.price).cents}</span>
-                          </div>
-                          <span className="absolute bottom-0.5 right-1 text-[7px] font-black uppercase opacity-80">UNI</span>
                         </div>
                         <div className={cn("flex-grow flex items-center justify-center bg-transparent", adaptive.img)}>
                           {product.image && (
@@ -1129,7 +1340,12 @@ export default function EncarteCreator() {
           )}
           <div className={cn("p-4 flex-grow flex flex-col relative z-10")}>
             {currentEncarte.date && (
-              <div className="absolute top-2 right-4 z-20">
+              <div 
+                className="absolute top-2 right-4 z-20"
+                style={{
+                  transform: `translate(${currentEncarte.dateOffsetX || 0}px, ${currentEncarte.dateOffsetY || 0}px)`
+                }}
+              >
                 <span className="text-[10px] font-black uppercase tracking-widest text-red-600 bg-white/80 px-2 py-1 rounded-lg backdrop-blur-sm border border-red-100 shadow-sm">
                   {currentEncarte.date}
                 </span>
@@ -1178,27 +1394,45 @@ export default function EncarteCreator() {
                   }}
                 >
                   {product && (
-                    <div className="flex flex-col h-full bg-transparent">
+                    <div className="flex flex-col h-full bg-transparent justify-end">
                       <div 
-                        className="text-left mb-1 h-[2.8rem] flex flex-col justify-end bg-transparent"
+                        className="text-left h-[2.5rem] flex flex-col justify-end bg-transparent"
                         style={{ 
                           transform: `translate(${product.textOffsetX || 0}px, ${product.textOffsetY || 0}px)`
                         }}
                       >
-                        <h4 className={cn("font-black tracking-tight leading-tight uppercase text-red-600 line-clamp-2", adaptive.title)}>{product.name}</h4>
-                        <p className={cn("font-bold text-red-600 uppercase leading-none truncate", adaptive.subtitle)}>{product.subtitle}</p>
+                        <h4 
+                          className={cn("font-black tracking-tight leading-tight uppercase line-clamp-2", adaptive.title)}
+                          style={{ color: product.textColor || '#dc2626' }}
+                        >
+                          {product.name}
+                        </h4>
+                        <p 
+                          className={cn("font-bold uppercase leading-none truncate", adaptive.subtitle)}
+                          style={{ color: product.textColor || '#dc2626' }}
+                        >
+                          {product.subtitle}
+                        </p>
                       </div>
-                      <div className={cn("flex items-center mt-auto bg-transparent", adaptive.gap)}>
-                        <div className={cn("bg-red-600 text-white rounded-lg relative flex items-center justify-center px-2", adaptive.box)}>
-                          <div className="absolute top-2 left-2 flex flex-col items-start leading-none">
-                            <span className="text-[8px] font-black uppercase">POR</span>
-                            <span className="text-[10px] font-black">R$</span>
+                      <div className={cn("flex items-center bg-transparent", adaptive.gap)}>
+                        <div 
+                          className={cn("text-white relative flex items-center justify-center shadow-lg", adaptive.box, getBubbleClass(currentEncarte.bubbleShape))}
+                          style={{ 
+                            backgroundColor: product.priceColor || '#dc2626',
+                            ...getBubbleStyle(currentEncarte.bubbleShape)
+                          }}
+                        >
+                          <div className={cn("flex items-center justify-center w-full h-full relative", currentEncarte.bubbleShape === 'diamond' && '-rotate-45')}>
+                            <div className="flex items-baseline gap-0.5">
+                              <div className="flex flex-col items-start leading-none">
+                                <span className="text-[8px] font-black uppercase">POR</span>
+                                <span className="text-[10px] font-black">R$</span>
+                              </div>
+                              <span className={cn("font-black tracking-tighter leading-none", adaptive.price)}>{formatPrice(product.price).integer}</span>
+                              <span className={cn("font-black tracking-tighter leading-none", adaptive.cents)}>{formatPrice(product.price).cents}</span>
+                            </div>
+                            <span className="absolute bottom-0.5 right-1 text-[7px] font-black uppercase opacity-80">UNI</span>
                           </div>
-                          <div className="flex items-baseline ml-4">
-                            <span className={cn("font-black tracking-tighter leading-none", adaptive.price)}>{formatPrice(product.price).integer}</span>
-                            <span className={cn("font-black tracking-tighter leading-none", adaptive.cents)}>{formatPrice(product.price).cents}</span>
-                          </div>
-                          <span className="absolute bottom-0.5 right-1 text-[7px] font-black uppercase opacity-80">UNI</span>
                         </div>
                         <div className={cn("flex-grow flex items-center justify-center bg-transparent", adaptive.img)}>
                           {product.image && (
