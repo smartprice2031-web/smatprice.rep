@@ -640,24 +640,26 @@ export default function App() {
 
               {/* Layout Switcher Buttons */}
               <div className="p-3 border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-800/20">
-                <div className="grid grid-cols-4 gap-1.5">
-                  {filteredLayouts.map((layout) => {
-                    return (
-                      <button
-                        key={`${layout.name}-${layout.originalIndex}`}
-                        onClick={() => handleLayoutSelect(layout.originalIndex)}
-                        className={cn(
-                          "py-2 px-0.5 text-[8px] font-black uppercase tracking-tighter rounded-lg border transition-all truncate",
-                          activeLayoutIndex === layout.originalIndex
-                            ? "bg-blue-600 border-blue-600 text-white shadow-md shadow-blue-500/20"
-                            : "bg-white dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 text-black dark:text-white opacity-60 hover:border-zinc-400"
-                        )}
-                        title={layout.name}
-                      >
-                        {layout.name.replace('Modelo ', '')}
-                      </button>
-                    );
-                  })}
+                <div className="max-h-32 overflow-y-auto pr-1 custom-scrollbar">
+                  <div className="grid grid-cols-4 gap-1.5">
+                    {filteredLayouts.map((layout) => {
+                      return (
+                        <button
+                          key={`${layout.name}-${layout.originalIndex}`}
+                          onClick={() => handleLayoutSelect(layout.originalIndex)}
+                          className={cn(
+                            "py-2 px-0.5 text-[8px] font-black uppercase tracking-tighter rounded-lg border transition-all truncate",
+                            activeLayoutIndex === layout.originalIndex
+                              ? "bg-blue-600 border-blue-600 text-white shadow-md shadow-blue-500/20"
+                              : "bg-white dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 text-black dark:text-white opacity-60 hover:border-zinc-400"
+                          )}
+                          title={layout.name}
+                        >
+                          {layout.name.replace('Modelo ', '')}
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
               </div>
 

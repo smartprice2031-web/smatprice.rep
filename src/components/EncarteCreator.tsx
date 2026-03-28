@@ -44,6 +44,45 @@ const ENCARTE_MODELS: EncarteModel[] = [
   { id: 'eco-green', name: 'Eco Verde', primaryColor: '#16a34a', secondaryColor: '#22c55e', accentColor: '#15803d', textColor: '#14532d', bgClass: 'bg-green-600', borderClass: 'border-green-600' },
   { id: 'beauty-pink', name: 'Beleza Rosa', primaryColor: '#db2777', secondaryColor: '#ec4899', accentColor: '#be185d', textColor: '#831843', bgClass: 'bg-pink-600', borderClass: 'border-pink-600' },
   { id: 'cyber-neon', name: 'Cyber Neon', primaryColor: '#000000', secondaryColor: '#00ff00', accentColor: '#00ff00', textColor: '#00ff00', bgClass: 'bg-black', borderClass: 'border-green-500' },
+  { id: 'royal-gold', name: 'Ouro Real', primaryColor: '#854d0e', secondaryColor: '#a16207', accentColor: '#713f12', textColor: '#422006', bgClass: 'bg-yellow-700', borderClass: 'border-yellow-700' },
+  { id: 'ocean-deep', name: 'Oceano Profundo', primaryColor: '#1e3a8a', secondaryColor: '#1e40af', accentColor: '#172554', textColor: '#eff6ff', bgClass: 'bg-blue-900', borderClass: 'border-blue-900' },
+  { id: 'sunset-glow', name: 'Brilho do Pôr do Sol', primaryColor: '#9a3412', secondaryColor: '#c2410c', accentColor: '#7c2d12', textColor: '#fff7ed', bgClass: 'bg-orange-800', borderClass: 'border-orange-800' },
+  { id: 'forest-leaf', name: 'Folha da Floresta', primaryColor: '#166534', secondaryColor: '#15803d', accentColor: '#14532d', textColor: '#f0fdf4', bgClass: 'bg-green-800', borderClass: 'border-green-800' },
+  { id: 'berry-sweet', name: 'Doce de Amora', primaryColor: '#9d174d', secondaryColor: '#be185d', accentColor: '#831843', textColor: '#fdf2f8', bgClass: 'bg-pink-800', borderClass: 'border-pink-800' },
+  { id: 'slate-pro', name: 'Ardósia Pro', primaryColor: '#334155', secondaryColor: '#475569', accentColor: '#1e293b', textColor: '#f8fafc', bgClass: 'bg-slate-700', borderClass: 'border-slate-700' },
+  { id: 'ruby-red', name: 'Vermelho Rubi', primaryColor: '#991b1b', secondaryColor: '#b91c1c', accentColor: '#7f1d1d', textColor: '#fef2f2', bgClass: 'bg-red-800', borderClass: 'border-red-800' },
+  { id: 'indigo-night', name: 'Noite Índigo', primaryColor: '#3730a3', secondaryColor: '#4338ca', accentColor: '#312e81', textColor: '#eef2ff', bgClass: 'bg-indigo-800', borderClass: 'border-indigo-800' },
+  { id: 'teal-wave', name: 'Onda de Cerceta', primaryColor: '#115e59', secondaryColor: '#0f766e', accentColor: '#134e4a', textColor: '#f0fdfa', bgClass: 'bg-teal-800', borderClass: 'border-teal-800' },
+  { id: 'amber-warmth', name: 'Calor de Âmbar', primaryColor: '#92400e', secondaryColor: '#b45309', accentColor: '#78350f', textColor: '#fffbeb', bgClass: 'bg-amber-800', borderClass: 'border-amber-800' },
+  { id: 'lime-zest', name: 'Zest de Lima', primaryColor: '#3f6212', secondaryColor: '#4d7c0f', accentColor: '#365314', textColor: '#f7fee7', bgClass: 'bg-lime-800', borderClass: 'border-lime-800' },
+  { id: 'cyan-sky', name: 'Céu Ciano', primaryColor: '#155e75', secondaryColor: '#0e7490', accentColor: '#164e63', textColor: '#ecfeff', bgClass: 'bg-cyan-800', borderClass: 'border-cyan-800' },
+  { id: 'rose-petal', name: 'Pétala de Rosa', primaryColor: '#9f1239', secondaryColor: '#be123c', accentColor: '#881337', textColor: '#fff1f2', bgClass: 'bg-rose-800', borderClass: 'border-rose-800' },
+  { id: 'violet-dream', name: 'Sonho Violeta', primaryColor: '#5b21b6', secondaryColor: '#6d28d9', accentColor: '#4c1d95', textColor: '#f5f3ff', bgClass: 'bg-violet-800', borderClass: 'border-violet-800' },
+  { id: 'emerald-city', name: 'Cidade Esmeralda', primaryColor: '#065f46', secondaryColor: '#047857', accentColor: '#064e3b', textColor: '#ecfdf5', bgClass: 'bg-emerald-800', borderClass: 'border-emerald-800' },
+  { id: 'sky-high', name: 'Céu Alto', primaryColor: '#075985', secondaryColor: '#0369a1', accentColor: '#0c4a6e', textColor: '#f0f9ff', bgClass: 'bg-sky-800', borderClass: 'border-sky-800' },
+  { id: 'stone-cold', name: 'Pedra Fria', primaryColor: '#292524', secondaryColor: '#44403c', accentColor: '#1c1917', textColor: '#fafaf9', bgClass: 'bg-stone-800', borderClass: 'border-stone-800' },
+  { id: 'zinc-solid', name: 'Zinco Sólido', primaryColor: '#27272a', secondaryColor: '#3f3f46', accentColor: '#18181b', textColor: '#fafafa', bgClass: 'bg-zinc-800', borderClass: 'border-zinc-800' },
+  { id: 'neutral-base', name: 'Base Neutra', primaryColor: '#262626', secondaryColor: '#404040', accentColor: '#171717', textColor: '#fafafa', bgClass: 'bg-neutral-800', borderClass: 'border-neutral-800' },
+  { id: 'gray-metal', name: 'Metal Cinza', primaryColor: '#1f2937', secondaryColor: '#374151', accentColor: '#111827', textColor: '#f9fafb', bgClass: 'bg-gray-800', borderClass: 'border-gray-800' },
+  { id: 'red-fire', name: 'Fogo Vermelho', primaryColor: '#7f1d1d', secondaryColor: '#991b1b', accentColor: '#450a0a', textColor: '#fef2f2', bgClass: 'bg-red-900', borderClass: 'border-red-900' },
+  { id: 'orange-sunset', name: 'Pôr do Sol Laranja', primaryColor: '#7c2d12', secondaryColor: '#9a3412', accentColor: '#431407', textColor: '#fff7ed', bgClass: 'bg-orange-900', borderClass: 'border-orange-900' },
+  { id: 'amber-gold', name: 'Âmbar Dourado', primaryColor: '#78350f', secondaryColor: '#92400e', accentColor: '#451a03', textColor: '#fffbeb', bgClass: 'bg-amber-900', borderClass: 'border-amber-900' },
+  { id: 'yellow-bright', name: 'Amarelo Brilhante', primaryColor: '#713f12', secondaryColor: '#854d0e', accentColor: '#422006', textColor: '#fefce8', bgClass: 'bg-yellow-900', borderClass: 'border-yellow-900' },
+  { id: 'lime-fresh', name: 'Lima Fresca', primaryColor: '#365314', secondaryColor: '#3f6212', accentColor: '#1a2e05', textColor: '#f7fee7', bgClass: 'bg-lime-900', borderClass: 'border-lime-900' },
+  { id: 'green-forest', name: 'Floresta Verde', primaryColor: '#14532d', secondaryColor: '#166534', accentColor: '#064e3b', textColor: '#f0fdf4', bgClass: 'bg-green-900', borderClass: 'border-green-900' },
+  { id: 'emerald-deep', name: 'Esmeralda Profunda', primaryColor: '#064e3b', secondaryColor: '#065f46', accentColor: '#022c22', textColor: '#ecfdf5', bgClass: 'bg-emerald-900', borderClass: 'border-emerald-900' },
+  { id: 'teal-ocean', name: 'Oceano Cerceta', primaryColor: '#134e4a', secondaryColor: '#115e59', accentColor: '#042f2e', textColor: '#f0fdfa', bgClass: 'bg-teal-900', borderClass: 'border-teal-900' },
+  { id: 'cyan-deep', name: 'Ciano Profundo', primaryColor: '#164e63', secondaryColor: '#155e75', accentColor: '#083344', textColor: '#ecfeff', bgClass: 'bg-cyan-900', borderClass: 'border-cyan-900' },
+  { id: 'sky-deep', name: 'Céu Profundo', primaryColor: '#0c4a6e', secondaryColor: '#075985', accentColor: '#082f49', textColor: '#f0f9ff', bgClass: 'bg-sky-900', borderClass: 'border-sky-900' },
+  { id: 'blue-deep', name: 'Azul Profundo', primaryColor: '#1e3a8a', secondaryColor: '#1e40af', accentColor: '#172554', textColor: '#eff6ff', bgClass: 'bg-blue-900', borderClass: 'border-blue-900' },
+  { id: 'indigo-deep', name: 'Índigo Profundo', primaryColor: '#312e81', secondaryColor: '#3730a3', accentColor: '#1e1b4b', textColor: '#eef2ff', bgClass: 'bg-indigo-900', borderClass: 'border-indigo-900' },
+  { id: 'violet-deep', name: 'Violeta Profundo', primaryColor: '#4c1d95', secondaryColor: '#5b21b6', accentColor: '#2e1065', textColor: '#f5f3ff', bgClass: 'bg-violet-900', borderClass: 'border-violet-900' },
+  { id: 'purple-deep', name: 'Roxo Profundo', primaryColor: '#581c87', secondaryColor: '#6b21a8', accentColor: '#3b0764', textColor: '#faf5ff', bgClass: 'bg-purple-900', borderClass: 'border-purple-900' },
+  { id: 'fuchsia-deep', name: 'Fúcsia Profunda', primaryColor: '#701a75', secondaryColor: '#86198f', accentColor: '#4a044e', textColor: '#fdf4ff', bgClass: 'bg-fuchsia-900', borderClass: 'border-fuchsia-900' },
+  { id: 'pink-deep', name: 'Rosa Profundo', primaryColor: '#831843', secondaryColor: '#9d174d', accentColor: '#500724', textColor: '#fdf2f8', bgClass: 'bg-pink-900', borderClass: 'border-pink-900' },
+  { id: 'rose-deep', name: 'Rosa Profunda', primaryColor: '#881337', secondaryColor: '#9f1239', accentColor: '#4c0519', textColor: '#fff1f2', bgClass: 'bg-rose-900', borderClass: 'border-rose-900' },
+  { id: 'midnight', name: 'Meia Noite', primaryColor: '#020617', secondaryColor: '#0f172a', accentColor: '#000000', textColor: '#f8fafc', bgClass: 'bg-slate-950', borderClass: 'border-slate-900' },
+  { id: 'carbon', name: 'Carbono', primaryColor: '#09090b', secondaryColor: '#18181b', accentColor: '#000000', textColor: '#fafafa', bgClass: 'bg-zinc-950', borderClass: 'border-zinc-900' },
 ];
 
 const BUBBLE_SHAPES = [
@@ -177,7 +216,11 @@ export default function EncarteCreator() {
         subtitle: product.description || '',
         displayType: 'price',
         offsetX: 0,
-        offsetY: 0
+        offsetY: 0,
+        width: 350,
+        height: 120,
+        bgColor: '#ffffff',
+        showBg: true
       };
       updateActiveEncarte({ extraProducts: newExtras });
       setIsSelectorOpen(false);
@@ -675,6 +718,33 @@ export default function EncarteCreator() {
             </>
           ) : (
             <div className="space-y-6">
+              {/* Model Selection */}
+              <div className="bg-white dark:bg-zinc-900 p-6 rounded-3xl border border-zinc-200 dark:border-zinc-800 shadow-sm">
+                <div className="flex items-center gap-2 mb-4">
+                  <LayoutIcon className="w-4 h-4 text-zinc-400" />
+                  <h3 className="text-xs font-black uppercase tracking-widest text-zinc-400">Escolher Estilo do Encarte</h3>
+                </div>
+                <div className="max-h-48 overflow-y-auto pr-2 space-y-2 custom-scrollbar">
+                  <div className="grid grid-cols-2 gap-2">
+                    {ENCARTE_MODELS.map((model) => (
+                      <button
+                        key={model.id}
+                        onClick={() => setSelectedModel(model)}
+                        className={cn(
+                          "p-3 rounded-xl border-2 transition-all flex flex-col items-center gap-2 text-center",
+                          selectedModel.id === model.id
+                            ? "border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20"
+                            : "border-zinc-100 dark:border-zinc-800 hover:border-zinc-200 dark:hover:border-zinc-700"
+                        )}
+                      >
+                        <div className={cn("w-6 h-6 rounded shadow-sm", model.bgClass)} />
+                        <span className="text-[9px] font-black uppercase leading-tight">{model.name}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
               {/* Model Settings */}
               <div className="bg-white dark:bg-zinc-900 p-6 rounded-3xl border border-zinc-200 dark:border-zinc-800 shadow-sm">
                 <div className="flex items-center gap-2 mb-4">
@@ -928,6 +998,113 @@ export default function EncarteCreator() {
                                 />
                               </div>
                             )}
+
+                            <div className="space-y-4 pt-2 border-t border-zinc-100 dark:border-zinc-700">
+                              <div className="flex items-center justify-between">
+                                <label className="text-[9px] font-black uppercase text-zinc-500">Mostrar Fundo</label>
+                                <input 
+                                  type="checkbox"
+                                  checked={extra.showBg !== false}
+                                  onChange={(e) => {
+                                    const newExtras = [...(currentEncarte.extraProducts || [null, null])];
+                                    newExtras[idx] = { ...extra, showBg: e.target.checked };
+                                    updateActiveEncarte({ extraProducts: newExtras });
+                                  }}
+                                  className="w-4 h-4 rounded border-zinc-300 text-emerald-600 focus:ring-emerald-500"
+                                />
+                              </div>
+
+                              <div className="flex items-center justify-between">
+                                <label className="text-[9px] font-black uppercase text-zinc-500">Cor do Fundo</label>
+                                <input 
+                                  type="color"
+                                  value={extra.bgColor || '#ffffff'}
+                                  onChange={(e) => {
+                                    const newExtras = [...(currentEncarte.extraProducts || [null, null])];
+                                    newExtras[idx] = { ...extra, bgColor: e.target.value };
+                                    updateActiveEncarte({ extraProducts: newExtras });
+                                  }}
+                                  className="w-8 h-8 rounded-lg cursor-pointer border-none bg-transparent"
+                                />
+                              </div>
+
+                              <div className="grid grid-cols-2 gap-2">
+                                <div className="space-y-1">
+                                  <label className="text-[9px] font-black uppercase text-zinc-500">Largura</label>
+                                  <input 
+                                    type="number"
+                                    value={extra.width || 350}
+                                    onChange={(e) => {
+                                      const newExtras = [...(currentEncarte.extraProducts || [null, null])];
+                                      newExtras[idx] = { ...extra, width: parseInt(e.target.value) };
+                                      updateActiveEncarte({ extraProducts: newExtras });
+                                    }}
+                                    className="w-full px-3 py-1.5 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-lg text-xs font-bold outline-none"
+                                  />
+                                </div>
+                                <div className="space-y-1">
+                                  <label className="text-[9px] font-black uppercase text-zinc-500">Altura</label>
+                                  <input 
+                                    type="number"
+                                    value={extra.height || 120}
+                                    onChange={(e) => {
+                                      const newExtras = [...(currentEncarte.extraProducts || [null, null])];
+                                      newExtras[idx] = { ...extra, height: parseInt(e.target.value) };
+                                      updateActiveEncarte({ extraProducts: newExtras });
+                                    }}
+                                    className="w-full px-3 py-1.5 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-lg text-xs font-bold outline-none"
+                                  />
+                                </div>
+                              </div>
+
+                              <div className="flex flex-col gap-1">
+                                <span className="text-[9px] font-black text-zinc-500 uppercase">Posicionamento:</span>
+                                <div className="flex items-center gap-1 bg-zinc-100 dark:bg-zinc-900 p-1 rounded-lg justify-center">
+                                  <button 
+                                    onClick={() => {
+                                      const newExtras = [...(currentEncarte.extraProducts || [null, null])];
+                                      newExtras[idx] = { ...extra, offsetX: (extra.offsetX || 0) - 5 };
+                                      updateActiveEncarte({ extraProducts: newExtras });
+                                    }} 
+                                    className="p-1 hover:bg-white dark:hover:bg-zinc-800 rounded shadow-sm transition-all text-black dark:text-white"
+                                  >
+                                    <MoveLeft className="w-3 h-3" />
+                                  </button>
+                                  <div className="flex flex-col gap-1">
+                                    <button 
+                                      onClick={() => {
+                                        const newExtras = [...(currentEncarte.extraProducts || [null, null])];
+                                        newExtras[idx] = { ...extra, offsetY: (extra.offsetY || 0) - 5 };
+                                        updateActiveEncarte({ extraProducts: newExtras });
+                                      }} 
+                                      className="p-1 hover:bg-white dark:hover:bg-zinc-800 rounded shadow-sm transition-all text-black dark:text-white"
+                                    >
+                                      <MoveUp className="w-3 h-3" />
+                                    </button>
+                                    <button 
+                                      onClick={() => {
+                                        const newExtras = [...(currentEncarte.extraProducts || [null, null])];
+                                        newExtras[idx] = { ...extra, offsetY: (extra.offsetY || 0) + 5 };
+                                        updateActiveEncarte({ extraProducts: newExtras });
+                                      }} 
+                                      className="p-1 hover:bg-white dark:hover:bg-zinc-800 rounded shadow-sm transition-all text-black dark:text-white"
+                                    >
+                                      <MoveDown className="w-3 h-3" />
+                                    </button>
+                                  </div>
+                                  <button 
+                                    onClick={() => {
+                                      const newExtras = [...(currentEncarte.extraProducts || [null, null])];
+                                      newExtras[idx] = { ...extra, offsetX: (extra.offsetX || 0) + 5 };
+                                      updateActiveEncarte({ extraProducts: newExtras });
+                                    }} 
+                                    className="p-1 hover:bg-white dark:hover:bg-zinc-800 rounded shadow-sm transition-all text-black dark:text-white"
+                                  >
+                                    <MoveRight className="w-3 h-3" />
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
                           </div>
                         )}
                       </div>
@@ -993,7 +1170,31 @@ export default function EncarteCreator() {
                 {currentEncarte.extraProducts?.some(p => p !== null) && (
                   <div className="col-span-full grid grid-cols-2 gap-6 mb-6">
                     {currentEncarte.extraProducts.map((extra, idx) => extra && (
-                      <div key={`extra-${idx}`} className="bg-white/95 backdrop-blur-sm p-4 rounded-3xl border-2 border-red-600 shadow-xl flex items-center gap-4 relative">
+                      <motion.div 
+                        key={`extra-${idx}`} 
+                        drag
+                        dragMomentum={false}
+                        onDragEnd={(_, info) => {
+                          const newExtras = [...(currentEncarte.extraProducts || [null, null])];
+                          newExtras[idx] = { 
+                            ...extra, 
+                            offsetX: (extra.offsetX || 0) + info.offset.x,
+                            offsetY: (extra.offsetY || 0) + info.offset.y
+                          };
+                          updateActiveEncarte({ extraProducts: newExtras });
+                        }}
+                        className={cn(
+                          "p-4 rounded-3xl border-2 border-red-600 shadow-xl flex items-center gap-4 relative cursor-move",
+                          extra.showBg !== false ? "backdrop-blur-sm" : "bg-transparent border-transparent shadow-none"
+                        )}
+                        style={{
+                          x: extra.offsetX || 0,
+                          y: extra.offsetY || 0,
+                          width: extra.width ? `${extra.width}px` : '350px',
+                          height: extra.height ? `${extra.height}px` : '120px',
+                          backgroundColor: extra.showBg !== false ? (extra.bgColor || 'rgba(255, 255, 255, 0.95)') : 'transparent'
+                        }}
+                      >
                         <div className="flex-grow">
                           <h4 className="text-sm font-black uppercase text-red-600 leading-tight">{extra.name}</h4>
                           <p className="text-[10px] font-bold text-red-500 uppercase">{extra.subtitle}</p>
@@ -1023,7 +1224,7 @@ export default function EncarteCreator() {
                             <img src={extra.image} className="w-full h-full object-contain" referrerPolicy="no-referrer" />
                           )}
                         </div>
-                      </div>
+                      </motion.div>
                     ))}
                   </div>
                 )}

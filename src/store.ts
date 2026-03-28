@@ -117,6 +117,10 @@ export interface SelectedProduct extends Product {
   discountValue?: string;
   priceColor?: string;
   textColor?: string;
+  width?: number;
+  height?: number;
+  bgColor?: string;
+  showBg?: boolean;
 }
 
 export interface EncarteSlot {
@@ -487,6 +491,35 @@ export const useStore = create<AppState>()(
         createDefaultLayout('Modelo 19', 18),
         createDefaultLayout('Modelo 20', 19),
         createDefaultLayout('Padrão Ultra', 20),
+        createDefaultLayout('Modelo 22', 21),
+        createDefaultLayout('Modelo 23', 22),
+        createDefaultLayout('Modelo 24', 23),
+        createDefaultLayout('Modelo 25', 24),
+        createDefaultLayout('Modelo 26', 25),
+        createDefaultLayout('Modelo 27', 26),
+        createDefaultLayout('Modelo 28', 27),
+        createDefaultLayout('Modelo 29', 28),
+        createDefaultLayout('Modelo 30', 29),
+        createDefaultLayout('Modelo 31', 30),
+        createDefaultLayout('Modelo 32', 31),
+        createDefaultLayout('Modelo 33', 32),
+        createDefaultLayout('Modelo 34', 33),
+        createDefaultLayout('Modelo 35', 34),
+        createDefaultLayout('Modelo 36', 35),
+        createDefaultLayout('Modelo 37', 36),
+        createDefaultLayout('Modelo 38', 37),
+        createDefaultLayout('Modelo 39', 38),
+        createDefaultLayout('Modelo 40', 39),
+        createDefaultLayout('Modelo 41', 40),
+        createDefaultLayout('Modelo 42', 41),
+        createDefaultLayout('Modelo 43', 42),
+        createDefaultLayout('Modelo 44', 43),
+        createDefaultLayout('Modelo 45', 44),
+        createDefaultLayout('Modelo 46', 45),
+        createDefaultLayout('Modelo 47', 46),
+        createDefaultLayout('Modelo 48', 47),
+        createDefaultLayout('Modelo 49', 48),
+        createDefaultLayout('Modelo 50', 49),
       ],
 
       background: {
@@ -897,7 +930,15 @@ export const useStore = create<AppState>()(
             }
 
             // Trust the layouts from the database, but ensure they have all properties
-            let loadedLayouts = (layout.layouts || currentState.layouts).map((l: any, idx: number) => {
+            let rawLayouts = layout.layouts || currentState.layouts;
+            
+            // Ensure we have at least as many layouts as the default state (50)
+            if (rawLayouts.length < currentState.layouts.length) {
+              const missing = currentState.layouts.slice(rawLayouts.length);
+              rawLayouts = [...rawLayouts, ...missing];
+            }
+
+            let loadedLayouts = rawLayouts.map((l: any, idx: number) => {
               const name = l.name || `Modelo ${idx + 1}`;
               const defaultL = createDefaultLayout(name, idx);
               

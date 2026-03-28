@@ -228,30 +228,32 @@ const Adjustments = () => {
               Resetar Modelos
             </button>
           </div>
-          <div className="grid grid-cols-2 gap-3">
-            {layouts.map((layout, index) => (
-              <div key={index} className="space-y-1 p-2 bg-zinc-50 dark:bg-zinc-800/50 rounded-xl border border-zinc-200 dark:border-zinc-700">
-                <div className="flex justify-between items-center mb-1">
-                  <label className="text-[10px] font-black uppercase tracking-tighter text-black dark:text-white opacity-60">Modelo {index + 1}</label>
-                  <button 
-                    onClick={() => setLayoutHasThirdProduct(index, !layout.hasThirdProduct)}
-                    className={cn(
-                      "p-1 rounded transition-colors",
-                      layout.hasThirdProduct ? "text-blue-600 bg-blue-50 dark:bg-blue-900/20" : "text-black dark:text-white opacity-40 bg-zinc-100 dark:bg-zinc-800"
-                    )}
-                    title={layout.hasThirdProduct ? "Desativar 3º Produto" : "Ativar 3º Produto"}
-                  >
-                    <Layout className="w-3 h-3" />
-                  </button>
+          <div className="max-h-64 overflow-y-auto pr-2 space-y-3 custom-scrollbar">
+            <div className="grid grid-cols-2 gap-3">
+              {layouts.map((layout, index) => (
+                <div key={index} className="space-y-1 p-2 bg-zinc-50 dark:bg-zinc-800/50 rounded-xl border border-zinc-200 dark:border-zinc-700">
+                  <div className="flex justify-between items-center mb-1">
+                    <label className="text-[10px] font-black uppercase tracking-tighter text-black dark:text-white opacity-60">Modelo {index + 1}</label>
+                    <button 
+                      onClick={() => setLayoutHasThirdProduct(index, !layout.hasThirdProduct)}
+                      className={cn(
+                        "p-1 rounded transition-colors",
+                        layout.hasThirdProduct ? "text-blue-600 bg-blue-50 dark:bg-blue-900/20" : "text-black dark:text-white opacity-40 bg-zinc-100 dark:bg-zinc-800"
+                      )}
+                      title={layout.hasThirdProduct ? "Desativar 3º Produto" : "Ativar 3º Produto"}
+                    >
+                      <Layout className="w-3 h-3" />
+                    </button>
+                  </div>
+                  <input 
+                    type="text"
+                    value={layout.name}
+                    onChange={(e) => setLayoutName(index, e.target.value)}
+                    className="w-full px-2 py-1.5 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded text-[10px] font-bold outline-none focus:ring-1 focus:ring-blue-500"
+                  />
                 </div>
-                <input 
-                  type="text"
-                  value={layout.name}
-                  onChange={(e) => setLayoutName(index, e.target.value)}
-                  className="w-full px-2 py-1.5 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded text-[10px] font-bold outline-none focus:ring-1 focus:ring-blue-500"
-                />
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         </section>
       )}
