@@ -640,7 +640,7 @@ export default function App() {
 
               {/* Layout Switcher Buttons */}
               <div className="p-3 border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-800/20">
-                <div className="max-h-32 overflow-y-auto pr-1 custom-scrollbar">
+                <div className="max-h-64 overflow-y-auto pr-1 custom-scrollbar">
                   <div className="grid grid-cols-4 gap-1.5">
                     {filteredLayouts.map((layout) => {
                       return (

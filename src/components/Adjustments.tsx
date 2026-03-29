@@ -27,29 +27,17 @@ const Adjustments = () => {
 
   const handleReset = () => {
     useStore.setState((state) => ({
-      layouts: [
-        createDefaultLayout('QUARTA FRALDA PL', 0),
-        createDefaultLayout('SABADÃO PL', 1),
-        createDefaultLayout('QUI KIDS PL', 2),
-        createDefaultLayout('DERMO PL', 3),
-        createDefaultLayout('MARONBA', 4),
-        createDefaultLayout('Modelo 6', 5),
-        createDefaultLayout('Modelo 7', 6),
-        createDefaultLayout('Modelo 8', 7),
-        createDefaultLayout('Modelo 9', 8),
-        createDefaultLayout('Modelo 10', 9),
-        createDefaultLayout('Modelo 11', 10),
-        createDefaultLayout('Modelo 12', 11),
-        createDefaultLayout('Modelo 13', 12),
-        createDefaultLayout('Modelo 14', 13),
-        createDefaultLayout('Modelo 15', 14),
-        createDefaultLayout('Modelo 16', 15),
-        createDefaultLayout('Modelo 17', 16),
-        createDefaultLayout('Modelo 18', 17),
-        createDefaultLayout('Modelo 19', 18),
-        createDefaultLayout('Modelo 20', 19),
-        createDefaultLayout('Padrão Ultra', 20),
-      ]
+      layouts: Array.from({ length: 50 }, (_, i) => {
+        const defaultNames: Record<number, string> = {
+          0: 'QUARTA FRALDA PL',
+          1: 'SABADÃO PL',
+          2: 'QUI KIDS PL',
+          3: 'DERMO PL',
+          4: 'MARONBA',
+          20: 'Padrão Ultra'
+        };
+        return createDefaultLayout(defaultNames[i] || `Modelo ${i + 1}`, i);
+      })
     }));
     useStore.getState().saveLayout();
     toast.success('Modelos resetados com sucesso!');

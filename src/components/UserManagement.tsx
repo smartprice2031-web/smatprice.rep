@@ -274,7 +274,7 @@ export default function UserManagement() {
                       </button>
                     </div>
                   </div>
-                  <div className="flex flex-wrap gap-2 p-3 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-xl">
+                  <div className="flex flex-wrap gap-2 p-3 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-xl max-h-40 overflow-y-auto custom-scrollbar">
                     {layouts.map((layout, index) => (
                       <button
                         key={layout.name}
@@ -419,7 +419,7 @@ export default function UserManagement() {
                               </button>
                             </div>
                           </div>
-                          <div className="flex flex-wrap gap-1.5">
+                          <div className="flex flex-wrap gap-1.5 max-h-40 overflow-y-auto custom-scrollbar p-1">
                             {layouts.map((layout, index) => {
                               const isAllowed = store.allowedLayouts === undefined || store.allowedLayouts.includes(index);
                               return (

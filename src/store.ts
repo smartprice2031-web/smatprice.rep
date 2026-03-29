@@ -932,9 +932,13 @@ export const useStore = create<AppState>()(
             // Trust the layouts from the database, but ensure they have all properties
             let rawLayouts = layout.layouts || currentState.layouts;
             
-            // Ensure we have at least as many layouts as the default state (50)
-            if (rawLayouts.length < currentState.layouts.length) {
-              const missing = currentState.layouts.slice(rawLayouts.length);
+            // Ensure we have at least 50 layouts
+            if (rawLayouts.length < 50) {
+              const missingCount = 50 - rawLayouts.length;
+              const missing = Array.from({ length: missingCount }, (_, i) => {
+                const idx = rawLayouts.length + i;
+                return createDefaultLayout(`Modelo ${idx + 1}`, idx);
+              });
               rawLayouts = [...rawLayouts, ...missing];
             }
 
@@ -1167,13 +1171,26 @@ export const useStore = create<AppState>()(
           if (error && error.code !== 'PGRST116') throw error;
           
           if (data?.value) {
+            const currentState = get();
+            let loadedLayouts = data.value.layouts || currentState.layouts;
+            
+            // Ensure we have at least 50 layouts
+            if (loadedLayouts.length < 50) {
+              const missingCount = 50 - loadedLayouts.length;
+              const missing = Array.from({ length: missingCount }, (_, i) => {
+                const idx = loadedLayouts.length + i;
+                return createDefaultLayout(`Modelo ${idx + 1}`, idx);
+              });
+              loadedLayouts = [...loadedLayouts, ...missing];
+            }
+
             set({
               allowedStores: data.value.allowedStores || [],
               flags: data.value.flags || get().flags,
               userGroups: data.value.userGroups || [],
               encartes: data.value.encartes || get().encartes,
               selectedEncarteModel: data.value.selectedEncarteModel || get().selectedEncarteModel,
-              layouts: data.value.layouts || get().layouts,
+              layouts: loadedLayouts,
               announcements: data.value.announcements || []
             });
           }
