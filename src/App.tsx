@@ -17,7 +17,7 @@ import {
   LayoutDashboard, Package, Settings as SettingsIcon,
   ShoppingBag, Search, Database, X, ListPlus, LayoutGrid,
   ArrowLeft, LogOut, Users, MessageCircle, AlertTriangle,
-  RefreshCw, Layout, Megaphone
+  RefreshCw, Layout, Megaphone, Flag, MapPin
 } from 'lucide-react';
 import { jsPDF } from 'jspdf';
 import { clsx, type ClassValue } from 'clsx';
@@ -51,21 +51,24 @@ export default function App() {
 
   // Filter layouts based on user permissions
   const filteredLayouts = React.useMemo(() => {
-    if (userRole === 'admin') return layouts.map((l, i) => ({ ...l, originalIndex: i }));
-    
-    // Normalize CNPJ for comparison
-    const normalizedUserCnpj = currentUser?.cnpj?.replace(/[^\d]/g, '') || '';
-    const store = allowedStores.find(s => s.cnpj?.replace(/[^\d]/g, '') === normalizedUserCnpj);
-    
-    // If no store found or allowedLayouts is undefined/empty, show NOTHING (Total Control)
-    if (!store || !store.allowedLayouts || store.allowedLayouts.length === 0) {
-      return [];
+    let baseLayouts = layouts.map((l, i) => ({ ...l, originalIndex: i }));
+
+    if (userRole !== 'admin') {
+      // Normalize CNPJ for comparison
+      const normalizedUserCnpj = currentUser?.cnpj?.replace(/[^\d]/g, '') || '';
+      const store = allowedStores.find(s => s.cnpj?.replace(/[^\d]/g, '') === normalizedUserCnpj);
+      
+      // If no store found or allowedLayouts is undefined/empty, show NOTHING (Total Control)
+      if (!store || !store.allowedLayouts || store.allowedLayouts.length === 0) {
+        return [];
+      }
+      
+      // Filter by index
+      baseLayouts = baseLayouts.filter((_, index) => store.allowedLayouts?.includes(index));
     }
-    
-    // Filter by index
-    return layouts
-      .map((l, i) => ({ ...l, originalIndex: i }))
-      .filter((_, index) => store.allowedLayouts?.includes(index));
+
+    // Sort by sortOrder
+    return baseLayouts.sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
   }, [layouts, userRole, currentUser, allowedStores]);
 
   // Map filtered index back to original index for setActiveLayout
@@ -640,26 +643,50 @@ export default function App() {
 
               {/* Layout Switcher Buttons */}
               <div className="p-3 border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-800/20">
-                <div className="max-h-64 overflow-y-auto pr-1 custom-scrollbar">
-                  <div className="grid grid-cols-4 gap-1.5">
-                    {filteredLayouts.map((layout) => {
-                      return (
-                        <button
-                          key={`${layout.name}-${layout.originalIndex}`}
-                          onClick={() => handleLayoutSelect(layout.originalIndex)}
-                          className={cn(
-                            "py-2 px-0.5 text-[8px] font-black uppercase tracking-tighter rounded-lg border transition-all truncate",
-                            activeLayoutIndex === layout.originalIndex
-                              ? "bg-blue-600 border-blue-600 text-white shadow-md shadow-blue-500/20"
-                              : "bg-white dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 text-black dark:text-white opacity-60 hover:border-zinc-400"
-                          )}
-                          title={layout.name}
-                        >
-                          {layout.name.replace('Modelo ', '')}
-                        </button>
-                      );
-                    })}
-                  </div>
+                <div className="max-h-80 overflow-y-auto pr-1 custom-scrollbar space-y-4">
+                  {Object.entries(
+                    filteredLayouts.reduce((acc, layout) => {
+                      const key = layout.bandeira || 'Sem Bandeira';
+                      if (!acc[key]) acc[key] = {};
+                      const subKey = layout.localidade || 'Geral';
+                      if (!acc[key][subKey]) acc[key][subKey] = [];
+                      acc[key][subKey].push(layout);
+                      return acc;
+                    }, {} as Record<string, Record<string, typeof filteredLayouts>>)
+                  ).map(([bandeira, localidades]) => (
+                    <div key={bandeira} className="space-y-2">
+                      <div className="flex items-center gap-2 px-1">
+                        <Flag className="w-3 h-3 text-blue-600" />
+                        <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500">{bandeira}</span>
+                      </div>
+                      
+                      {Object.entries(localidades).map(([localidade, layouts]) => (
+                        <div key={localidade} className="pl-2 space-y-1">
+                          <div className="flex items-center gap-1 px-1">
+                            <MapPin className="w-2 h-2 text-zinc-400" />
+                            <span className="text-[8px] font-bold uppercase text-zinc-400">{localidade}</span>
+                          </div>
+                          <div className="grid grid-cols-4 gap-1.5">
+                            {layouts.map((layout) => (
+                              <button
+                                key={`${layout.name}-${layout.originalIndex}`}
+                                onClick={() => handleLayoutSelect(layout.originalIndex)}
+                                className={cn(
+                                  "py-2 px-0.5 text-[8px] font-black uppercase tracking-tighter rounded-lg border transition-all truncate",
+                                  activeLayoutIndex === layout.originalIndex
+                                    ? "bg-blue-600 border-blue-600 text-white shadow-md shadow-blue-500/20"
+                                    : "bg-white dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 text-black dark:text-white opacity-60 hover:border-zinc-400"
+                                )}
+                                title={layout.name}
+                              >
+                                {layout.name.replace('Modelo ', '')}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ))}
                 </div>
               </div>
 

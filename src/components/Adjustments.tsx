@@ -1,6 +1,6 @@
 import React from 'react';
 import { useStore, TextSettings, createDefaultLayout, Layout as LayoutType, isThreeProduct } from '../store';
-import { Settings, Type, Image as ImageIcon, Layout, Eye, EyeOff, Lock, Unlock, AlignLeft, AlignCenter, AlignRight, Bold, AlertTriangle } from 'lucide-react';
+import { Settings, Type, Image as ImageIcon, Layout, Eye, EyeOff, Lock, Unlock, AlignLeft, AlignCenter, AlignRight, Bold, AlertTriangle, ChevronUp, ChevronDown, Flag, MapPin } from 'lucide-react';
 import { toast } from 'sonner';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
@@ -14,7 +14,7 @@ const Adjustments = () => {
     textElements1, textElements2, textElements3,
     productImage1, productImage2, productImage3,
     background, setElement, setProductImage, setBackground,
-    userRole, layouts, setLayoutName, setLayoutHasThirdProduct, activeLayoutIndex,
+    userRole, layouts, setLayoutName, setLayoutBandeira, setLayoutLocalidade, reorderLayouts, setLayoutHasThirdProduct, activeLayoutIndex,
     setSlotVisibility
   } = useStore();
 
@@ -219,9 +219,34 @@ const Adjustments = () => {
           <div className="max-h-64 overflow-y-auto pr-2 space-y-3 custom-scrollbar">
             <div className="grid grid-cols-2 gap-3">
               {layouts.map((layout, index) => (
-                <div key={index} className="space-y-1 p-2 bg-zinc-50 dark:bg-zinc-800/50 rounded-xl border border-zinc-200 dark:border-zinc-700">
+                <div key={index} className={cn(
+                  "space-y-1 p-3 bg-zinc-50 dark:bg-zinc-800/50 rounded-xl border transition-all",
+                  index === activeLayoutIndex 
+                    ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20 ring-1 ring-blue-500" 
+                    : "border-zinc-200 dark:border-zinc-700"
+                )}>
                   <div className="flex justify-between items-center mb-1">
-                    <label className="text-[10px] font-black uppercase tracking-tighter text-black dark:text-white opacity-60">Modelo {index + 1}</label>
+                    <div className="flex items-center gap-2">
+                      <label className="text-[10px] font-black uppercase tracking-tighter text-black dark:text-white opacity-60">Modelo {index + 1}</label>
+                      <div className="flex items-center gap-0.5">
+                        <button
+                          onClick={() => reorderLayouts(index, index - 1)}
+                          disabled={index === 0}
+                          className="p-1 hover:bg-zinc-200 dark:hover:bg-zinc-700 rounded disabled:opacity-20"
+                          title="Mover para cima"
+                        >
+                          <ChevronUp className="w-3 h-3" />
+                        </button>
+                        <button
+                          onClick={() => reorderLayouts(index, index + 1)}
+                          disabled={index === layouts.length - 1}
+                          className="p-1 hover:bg-zinc-200 dark:hover:bg-zinc-700 rounded disabled:opacity-20"
+                          title="Mover para baixo"
+                        >
+                          <ChevronDown className="w-3 h-3" />
+                        </button>
+                      </div>
+                    </div>
                     <button 
                       onClick={() => setLayoutHasThirdProduct(index, !layout.hasThirdProduct)}
                       className={cn(
@@ -233,12 +258,41 @@ const Adjustments = () => {
                       <Layout className="w-3 h-3" />
                     </button>
                   </div>
-                  <input 
-                    type="text"
-                    value={layout.name}
-                    onChange={(e) => setLayoutName(index, e.target.value)}
-                    className="w-full px-2 py-1.5 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded text-[10px] font-bold outline-none focus:ring-1 focus:ring-blue-500"
-                  />
+                  <div className="space-y-2">
+                    <div>
+                      <label className="text-[8px] font-bold text-zinc-500 uppercase block mb-0.5">Nome</label>
+                      <input 
+                        type="text"
+                        value={layout.name}
+                        onChange={(e) => setLayoutName(index, e.target.value)}
+                        className="w-full px-2 py-1 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded text-[10px] font-bold outline-none focus:ring-1 focus:ring-blue-500"
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label className="text-[8px] font-bold text-zinc-500 uppercase flex items-center gap-1 mb-0.5">
+                          <Flag className="w-2 h-2" /> Bandeira
+                        </label>
+                        <input 
+                          type="text"
+                          value={layout.bandeira || ''}
+                          onChange={(e) => setLayoutBandeira(index, e.target.value)}
+                          className="w-full px-2 py-1 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded text-[10px] font-bold outline-none focus:ring-1 focus:ring-blue-500"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-[8px] font-bold text-zinc-500 uppercase flex items-center gap-1 mb-0.5">
+                          <MapPin className="w-2 h-2" /> Localidade
+                        </label>
+                        <input 
+                          type="text"
+                          value={layout.localidade || ''}
+                          onChange={(e) => setLayoutLocalidade(index, e.target.value)}
+                          className="w-full px-2 py-1 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded text-[10px] font-bold outline-none focus:ring-1 focus:ring-blue-500"
+                        />
+                      </div>
+                    </div>
+                  </div>
                 </div>
               ))}
             </div>

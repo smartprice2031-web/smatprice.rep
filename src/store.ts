@@ -37,6 +37,9 @@ export interface Product {
 
 export interface Layout {
   name: string;
+  bandeira?: string;
+  localidade?: string;
+  sortOrder?: number;
   background: {
     url: string | null;
     mode: 'cover' | 'contain';
@@ -212,6 +215,9 @@ interface AppState {
   layouts: Layout[];
   setActiveLayout: (index: number) => void;
   setLayoutName: (index: number, name: string) => void;
+  setLayoutBandeira: (index: number, bandeira: string) => void;
+  setLayoutLocalidade: (index: number, localidade: string) => void;
+  reorderLayouts: (fromIndex: number, toIndex: number) => void;
   setLayoutHasThirdProduct: (index: number, hasThirdProduct: boolean) => void;
 
   setElement: (slot: 1 | 2 | 3, key: keyof AppState['textElements1'], settings: Partial<TextSettings>) => void;
@@ -346,7 +352,10 @@ export const THREE_PRODUCT_LAYOUTS = [
 ];
 
 export const isThreeProduct = (name: string, index?: number) => {
-  return true;
+  const upperName = name.toUpperCase();
+  return THREE_PRODUCT_LAYOUTS.includes(upperName) || 
+         upperName.includes(' 3') || 
+         (index !== undefined && THREE_PRODUCT_LAYOUTS.includes(`MODELO ${index + 1}`));
 };
 
 export const createDefaultLayout = (name: string, index?: number): Layout => {
@@ -354,6 +363,7 @@ export const createDefaultLayout = (name: string, index?: number): Layout => {
 
   return {
     name,
+    sortOrder: index ?? 0,
     hasThirdProduct: showThird,
     background: {
       url: null,
@@ -587,6 +597,7 @@ export const useStore = create<AppState>()(
 
         // 1. Save current active layout state into the layouts array
         const currentLayout: Layout = {
+          ...state.layouts[state.activeLayoutIndex],
           name: state.layouts[state.activeLayoutIndex]?.name || `Modelo ${state.activeLayoutIndex + 1}`,
           background: state.background,
           productImage1: state.productImage1,
@@ -595,7 +606,6 @@ export const useStore = create<AppState>()(
           textElements1: state.textElements1,
           textElements2: state.textElements2,
           textElements3: state.textElements3,
-          hasThirdProduct: state.layouts[state.activeLayoutIndex]?.hasThirdProduct,
           optionalText1: state.optionalText1,
           optionalText2: state.optionalText2,
           optionalText3: state.optionalText3,
@@ -636,6 +646,48 @@ export const useStore = create<AppState>()(
           newLayouts[index] = updatedLayout;
           
           return { layouts: newLayouts };
+        });
+        get().saveLayoutDebounced();
+      },
+
+      setLayoutBandeira: (index, bandeira) => {
+        set((state) => {
+          const newLayouts = [...state.layouts];
+          newLayouts[index] = { ...newLayouts[index], bandeira };
+          return { layouts: newLayouts };
+        });
+        get().saveLayoutDebounced();
+      },
+
+      setLayoutLocalidade: (index, localidade) => {
+        set((state) => {
+          const newLayouts = [...state.layouts];
+          newLayouts[index] = { ...newLayouts[index], localidade };
+          return { layouts: newLayouts };
+        });
+        get().saveLayoutDebounced();
+      },
+
+      reorderLayouts: (fromIndex, toIndex) => {
+        set((state) => {
+          const newLayouts = [...state.layouts];
+          const [movedItem] = newLayouts.splice(fromIndex, 1);
+          newLayouts.splice(toIndex, 0, movedItem);
+          
+          // Update sortOrder for all layouts to match their new positions
+          const updatedLayouts = newLayouts.map((l, i) => ({ ...l, sortOrder: i }));
+          
+          // If the active layout was moved, update activeLayoutIndex
+          let newActiveIndex = state.activeLayoutIndex;
+          if (state.activeLayoutIndex === fromIndex) {
+            newActiveIndex = toIndex;
+          } else if (fromIndex < state.activeLayoutIndex && toIndex >= state.activeLayoutIndex) {
+            newActiveIndex--;
+          } else if (fromIndex > state.activeLayoutIndex && toIndex <= state.activeLayoutIndex) {
+            newActiveIndex++;
+          }
+
+          return { layouts: updatedLayouts, activeLayoutIndex: newActiveIndex };
         });
         get().saveLayoutDebounced();
       },
@@ -955,7 +1007,7 @@ export const useStore = create<AppState>()(
               };
 
               return merged;
-            });
+            }).sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
 
             const activeLayout = loadedLayouts[layout.activeLayoutIndex || 0] || loadedLayouts[0];
 
