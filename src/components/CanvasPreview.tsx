@@ -437,10 +437,9 @@ const CanvasPreview = ({ id = "placa" }: { id?: string }) => {
             {renderProduct(2)}
             {renderProduct(3)}
 
-            {/* Optional Text for Modelo 12 and 13 */}
-            {(activeLayoutIndex === 11 || activeLayoutIndex === 12) && (
-              <>
-                {optionalText1.active && (
+            {/* Optional Text */}
+            <>
+              {optionalText1.active && (
                   <Group
                     id="optional-text-1"
                     x={optionalText1.x}
@@ -504,7 +503,7 @@ const CanvasPreview = ({ id = "placa" }: { id?: string }) => {
                     />
                   </Group>
                 )}
-                {!isSingleProduct && activeLayoutIndex === 12 && optionalText3.active && (
+                {!isSingleProduct && optionalText3.active && (
                   <Group
                     id="optional-text-3"
                     x={optionalText3.x}
@@ -537,7 +536,7 @@ const CanvasPreview = ({ id = "placa" }: { id?: string }) => {
                   </Group>
                 )}
               </>
-            )}
+            
 
             {/* Single Product Overlay - Blank lower half */}
             {isSingleProduct && (!isThreeProduct(activeLayout.name, activeLayoutIndex) || activeLayout.name.toUpperCase() === 'PADRÃO ULTRA') && (

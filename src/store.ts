@@ -988,6 +988,7 @@ export const useStore = create<AppState>()(
           optionalText1: state.optionalText1,
           optionalText2: state.optionalText2,
           optionalText3: state.optionalText3,
+          isSingleProduct: state.isSingleProduct,
           updated_at: timestamp
         };
         
@@ -1071,6 +1072,7 @@ export const useStore = create<AppState>()(
               optionalText3: layout.optionalText3 || currentState.optionalText3 || activeLayout.optionalText3,
               activeLayoutIndex: layout.activeLayoutIndex !== undefined ? layout.activeLayoutIndex : currentState.activeLayoutIndex,
               layouts: loadedLayouts,
+              isSingleProduct: layout.isSingleProduct !== undefined ? layout.isSingleProduct : currentState.isSingleProduct,
               lastUpdateTimestamp: layout.updated_at || null
             } as any);
           }
@@ -1081,15 +1083,18 @@ export const useStore = create<AppState>()(
             channel
               .on(
                 'postgres_changes' as any,
-                { event: '*', table: 'settings', schema: 'public', filter: 'id=eq.current_layout' },
+                { event: '*', table: 'settings', schema: 'public' },
                 async (payload) => {
+                  const id = (payload.new as any)?.id;
                   const newValue = (payload.new as any)?.value;
-                  if (newValue) {
+                  
+                  if (id === 'current_layout' && newValue) {
                     const currentState = get();
-                    // Only update if the new timestamp is newer than our last update
                     if (!currentState.lastUpdateTimestamp || (newValue.updated_at && newValue.updated_at > currentState.lastUpdateTimestamp)) {
                       await get().loadLayout();
                     }
+                  } else if (id === 'users_and_flags' && newValue) {
+                    await get().loadUsersAndFlags();
                   }
                 }
               )
@@ -1112,7 +1117,10 @@ export const useStore = create<AppState>()(
       isPrinting: false,
       setPrinting: (isPrinting) => set({ isPrinting }),
       isSingleProduct: false,
-      setSingleProduct: (isSingleProduct) => set({ isSingleProduct }),
+      setSingleProduct: (isSingleProduct) => {
+        set({ isSingleProduct });
+        get().saveLayoutDebounced();
+      },
 
       printQueue: [],
       addToQueue: (imageData, isLandscape) => set((state) => ({ 

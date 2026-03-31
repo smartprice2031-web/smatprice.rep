@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { useStore, Product } from '../store';
+import { useStore, Product, isThreeProduct } from '../store';
 import { Search, Package, Check, X, RefreshCw } from 'lucide-react';
 
 const ProductSelector: React.FC<{ onSelect?: (product: Product) => void }> = ({ onSelect }) => {
@@ -219,62 +219,80 @@ const ProductSlot = ({
         <h3 className="text-xs font-black text-blue-600 uppercase tracking-widest">
           Produto {slot === 1 ? 'Superior' : slot === 2 ? 'Inferior' : 'Central'}
         </h3>
-        {slot === 1 ? (
-          <div className="flex items-center gap-2 bg-blue-50 dark:bg-blue-900/20 px-2 py-1 rounded-lg border border-blue-100 dark:border-blue-800">
-            <span className="text-[9px] font-black text-blue-600 uppercase tracking-tight">Confeccionar apenas um produto</span>
-            <label className="relative inline-flex items-center cursor-pointer">
-              <input 
-                type="checkbox" 
-                className="sr-only peer"
-                checked={isSingleProduct}
-                onChange={(e) => setSingleProduct(e.target.checked)}
-              />
-              <div className="w-8 h-4 bg-zinc-200 peer-focus:outline-none rounded-full peer dark:bg-zinc-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
-            </label>
-          </div>
-        ) : (
-          <button 
-            onClick={handleSync}
-            disabled={isSyncing}
-            className="flex items-center gap-1.5 px-2 py-1 text-black dark:text-white opacity-60 hover:text-blue-600 transition-colors disabled:opacity-50 text-[10px] font-black uppercase tracking-tighter"
-            title="Sincronizar produtos"
-          >
-            <RefreshCw className={`w-3 h-3 ${isSyncing ? 'animate-spin' : ''}`} />
-            {isSyncing ? 'Sincronizando...' : 'Atualizar'}
-          </button>
-        )}
+        <button 
+          onClick={handleSync}
+          disabled={isSyncing}
+          className="flex items-center gap-1.5 px-2 py-1 text-black dark:text-white opacity-60 hover:text-blue-600 transition-colors disabled:opacity-50 text-[10px] font-black uppercase tracking-tighter"
+          title="Sincronizar produtos"
+        >
+          <RefreshCw className={`w-3 h-3 ${isSyncing ? 'animate-spin' : ''}`} />
+          {isSyncing ? 'Sincronizando...' : 'Atualizar'}
+        </button>
       </div>
 
-    {/* Optional Text for Modelo 12 and 13 */}
-    {showOptionalText && optionalText && setOptionalText && (
-      <div className="p-3 bg-amber-50 dark:bg-amber-900/10 rounded-xl border border-amber-200 dark:border-amber-900/30 space-y-2">
-        <div className="flex items-center justify-between">
-          <h4 className="text-[10px] font-black text-amber-600 uppercase tracking-widest flex items-center gap-1.5">
-            <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
-            Texto Opcional
-          </h4>
+      {/* Single Product Toggle */}
+      {(!isThreeProduct(layouts?.[activeLayoutIndex || 0]?.name || '', activeLayoutIndex || 0) || (layouts?.[activeLayoutIndex || 0]?.name || '').toUpperCase() === 'PADRÃO ULTRA') && (
+        <div 
+          className="flex items-center justify-between p-3 rounded-2xl border border-white/5 shadow-lg bg-[#1a1614]"
+        >
+          <div className="flex items-center gap-3">
+            <div 
+              className="w-2 h-2 rounded-full bg-[#2563eb]" 
+              style={{ boxShadow: `0 0 8px #2563eb99` }} 
+            />
+            <span className="text-[11px] font-black uppercase tracking-widest text-[#2563eb]">
+              Confeccionar apenas um produto
+            </span>
+          </div>
           <label className="relative inline-flex items-center cursor-pointer">
             <input 
               type="checkbox" 
               className="sr-only peer"
-              checked={optionalText.active}
-              onChange={(e) => setOptionalText({ active: e.target.checked })}
+              checked={isSingleProduct}
+              onChange={(e) => setSingleProduct(e.target.checked)}
             />
-            <div className="w-7 h-3.5 bg-zinc-200 peer-focus:outline-none rounded-full peer dark:bg-zinc-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-2.5 after:w-2.5 after:transition-all dark:border-gray-600 peer-checked:bg-amber-500"></div>
+            <div className="w-11 h-6 bg-zinc-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#2563eb]"></div>
           </label>
         </div>
-        
-        {optionalText.active && (
+      )}
+
+    {/* Optional Text */}
+    <div className="space-y-3">
+      <div 
+        className="flex items-center justify-between p-3 rounded-2xl border border-white/5 shadow-lg bg-[#1a1614]"
+      >
+        <div className="flex items-center gap-3">
+          <div 
+            className="w-2 h-2 rounded-full bg-[#ff6600]" 
+            style={{ boxShadow: `0 0 8px #ff660099` }} 
+          />
+          <span className="text-[11px] font-black uppercase tracking-widest text-[#ff6600]">
+            Texto Opcional
+          </span>
+        </div>
+        <label className="relative inline-flex items-center cursor-pointer">
+          <input 
+            type="checkbox" 
+            className="sr-only peer"
+            checked={optionalText?.active || false}
+            onChange={(e) => setOptionalText?.({ active: e.target.checked })}
+          />
+          <div className="w-11 h-6 bg-zinc-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#ff6600]"></div>
+        </label>
+      </div>
+      
+      {optionalText?.active && (
+        <div className="px-1 animate-in fade-in slide-in-from-top-1 duration-200">
           <input
             type="text"
             placeholder="Digite o texto opcional..."
-            className="w-full px-3 py-1.5 bg-white dark:bg-zinc-800 border border-amber-200 dark:border-amber-900/30 rounded-lg text-[11px] font-bold focus:ring-2 focus:ring-amber-500 outline-none"
-            value={optionalText.text}
-            onChange={(e) => setOptionalText({ text: e.target.value })}
+            className="w-full px-4 py-2.5 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-xl text-xs font-bold focus:ring-2 focus:ring-[#ff6600] outline-none transition-all shadow-sm"
+            value={optionalText.text || ''}
+            onChange={(e) => setOptionalText?.({ text: e.target.value })}
           />
-        )}
-      </div>
-    )}
+        </div>
+      )}
+    </div>
 
     {/* Manual Info Editing */}
     <div className="grid grid-cols-1 gap-3">

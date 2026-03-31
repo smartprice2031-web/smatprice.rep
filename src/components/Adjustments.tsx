@@ -17,7 +17,8 @@ const Adjustments = () => {
     userRole, layouts, setLayoutName, setLayoutBandeira, setLayoutLocalidade, reorderLayouts, setLayoutHasThirdProduct, setLayoutOrientation, activeLayoutIndex,
     setSlotVisibility,
     isSingleProduct, setSingleProduct,
-    orientation
+    orientation,
+    optionalText1, optionalText2, optionalText3, setOptionalText
   } = useStore();
 
   const [showResetConfirm, setShowResetConfirm] = React.useState(false);
@@ -370,20 +371,6 @@ const Adjustments = () => {
           <h3 className="text-sm font-black uppercase tracking-widest text-blue-600 flex items-center gap-2">
             Produto Superior
           </h3>
-          {(!isThreeProduct(currentLayoutName, activeLayoutIndex) || currentLayoutName.toUpperCase() === 'PADRÃO ULTRA') && (
-            <div className="flex items-center gap-2 bg-blue-50 dark:bg-blue-900/20 px-2 py-1 rounded-lg border border-blue-100 dark:border-blue-800">
-              <span className="text-[9px] font-black text-blue-600 uppercase tracking-tight">Confeccionar apenas um produto</span>
-              <label className="relative inline-flex items-center cursor-pointer">
-                <input 
-                  type="checkbox" 
-                  className="sr-only peer"
-                  checked={isSingleProduct}
-                  onChange={(e) => setSingleProduct(e.target.checked)}
-                />
-                <div className="w-8 h-4 bg-zinc-200 peer-focus:outline-none rounded-full peer dark:bg-zinc-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
-              </label>
-            </div>
-          )}
         </div>
         <div className="space-y-4">
           <ProductImageControl slot={1} productImage={productImage1} />
@@ -400,9 +387,11 @@ const Adjustments = () => {
 
           {/* Product 2 Section */}
           <section className="space-y-4">
-            <h3 className="text-sm font-black uppercase tracking-widest text-blue-600 flex items-center gap-2">
-              Produto Inferior
-            </h3>
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-black uppercase tracking-widest text-blue-600 flex items-center gap-2">
+                Produto Inferior
+              </h3>
+            </div>
             <div className="space-y-4">
               <ProductImageControl slot={2} productImage={productImage2} />
               <TextControl slot={2} label="Nome" elementKey="name" textElements={textElements2} />
