@@ -9,7 +9,7 @@ const ProductSelector: React.FC<{ onSelect?: (product: Product) => void }> = ({ 
     productImage3, setElement,
     layouts, activeLayoutIndex,
     optionalText1, optionalText2, optionalText3, setOptionalText,
-    isSingleProduct
+    isSingleProduct, showOptionalTextControl
   } = useStore();
 
   const currentLayoutName = layouts[activeLayoutIndex]?.name || '';
@@ -113,10 +113,10 @@ const ProductSelector: React.FC<{ onSelect?: (product: Product) => void }> = ({ 
         handleSync={handleSync}
         optionalText={optionalText1}
         setOptionalText={(updates) => setOptionalText(1, updates)}
-        showOptionalText={activeLayoutIndex === 11 || activeLayoutIndex === 12}
         isIdosoLayout={isIdosoLayout}
         layouts={layouts}
         activeLayoutIndex={activeLayoutIndex}
+        showOptionalTextControl={showOptionalTextControl}
       />
       
       {!isSingleProduct && (
@@ -137,10 +137,10 @@ const ProductSelector: React.FC<{ onSelect?: (product: Product) => void }> = ({ 
             handleSync={handleSync}
             optionalText={optionalText2}
             setOptionalText={(updates) => setOptionalText(2, updates)}
-            showOptionalText={activeLayoutIndex === 11 || activeLayoutIndex === 12}
             isIdosoLayout={isIdosoLayout}
             layouts={layouts}
             activeLayoutIndex={activeLayoutIndex}
+            showOptionalTextControl={showOptionalTextControl}
           />
 
           {showThirdProduct && (
@@ -161,10 +161,10 @@ const ProductSelector: React.FC<{ onSelect?: (product: Product) => void }> = ({ 
                 handleSync={handleSync}
                 optionalText={optionalText3}
                 setOptionalText={(updates) => setOptionalText(3, updates)}
-                showOptionalText={activeLayoutIndex === 12}
                 isIdosoLayout={isIdosoLayout}
                 layouts={layouts}
                 activeLayoutIndex={activeLayoutIndex}
+                showOptionalTextControl={showOptionalTextControl}
               />
             </>
           )}
@@ -188,10 +188,10 @@ const ProductSlot = ({
   handleSync,
   optionalText,
   setOptionalText,
-  showOptionalText,
   isIdosoLayout,
   layouts,
-  activeLayoutIndex
+  activeLayoutIndex,
+  showOptionalTextControl
 }: { 
   slot: 1 | 2 | 3, 
   searchTerm: string, 
@@ -206,10 +206,10 @@ const ProductSlot = ({
   handleSync: () => void,
   optionalText?: any,
   setOptionalText?: (updates: any) => void,
-  showOptionalText?: boolean,
   isIdosoLayout?: boolean,
   layouts?: any[],
-  activeLayoutIndex?: number
+  activeLayoutIndex?: number,
+  showOptionalTextControl?: boolean
 }) => {
   const { isSingleProduct, setSingleProduct } = useStore();
 
@@ -230,58 +230,62 @@ const ProductSlot = ({
         </button>
       </div>
 
-      {/* Single Product Toggle */}
-      {(!isThreeProduct(layouts?.[activeLayoutIndex || 0]?.name || '', activeLayoutIndex || 0) || (layouts?.[activeLayoutIndex || 0]?.name || '').toUpperCase() === 'PADRÃO ULTRA') && (
-        <div 
-          className="flex items-center justify-between p-3 rounded-2xl border border-white/5 shadow-lg bg-[#1a1614]"
-        >
-          <div className="flex items-center gap-3">
-            <div 
-              className="w-2 h-2 rounded-full bg-[#2563eb]" 
-              style={{ boxShadow: `0 0 8px #2563eb99` }} 
-            />
-            <span className="text-[11px] font-black uppercase tracking-widest text-[#2563eb]">
-              Confeccionar apenas um produto
-            </span>
-          </div>
-          <label className="relative inline-flex items-center cursor-pointer">
-            <input 
-              type="checkbox" 
-              className="sr-only peer"
-              checked={isSingleProduct}
-              onChange={(e) => setSingleProduct(e.target.checked)}
-            />
-            <div className="w-11 h-6 bg-zinc-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#2563eb]"></div>
-          </label>
-        </div>
-      )}
-
-    {/* Optional Text */}
-    <div className="space-y-3">
-      <div 
-        className="flex items-center justify-between p-3 rounded-2xl border border-white/5 shadow-lg bg-[#1a1614]"
-      >
-        <div className="flex items-center gap-3">
+      {/* Toggles Row */}
+      <div className="grid grid-cols-2 gap-2">
+        {/* Single Product Toggle */}
+        {(!isThreeProduct(layouts?.[activeLayoutIndex || 0]?.name || '', activeLayoutIndex || 0) || (layouts?.[activeLayoutIndex || 0]?.name || '').toUpperCase() === 'PADRÃO ULTRA') ? (
           <div 
-            className="w-2 h-2 rounded-full bg-[#ff6600]" 
-            style={{ boxShadow: `0 0 8px #ff660099` }} 
-          />
-          <span className="text-[11px] font-black uppercase tracking-widest text-[#ff6600]">
-            Texto Opcional
-          </span>
-        </div>
-        <label className="relative inline-flex items-center cursor-pointer">
-          <input 
-            type="checkbox" 
-            className="sr-only peer"
-            checked={optionalText?.active || false}
-            onChange={(e) => setOptionalText?.({ active: e.target.checked })}
-          />
-          <div className="w-11 h-6 bg-zinc-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#ff6600]"></div>
-        </label>
+            className="flex items-center justify-between p-2 rounded-xl border border-white/5 shadow-lg bg-[#1a1614]"
+          >
+            <div className="flex items-center gap-2">
+              <div 
+                className="w-1.5 h-1.5 rounded-full bg-[#2563eb]" 
+                style={{ boxShadow: `0 0 6px #2563eb99` }} 
+              />
+              <span className="text-[9px] font-black uppercase tracking-tight text-[#2563eb] leading-tight">
+                (Apenas Um produto)
+              </span>
+            </div>
+            <label className="relative inline-flex items-center cursor-pointer scale-75 origin-right">
+              <input 
+                type="checkbox" 
+                className="sr-only peer"
+                checked={isSingleProduct}
+                onChange={(e) => setSingleProduct(e.target.checked)}
+              />
+              <div className="w-9 h-5 bg-zinc-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-[#2563eb]"></div>
+            </label>
+          </div>
+        ) : <div />}
+
+        {/* Optional Text Toggle */}
+        {showOptionalTextControl && (
+          <div 
+            className="flex items-center justify-between p-2 rounded-xl border border-white/5 shadow-lg bg-[#1a1614]"
+          >
+            <div className="flex items-center gap-2">
+              <div 
+                className="w-1.5 h-1.5 rounded-full bg-[#ff6600]" 
+                style={{ boxShadow: `0 0 6px #ff660099` }} 
+              />
+              <span className="text-[9px] font-black uppercase tracking-tight text-[#ff6600] leading-tight">
+                Texto Opcional
+              </span>
+            </div>
+            <label className="relative inline-flex items-center cursor-pointer scale-75 origin-right">
+              <input 
+                type="checkbox" 
+                className="sr-only peer"
+                checked={optionalText?.active || false}
+                onChange={(e) => setOptionalText?.({ active: e.target.checked })}
+              />
+              <div className="w-9 h-5 bg-zinc-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-[#ff6600]"></div>
+            </label>
+          </div>
+        )}
       </div>
-      
-      {optionalText?.active && (
+
+      {optionalText?.active && showOptionalTextControl && (
         <div className="px-1 animate-in fade-in slide-in-from-top-1 duration-200">
           <input
             type="text"
@@ -292,7 +296,6 @@ const ProductSlot = ({
           />
         </div>
       )}
-    </div>
 
     {/* Manual Info Editing */}
     <div className="grid grid-cols-1 gap-3">

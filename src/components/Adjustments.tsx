@@ -18,7 +18,8 @@ const Adjustments = () => {
     setSlotVisibility,
     isSingleProduct, setSingleProduct,
     orientation,
-    optionalText1, optionalText2, optionalText3, setOptionalText
+    optionalText1, optionalText2, optionalText3, setOptionalText,
+    showOptionalTextControl, setShowOptionalTextControl
   } = useStore();
 
   const [showResetConfirm, setShowResetConfirm] = React.useState(false);
@@ -203,6 +204,28 @@ const Adjustments = () => {
         <Settings className="w-6 h-6 text-blue-600" />
         Ajustes e Estilos
       </h2>
+
+      {/* Editor Settings Section */}
+      <section className="space-y-4">
+        <h3 className="text-sm font-black uppercase tracking-widest text-black dark:text-white opacity-60 flex items-center gap-2">
+          <Settings className="w-4 h-4" />
+          Configurações do Editor
+        </h3>
+        <div className="p-4 bg-zinc-50 dark:bg-zinc-800/50 rounded-xl border border-zinc-200 dark:border-zinc-700 space-y-4">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold uppercase tracking-tight opacity-80">Mostrar Texto Opcional no Editor</span>
+            <label className="relative inline-flex items-center cursor-pointer">
+              <input 
+                type="checkbox" 
+                className="sr-only peer"
+                checked={showOptionalTextControl}
+                onChange={(e) => setShowOptionalTextControl(e.target.checked)}
+              />
+              <div className="w-11 h-6 bg-zinc-200 peer-focus:outline-none rounded-full peer dark:bg-zinc-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
+            </label>
+          </div>
+        </div>
+      </section>
 
       {/* Admin: Rename Layouts */}
       {userRole === 'admin' && (

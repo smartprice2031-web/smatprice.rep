@@ -251,6 +251,8 @@ interface AppState {
   setPrinting: (isPrinting: boolean) => void;
   isSingleProduct: boolean;
   setSingleProduct: (isSingleProduct: boolean) => void;
+  showOptionalTextControl: boolean;
+  setShowOptionalTextControl: (show: boolean) => void;
 
   printQueue: { imageData: string; isLandscape: boolean }[];
   addToQueue: (imageData: string, isLandscape: boolean) => void;
@@ -989,6 +991,7 @@ export const useStore = create<AppState>()(
           optionalText2: state.optionalText2,
           optionalText3: state.optionalText3,
           isSingleProduct: state.isSingleProduct,
+          showOptionalTextControl: state.showOptionalTextControl,
           updated_at: timestamp
         };
         
@@ -1073,6 +1076,7 @@ export const useStore = create<AppState>()(
               activeLayoutIndex: layout.activeLayoutIndex !== undefined ? layout.activeLayoutIndex : currentState.activeLayoutIndex,
               layouts: loadedLayouts,
               isSingleProduct: layout.isSingleProduct !== undefined ? layout.isSingleProduct : currentState.isSingleProduct,
+              showOptionalTextControl: layout.showOptionalTextControl !== undefined ? layout.showOptionalTextControl : currentState.showOptionalTextControl,
               lastUpdateTimestamp: layout.updated_at || null
             } as any);
           }
@@ -1119,6 +1123,11 @@ export const useStore = create<AppState>()(
       isSingleProduct: false,
       setSingleProduct: (isSingleProduct) => {
         set({ isSingleProduct });
+        get().saveLayoutDebounced();
+      },
+      showOptionalTextControl: true,
+      setShowOptionalTextControl: (show) => {
+        set({ showOptionalTextControl: show });
         get().saveLayoutDebounced();
       },
 
@@ -1400,6 +1409,7 @@ export const useStore = create<AppState>()(
         announcements: state.announcements,
         seenAnnouncements: state.seenAnnouncements,
         isSingleProduct: state.isSingleProduct,
+        showOptionalTextControl: state.showOptionalTextControl,
       }),
     }
   )
