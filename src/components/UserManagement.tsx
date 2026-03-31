@@ -147,6 +147,18 @@ export default function UserManagement() {
     group.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  // Group layouts by bandeira and localidade
+  const groupedLayouts = layouts.reduce((acc, layout, index) => {
+    const bandeira = layout.bandeira || 'Sem Bandeira';
+    const localidade = layout.localidade || 'Sem Localidade';
+    
+    if (!acc[bandeira]) acc[bandeira] = {};
+    if (!acc[bandeira][localidade]) acc[bandeira][localidade] = [];
+    
+    acc[bandeira][localidade].push({ layout, index });
+    return acc;
+  }, {} as Record<string, Record<string, { layout: any; index: number }[]>>);
+
   return (
     <div className="flex flex-col h-full">
       {/* Tabs */}
@@ -274,23 +286,44 @@ export default function UserManagement() {
                       </button>
                     </div>
                   </div>
-                  <div className="flex flex-wrap gap-2 p-3 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-xl max-h-40 overflow-y-auto custom-scrollbar">
-                    {layouts.map((layout, index) => (
-                      <button
-                        key={layout.name}
-                        type="button"
-                        onClick={() => toggleLayout(index)}
-                        className={cn(
-                          "px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-tighter transition-all border",
-                          selectedLayouts.includes(index)
-                            ? "bg-blue-600 border-blue-600 text-white shadow-md shadow-blue-500/20"
-                            : "bg-zinc-100 dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 text-zinc-500 hover:border-zinc-400"
-                        )}
-                      >
-                        {layout.name}
-                      </button>
+                  <div className="space-y-4 p-4 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-xl max-h-64 overflow-y-auto custom-scrollbar">
+                    {Object.entries(groupedLayouts).map(([bandeira, localidades]) => (
+                      <div key={bandeira} className="space-y-2">
+                        <div className="flex items-center gap-2">
+                          <Flag className="w-3 h-3 text-blue-600" />
+                          <h5 className="text-[9px] font-black uppercase tracking-widest text-blue-600 bg-blue-50 dark:bg-blue-900/20 px-2 py-0.5 rounded">
+                            {bandeira}
+                          </h5>
+                        </div>
+                        <div className="pl-4 space-y-4">
+                          {Object.entries(localidades).map(([localidade, items]) => (
+                            <div key={localidade} className="space-y-1.5">
+                              <p className="text-[8px] font-bold uppercase tracking-tight text-zinc-400 ml-1">
+                                {localidade}
+                              </p>
+                              <div className="flex flex-wrap gap-1.5">
+                                {items.map(({ layout, index }) => (
+                                  <button
+                                    key={layout.name}
+                                    type="button"
+                                    onClick={() => toggleLayout(index)}
+                                    className={cn(
+                                      "px-2.5 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-tighter transition-all border",
+                                      selectedLayouts.includes(index)
+                                        ? "bg-blue-600 border-blue-600 text-white shadow-md shadow-blue-500/20"
+                                        : "bg-zinc-100 dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 text-zinc-500 hover:border-zinc-400"
+                                    )}
+                                  >
+                                    {layout.name}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
                     ))}
-                    {selectedLayouts.length === 0 && (
+                    {layouts.length === 0 && (
                       <span className="text-[10px] text-black dark:text-white opacity-40 font-bold italic py-1.5">Nenhum selecionado (o usuário não verá nenhum modelo até que você selecione)</span>
                     )}
                   </div>
@@ -419,24 +452,45 @@ export default function UserManagement() {
                               </button>
                             </div>
                           </div>
-                          <div className="flex flex-wrap gap-1.5 max-h-40 overflow-y-auto custom-scrollbar p-1">
-                            {layouts.map((layout, index) => {
-                              const isAllowed = store.allowedLayouts === undefined || store.allowedLayouts.includes(index);
-                              return (
-                                <button
-                                  key={layout.name}
-                                  onClick={() => toggleStoreLayout(store.cnpj, index)}
-                                  className={cn(
-                                    "px-2 py-1 rounded-md text-[9px] font-black uppercase tracking-tighter transition-all border",
-                                    isAllowed
-                                      ? "bg-blue-600 border-blue-600 text-white"
-                                      : "bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-700 text-zinc-400"
-                                  )}
-                                >
-                                  {layout.name}
-                                </button>
-                              );
-                            })}
+                          <div className="space-y-4 max-h-64 overflow-y-auto custom-scrollbar p-2">
+                            {Object.entries(groupedLayouts).map(([bandeira, localidades]) => (
+                              <div key={bandeira} className="space-y-2">
+                                <div className="flex items-center gap-2">
+                                  <Flag className="w-3 h-3 text-blue-600" />
+                                  <h5 className="text-[9px] font-black uppercase tracking-widest text-blue-600 bg-blue-50 dark:bg-blue-900/20 px-2 py-0.5 rounded">
+                                    {bandeira}
+                                  </h5>
+                                </div>
+                                <div className="pl-4 space-y-4">
+                                  {Object.entries(localidades).map(([localidade, items]) => (
+                                    <div key={localidade} className="space-y-1.5">
+                                      <p className="text-[8px] font-bold uppercase tracking-tight text-zinc-400 ml-1">
+                                        {localidade}
+                                      </p>
+                                      <div className="flex flex-wrap gap-1.5">
+                                        {items.map(({ layout, index }) => {
+                                          const isAllowed = store.allowedLayouts === undefined || store.allowedLayouts.includes(index);
+                                          return (
+                                            <button
+                                              key={layout.name}
+                                              onClick={() => toggleStoreLayout(store.cnpj, index)}
+                                              className={cn(
+                                                "px-2 py-1 rounded-md text-[9px] font-black uppercase tracking-tighter transition-all border",
+                                                isAllowed
+                                                  ? "bg-blue-600 border-blue-600 text-white"
+                                                  : "bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-700 text-zinc-400"
+                                              )}
+                                            >
+                                              {layout.name}
+                                            </button>
+                                          );
+                                        })}
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            ))}
                           </div>
                         </div>
                       </div>
