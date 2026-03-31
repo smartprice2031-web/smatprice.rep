@@ -246,6 +246,8 @@ interface AppState {
   setOptionalText: (slot: 1 | 2 | 3, updates: Partial<AppState['optionalText1']>) => void;
   isPrinting: boolean;
   setPrinting: (isPrinting: boolean) => void;
+  isSingleProduct: boolean;
+  setSingleProduct: (isSingleProduct: boolean) => void;
 
   printQueue: { imageData: string; isLandscape: boolean }[];
   addToQueue: (imageData: string, isLandscape: boolean) => void;
@@ -1064,6 +1066,8 @@ export const useStore = create<AppState>()(
       setSelectedId: (id) => set({ selectedId: id }),
       isPrinting: false,
       setPrinting: (isPrinting) => set({ isPrinting }),
+      isSingleProduct: false,
+      setSingleProduct: (isSingleProduct) => set({ isSingleProduct }),
 
       printQueue: [],
       addToQueue: (imageData, isLandscape) => set((state) => ({ 

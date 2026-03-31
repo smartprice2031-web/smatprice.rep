@@ -15,7 +15,8 @@ const CanvasPreview = ({ id = "placa" }: { id?: string }) => {
     selectedId, setSelectedId,
     isPrinting,
     layouts, activeLayoutIndex,
-    optionalText1, optionalText2, optionalText3, setOptionalText
+    optionalText1, optionalText2, optionalText3, setOptionalText,
+    isSingleProduct
   } = useStore();
   const stageRef = useRef<any>(null);
   const productImg1Ref = useRef<any>(null);
@@ -427,8 +428,8 @@ const CanvasPreview = ({ id = "placa" }: { id?: string }) => {
             )}
 
             {renderProduct(1)}
-            {renderProduct(2)}
-            {renderProduct(3)}
+            {!isSingleProduct && renderProduct(2)}
+            {!isSingleProduct && renderProduct(3)}
 
             {/* Optional Text for Modelo 12 and 13 */}
             {(activeLayoutIndex === 11 || activeLayoutIndex === 12) && (
@@ -465,7 +466,7 @@ const CanvasPreview = ({ id = "placa" }: { id?: string }) => {
                     />
                   </Group>
                 )}
-                {optionalText2.active && (
+                {!isSingleProduct && optionalText2.active && (
                   <Group
                     id="optional-text-2"
                     x={optionalText2.x}
@@ -497,7 +498,7 @@ const CanvasPreview = ({ id = "placa" }: { id?: string }) => {
                     />
                   </Group>
                 )}
-                {activeLayoutIndex === 12 && optionalText3.active && (
+                {!isSingleProduct && activeLayoutIndex === 12 && optionalText3.active && (
                   <Group
                     id="optional-text-3"
                     x={optionalText3.x}
@@ -530,6 +531,18 @@ const CanvasPreview = ({ id = "placa" }: { id?: string }) => {
                   </Group>
                 )}
               </>
+            )}
+
+            {/* Single Product Overlay - Blank lower half */}
+            {isSingleProduct && (
+              <Rect
+                x={0}
+                y={currentHeight / 2}
+                width={currentWidth}
+                height={currentHeight / 2}
+                fill="white"
+                listening={false}
+              />
             )}
 
             {selectedId && !isPrinting && (

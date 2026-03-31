@@ -205,22 +205,40 @@ const ProductSlot = ({
   isIdosoLayout?: boolean,
   layouts?: any[],
   activeLayoutIndex?: number
-}) => (
-  <div className="space-y-4 p-4 bg-zinc-50 dark:bg-zinc-800/30 rounded-2xl border border-zinc-200 dark:border-zinc-800">
-    <div className="flex items-center justify-between">
-      <h3 className="text-xs font-black text-blue-600 uppercase tracking-widest">
-        Produto {slot === 1 ? 'Superior' : slot === 2 ? 'Inferior' : 'Central'}
-      </h3>
-      <button 
-        onClick={handleSync}
-        disabled={isSyncing}
-        className="flex items-center gap-1.5 px-2 py-1 text-black dark:text-white opacity-60 hover:text-blue-600 transition-colors disabled:opacity-50 text-[10px] font-black uppercase tracking-tighter"
-        title="Sincronizar produtos"
-      >
-        <RefreshCw className={`w-3 h-3 ${isSyncing ? 'animate-spin' : ''}`} />
-        {isSyncing ? 'Sincronizando...' : 'Atualizar'}
-      </button>
-    </div>
+}) => {
+  const { isSingleProduct, setSingleProduct } = useStore();
+
+  return (
+    <div className="space-y-4 p-4 bg-zinc-50 dark:bg-zinc-800/30 rounded-2xl border border-zinc-200 dark:border-zinc-800">
+      <div className="flex items-center justify-between">
+        <h3 className="text-xs font-black text-blue-600 uppercase tracking-widest">
+          Produto {slot === 1 ? 'Superior' : slot === 2 ? 'Inferior' : 'Central'}
+        </h3>
+        {slot === 1 ? (
+          <div className="flex items-center gap-2 bg-blue-50 dark:bg-blue-900/20 px-2 py-1 rounded-lg border border-blue-100 dark:border-blue-800">
+            <span className="text-[9px] font-black text-blue-600 uppercase tracking-tight">Confeccionar apenas um produto</span>
+            <label className="relative inline-flex items-center cursor-pointer">
+              <input 
+                type="checkbox" 
+                className="sr-only peer"
+                checked={isSingleProduct}
+                onChange={(e) => setSingleProduct(e.target.checked)}
+              />
+              <div className="w-8 h-4 bg-zinc-200 peer-focus:outline-none rounded-full peer dark:bg-zinc-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
+            </label>
+          </div>
+        ) : (
+          <button 
+            onClick={handleSync}
+            disabled={isSyncing}
+            className="flex items-center gap-1.5 px-2 py-1 text-black dark:text-white opacity-60 hover:text-blue-600 transition-colors disabled:opacity-50 text-[10px] font-black uppercase tracking-tighter"
+            title="Sincronizar produtos"
+          >
+            <RefreshCw className={`w-3 h-3 ${isSyncing ? 'animate-spin' : ''}`} />
+            {isSyncing ? 'Sincronizando...' : 'Atualizar'}
+          </button>
+        )}
+      </div>
 
     {/* Optional Text for Modelo 12 and 13 */}
     {showOptionalText && optionalText && setOptionalText && (
@@ -395,6 +413,7 @@ const ProductSlot = ({
       )}
     </div>
   </div>
-);
+  );
+};
 
 export default ProductSelector;
