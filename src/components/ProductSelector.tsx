@@ -8,7 +8,8 @@ const ProductSelector: React.FC<{ onSelect?: (product: Product) => void }> = ({ 
     textElements1, textElements2, textElements3, 
     productImage3, setElement,
     layouts, activeLayoutIndex,
-    optionalText1, optionalText2, optionalText3, setOptionalText
+    optionalText1, optionalText2, optionalText3, setOptionalText,
+    isSingleProduct
   } = useStore();
 
   const currentLayoutName = layouts[activeLayoutIndex]?.name || '';
@@ -118,51 +119,55 @@ const ProductSelector: React.FC<{ onSelect?: (product: Product) => void }> = ({ 
         activeLayoutIndex={activeLayoutIndex}
       />
       
-      <div className="h-px bg-zinc-200 dark:bg-zinc-800" />
-
-      <ProductSlot 
-        slot={2}
-        searchTerm={searchTerm2}
-        setSearchTerm={setSearchTerm2}
-        filteredProducts={filteredProducts2}
-        currentPrice={textElements2.price.text}
-        currentName={textElements2.name.text}
-        currentDescription={textElements2.description.text}
-        setElement={setElement}
-        selectProduct={selectProduct}
-        isSyncing={isSyncing}
-        handleSync={handleSync}
-        optionalText={optionalText2}
-        setOptionalText={(updates) => setOptionalText(2, updates)}
-        showOptionalText={activeLayoutIndex === 11 || activeLayoutIndex === 12}
-        isIdosoLayout={isIdosoLayout}
-        layouts={layouts}
-        activeLayoutIndex={activeLayoutIndex}
-      />
-
-      {showThirdProduct && (
+      {!isSingleProduct && (
         <>
           <div className="h-px bg-zinc-200 dark:bg-zinc-800" />
 
           <ProductSlot 
-            slot={3}
-            searchTerm={searchTerm3}
-            setSearchTerm={setSearchTerm3}
-            filteredProducts={filteredProducts3}
-            currentPrice={textElements3.price.text}
-            currentName={textElements3.name.text}
-            currentDescription={textElements3.description.text}
+            slot={2}
+            searchTerm={searchTerm2}
+            setSearchTerm={setSearchTerm2}
+            filteredProducts={filteredProducts2}
+            currentPrice={textElements2.price.text}
+            currentName={textElements2.name.text}
+            currentDescription={textElements2.description.text}
             setElement={setElement}
             selectProduct={selectProduct}
             isSyncing={isSyncing}
             handleSync={handleSync}
-            optionalText={optionalText3}
-            setOptionalText={(updates) => setOptionalText(3, updates)}
-            showOptionalText={activeLayoutIndex === 12}
+            optionalText={optionalText2}
+            setOptionalText={(updates) => setOptionalText(2, updates)}
+            showOptionalText={activeLayoutIndex === 11 || activeLayoutIndex === 12}
             isIdosoLayout={isIdosoLayout}
             layouts={layouts}
             activeLayoutIndex={activeLayoutIndex}
           />
+
+          {showThirdProduct && (
+            <>
+              <div className="h-px bg-zinc-200 dark:bg-zinc-800" />
+
+              <ProductSlot 
+                slot={3}
+                searchTerm={searchTerm3}
+                setSearchTerm={setSearchTerm3}
+                filteredProducts={filteredProducts3}
+                currentPrice={textElements3.price.text}
+                currentName={textElements3.name.text}
+                currentDescription={textElements3.description.text}
+                setElement={setElement}
+                selectProduct={selectProduct}
+                isSyncing={isSyncing}
+                handleSync={handleSync}
+                optionalText={optionalText3}
+                setOptionalText={(updates) => setOptionalText(3, updates)}
+                showOptionalText={activeLayoutIndex === 12}
+                isIdosoLayout={isIdosoLayout}
+                layouts={layouts}
+                activeLayoutIndex={activeLayoutIndex}
+              />
+            </>
+          )}
         </>
       )}
     </div>

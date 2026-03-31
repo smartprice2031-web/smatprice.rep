@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Stage, Layer, Image as KonvaImage, Text, Transformer, Rect, Group } from 'react-konva';
-import { useStore } from '../store';
+import { useStore, isThreeProduct } from '../store';
 import useImage from 'use-image';
 
 const A4_WIDTH = 794; // 210mm at 96dpi
@@ -18,6 +18,7 @@ const CanvasPreview = ({ id = "placa" }: { id?: string }) => {
     optionalText1, optionalText2, optionalText3, setOptionalText,
     isSingleProduct
   } = useStore();
+  const activeLayout = layouts[activeLayoutIndex];
   const stageRef = useRef<any>(null);
   const productImg1Ref = useRef<any>(null);
   const productImg2Ref = useRef<any>(null);
@@ -30,6 +31,7 @@ const CanvasPreview = ({ id = "placa" }: { id?: string }) => {
   const [prodImg2] = useImage(productImage2.url || '', 'anonymous');
   const [prodImg3] = useImage(productImage3.url || '', 'anonymous');
   const [autoScale, setAutoScale] = useState(1);
+  if (!activeLayout) return null;
 
   const isLandscape = activeLayoutIndex === 10;
   const currentWidth = isLandscape ? A4_HEIGHT : A4_WIDTH;
@@ -217,14 +219,17 @@ const CanvasPreview = ({ id = "placa" }: { id?: string }) => {
   };
 
   const renderProduct = (slot: 1 | 2 | 3) => {
-    const currentLayout = layouts[activeLayoutIndex];
-    const hasThird = currentLayout?.hasThirdProduct ?? true;
-    
-    if (slot === 3 && (!productImage3.visible || !hasThird)) return null;
     const textElements = slot === 1 ? textElements1 : slot === 2 ? textElements2 : textElements3;
     const productImage = slot === 1 ? productImage1 : slot === 2 ? productImage2 : productImage3;
     const prodImg = slot === 1 ? prodImg1 : slot === 2 ? prodImg2 : prodImg3;
     const imgRef = slot === 1 ? productImg1Ref : slot === 2 ? productImg2Ref : productImg3Ref;
+
+    if (!productImage.visible) return null;
+
+    const currentLayout = layouts[activeLayoutIndex];
+    const hasThird = currentLayout?.hasThirdProduct ?? true;
+    
+    if (slot === 3 && !hasThird) return null;
 
     // Calculate aspect ratio maintained dimensions to prevent stretching
     let displayWidth = productImage.width;
@@ -295,16 +300,16 @@ const CanvasPreview = ({ id = "placa" }: { id?: string }) => {
         )}
 
         {/* Text Elements */}
-        {(Object.keys(textElements) as Array<keyof typeof textElements>).map((key) => {
-          const el = textElements[key];
+        {(Object.keys(textElements) as Array<keyof typeof textElements1>).map((key) => {
+          const el = textElements[key as keyof typeof textElements];
           if (!el.visible) return null;
           
           if (key === 'price') return renderPrice(slot, el, `${slot}-${key}`);
 
-          const isSelected = selectedId === `text-${slot}-${key}`;
+          const isSelected = selectedId === `text-${slot}-${String(key)}`;
 
           return (
-            <Group key={`${slot}-${key}`}>
+            <Group key={`${slot}-${String(key)}`}>
               {/* Visual box like Excel when selected - Hidden when printing */}
               {isSelected && !isPrinting && (
                 <Rect
@@ -318,7 +323,7 @@ const CanvasPreview = ({ id = "placa" }: { id?: string }) => {
                 />
               )}
               <Text
-                id={`text-${slot}-${key}`}
+                id={`text-${slot}-${String(key)}`}
                 text={el.text}
                 x={el.x}
                 y={el.y}
@@ -331,17 +336,17 @@ const CanvasPreview = ({ id = "placa" }: { id?: string }) => {
                 lineHeight={1.2}
                 draggable
                 wrap="word"
-                onClick={() => setSelectedId(`text-${slot}-${key}`)}
-                onTap={() => setSelectedId(`text-${slot}-${key}`)}
+                onClick={() => setSelectedId(`text-${slot}-${String(key)}`)}
+                onTap={() => setSelectedId(`text-${slot}-${String(key)}`)}
                 onDragEnd={(e) => {
-                  setElement(slot, key, { x: e.target.x(), y: e.target.y() });
+                  setElement(slot, key as any, { x: e.target.x(), y: e.target.y() });
                 }}
                 onTransformEnd={(e) => {
                   const node = e.target;
                   const scaleX = node.scaleX();
                   node.scaleX(1);
                   node.scaleY(1);
-                  setElement(slot, key, {
+                  setElement(slot, key as any, {
                     x: node.x(),
                     y: node.y(),
                     width: Math.max(5, node.width() * scaleX),
@@ -428,8 +433,8 @@ const CanvasPreview = ({ id = "placa" }: { id?: string }) => {
             )}
 
             {renderProduct(1)}
-            {!isSingleProduct && renderProduct(2)}
-            {!isSingleProduct && renderProduct(3)}
+            {renderProduct(2)}
+            {renderProduct(3)}
 
             {/* Optional Text for Modelo 12 and 13 */}
             {(activeLayoutIndex === 11 || activeLayoutIndex === 12) && (
@@ -534,7 +539,7 @@ const CanvasPreview = ({ id = "placa" }: { id?: string }) => {
             )}
 
             {/* Single Product Overlay - Blank lower half */}
-            {isSingleProduct && (
+            {isSingleProduct && !isThreeProduct(activeLayout.name, activeLayoutIndex) && (
               <Rect
                 x={0}
                 y={currentHeight / 2}

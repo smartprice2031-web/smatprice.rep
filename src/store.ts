@@ -350,7 +350,8 @@ export const THREE_PRODUCT_LAYOUTS = [
   'MODELO 17',
   'MODELO 18',
   'MODELO 19',
-  'MODELO 20'
+  'MODELO 20',
+  'PADRÃO ULTRA'
 ];
 
 export const isThreeProduct = (name: string, index?: number) => {
@@ -1346,6 +1347,7 @@ export const useStore = create<AppState>()(
         selectedEncarteModel: state.selectedEncarteModel,
         announcements: state.announcements,
         seenAnnouncements: state.seenAnnouncements,
+        isSingleProduct: state.isSingleProduct,
       }),
     }
   )

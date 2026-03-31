@@ -217,8 +217,8 @@ export default function EncarteCreator() {
         displayType: 'price',
         offsetX: 0,
         offsetY: 0,
-        width: 350,
-        height: 120,
+        width: 400,
+        height: 150,
         bgColor: '#ffffff',
         showBg: true
       };
@@ -1196,30 +1196,30 @@ export default function EncarteCreator() {
                         }}
                       >
                         <div className="flex-grow">
-                          <h4 className="text-sm font-black uppercase text-red-600 leading-tight">{extra.name}</h4>
-                          <p className="text-[10px] font-bold text-red-500 uppercase">{extra.subtitle}</p>
+                          <h4 className="text-lg font-black uppercase text-red-600 leading-tight">{extra.name}</h4>
+                          <p className="text-xs font-bold text-red-500 uppercase">{extra.subtitle}</p>
                           <div className="mt-2">
                             {extra.displayType === 'discount' ? (
-                              <div className="bg-red-600 text-white px-3 py-1 rounded-lg inline-block">
-                                <span className="text-lg font-black">{extra.discountValue || '0%'}</span>
-                                <span className="text-[8px] font-black uppercase ml-1">OFF</span>
+                              <div className="bg-red-600 text-white px-4 py-1.5 rounded-lg inline-block">
+                                <span className="text-2xl font-black">{extra.discountValue || '0%'}</span>
+                                <span className="text-[10px] font-black uppercase ml-1">OFF</span>
                               </div>
                             ) : (
                               <div className="text-red-600 font-black flex items-center gap-1">
                                 <div className="flex flex-col items-end leading-none">
-                                  <span className="text-[6px] font-black uppercase">POR</span>
-                                  <span className="text-[8px] font-black">R$</span>
+                                  <span className="text-[8px] font-black uppercase">POR</span>
+                                  <span className="text-[10px] font-black">R$</span>
                                 </div>
-                                <span className="text-xl leading-none tracking-tighter">{formatPrice(extra.price).integer}</span>
+                                <span className="text-5xl leading-none tracking-tighter">{formatPrice(extra.price).integer}</span>
                                 <div className="flex flex-col items-start justify-between h-full py-0.5">
-                                  <span className="text-xs leading-none tracking-tighter">{formatPrice(extra.price).cents}</span>
-                                  <span className="text-[6px] font-black uppercase leading-none">UNI</span>
+                                  <span className="text-2xl leading-none tracking-tighter">{formatPrice(extra.price).cents}</span>
+                                  <span className="text-[10px] font-black uppercase leading-none">UNI</span>
                                 </div>
                               </div>
                             )}
                           </div>
                         </div>
-                        <div className="w-24 h-24 flex-shrink-0">
+                        <div className="w-28 h-28 flex-shrink-0">
                           {extra.image && (
                             <img src={extra.image} className="w-full h-full object-contain" referrerPolicy="no-referrer" />
                           )}
@@ -1430,26 +1430,26 @@ export default function EncarteCreator() {
               {currentEncarte.extraProducts?.some(p => p !== null) && (
                 <div className="col-span-full grid grid-cols-2 gap-4 mb-4">
                   {currentEncarte.extraProducts.map((extra, idx) => extra && (
-                    <div key={`extra-print-${idx}`} className="bg-white/95 p-3 rounded-2xl border-2 border-red-600 shadow-sm flex items-center gap-3 relative">
+                    <div key={`extra-print-${idx}`} className="bg-white/95 p-4 rounded-3xl border-4 border-red-600 shadow-sm flex items-center gap-4 relative">
                       <div className="flex-grow">
-                        <h4 className="text-[10px] font-black uppercase text-red-600 leading-tight">{extra.name}</h4>
-                        <p className="text-[8px] font-bold text-red-500 uppercase">{extra.subtitle}</p>
+                        <h4 className="text-sm font-black uppercase text-red-600 leading-tight">{extra.name}</h4>
+                        <p className="text-[10px] font-bold text-red-500 uppercase">{extra.subtitle}</p>
                         <div className="mt-1">
                           {extra.displayType === 'discount' ? (
                             <div className="bg-red-600 text-white px-2 py-0.5 rounded-md inline-block">
-                              <span className="text-sm font-black">{extra.discountValue || '0%'}</span>
-                              <span className="text-[6px] font-black uppercase ml-0.5">OFF</span>
+                              <span className="text-lg font-black">{extra.discountValue || '0%'}</span>
+                              <span className="text-[8px] font-black uppercase ml-0.5">OFF</span>
                             </div>
                           ) : (
-                            <div className="text-red-600 font-black">
-                              <span className="text-[8px]">R$</span>
-                              <span className="text-sm leading-none">{formatPrice(extra.price).integer}</span>
-                              <span className="text-[8px] leading-none">{formatPrice(extra.price).cents}</span>
+                            <div className="text-red-600 font-black flex items-center gap-1">
+                              <span className="text-[10px]">R$</span>
+                              <span className="text-3xl leading-none">{formatPrice(extra.price).integer}</span>
+                              <span className="text-lg leading-none">{formatPrice(extra.price).cents}</span>
                             </div>
                           )}
                         </div>
                       </div>
-                      <div className="w-16 h-16 flex-shrink-0">
+                      <div className="w-20 h-20 flex-shrink-0">
                         {extra.image && (
                           <img src={extra.image} className="w-full h-full object-contain" referrerPolicy="no-referrer" crossOrigin="anonymous" />
                         )}
@@ -1557,26 +1557,26 @@ export default function EncarteCreator() {
               {currentEncarte.extraProducts?.some(p => p !== null) && (
                 <div className="col-span-full grid grid-cols-2 gap-4 mb-4">
                   {currentEncarte.extraProducts.map((extra, idx) => extra && (
-                    <div key={`extra-print-verso-${idx}`} className="bg-white/95 p-3 rounded-2xl border-2 border-red-600 shadow-sm flex items-center gap-3 relative">
+                    <div key={`extra-print-verso-${idx}`} className="bg-white/95 p-4 rounded-3xl border-4 border-red-600 shadow-sm flex items-center gap-4 relative">
                       <div className="flex-grow">
-                        <h4 className="text-[10px] font-black uppercase text-red-600 leading-tight">{extra.name}</h4>
-                        <p className="text-[8px] font-bold text-red-500 uppercase">{extra.subtitle}</p>
+                        <h4 className="text-sm font-black uppercase text-red-600 leading-tight">{extra.name}</h4>
+                        <p className="text-[10px] font-bold text-red-500 uppercase">{extra.subtitle}</p>
                         <div className="mt-1">
                           {extra.displayType === 'discount' ? (
                             <div className="bg-red-600 text-white px-2 py-0.5 rounded-md inline-block">
-                              <span className="text-sm font-black">{extra.discountValue || '0%'}</span>
-                              <span className="text-[6px] font-black uppercase ml-0.5">OFF</span>
+                              <span className="text-lg font-black">{extra.discountValue || '0%'}</span>
+                              <span className="text-[8px] font-black uppercase ml-0.5">OFF</span>
                             </div>
                           ) : (
-                            <div className="text-red-600 font-black">
-                              <span className="text-[8px]">R$</span>
-                              <span className="text-sm leading-none">{formatPrice(extra.price).integer}</span>
-                              <span className="text-[8px] leading-none">{formatPrice(extra.price).cents}</span>
+                            <div className="text-red-600 font-black flex items-center gap-1">
+                              <span className="text-[10px]">R$</span>
+                              <span className="text-3xl leading-none">{formatPrice(extra.price).integer}</span>
+                              <span className="text-lg leading-none">{formatPrice(extra.price).cents}</span>
                             </div>
                           )}
                         </div>
                       </div>
-                      <div className="w-16 h-16 flex-shrink-0">
+                      <div className="w-20 h-20 flex-shrink-0">
                         {extra.image && (
                           <img src={extra.image} className="w-full h-full object-contain" referrerPolicy="no-referrer" crossOrigin="anonymous" />
                         )}
