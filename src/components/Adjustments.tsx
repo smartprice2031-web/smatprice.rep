@@ -14,9 +14,10 @@ const Adjustments = () => {
     textElements1, textElements2, textElements3,
     productImage1, productImage2, productImage3,
     background, setElement, setProductImage, setBackground,
-    userRole, layouts, setLayoutName, setLayoutBandeira, setLayoutLocalidade, reorderLayouts, setLayoutHasThirdProduct, activeLayoutIndex,
+    userRole, layouts, setLayoutName, setLayoutBandeira, setLayoutLocalidade, reorderLayouts, setLayoutHasThirdProduct, setLayoutOrientation, activeLayoutIndex,
     setSlotVisibility,
-    isSingleProduct, setSingleProduct
+    isSingleProduct, setSingleProduct,
+    orientation
   } = useStore();
 
   const [showResetConfirm, setShowResetConfirm] = React.useState(false);
@@ -28,7 +29,7 @@ const Adjustments = () => {
 
   const handleReset = () => {
     useStore.setState((state) => ({
-      layouts: Array.from({ length: 50 }, (_, i) => {
+      layouts: Array.from({ length: 75 }, (_, i) => {
         const defaultNames: Record<number, string> = {
           0: 'QUARTA FRALDA PL',
           1: 'SABADÃO PL',
@@ -336,6 +337,23 @@ const Adjustments = () => {
                 Contain
               </button>
             </div>
+            <div className="flex gap-2 items-center">
+              <span className="text-[10px] font-bold uppercase opacity-60">Orientação:</span>
+              <div className="flex border border-zinc-200 dark:border-zinc-700 rounded-full overflow-hidden">
+                <button 
+                  onClick={() => setLayoutOrientation(activeLayoutIndex, 'portrait')}
+                  className={`px-3 py-1 text-[10px] font-bold uppercase ${orientation === 'portrait' ? 'bg-blue-600 text-white' : 'bg-white dark:bg-zinc-900 text-zinc-500'}`}
+                >
+                  Retrato
+                </button>
+                <button 
+                  onClick={() => setLayoutOrientation(activeLayoutIndex, 'landscape')}
+                  className={`px-3 py-1 text-[10px] font-bold uppercase ${orientation === 'landscape' ? 'bg-blue-600 text-white' : 'bg-white dark:bg-zinc-900 text-zinc-500'}`}
+                >
+                  Paisagem
+                </button>
+              </div>
+            </div>
             <button 
               onClick={() => setBackground({ locked: !background.locked })}
               className={`p-2 rounded ${background.locked ? 'text-blue-600' : 'text-zinc-400'}`}
@@ -352,7 +370,7 @@ const Adjustments = () => {
           <h3 className="text-sm font-black uppercase tracking-widest text-blue-600 flex items-center gap-2">
             Produto Superior
           </h3>
-          {!isThreeProduct(currentLayoutName, activeLayoutIndex) && (
+          {(!isThreeProduct(currentLayoutName, activeLayoutIndex) || currentLayoutName.toUpperCase() === 'PADRÃO ULTRA') && (
             <div className="flex items-center gap-2 bg-blue-50 dark:bg-blue-900/20 px-2 py-1 rounded-lg border border-blue-100 dark:border-blue-800">
               <span className="text-[9px] font-black text-blue-600 uppercase tracking-tight">Confeccionar apenas um produto</span>
               <label className="relative inline-flex items-center cursor-pointer">
@@ -376,7 +394,7 @@ const Adjustments = () => {
         </div>
       </section>
 
-      {(!isSingleProduct || isThreeProduct(currentLayoutName, activeLayoutIndex)) && (
+      {(!isSingleProduct || (isThreeProduct(currentLayoutName, activeLayoutIndex) && currentLayoutName.toUpperCase() !== 'PADRÃO ULTRA')) && (
         <>
           <div className="h-px bg-zinc-200 dark:bg-zinc-800" />
 

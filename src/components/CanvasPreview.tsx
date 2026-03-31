@@ -15,6 +15,7 @@ const CanvasPreview = ({ id = "placa" }: { id?: string }) => {
     selectedId, setSelectedId,
     isPrinting,
     layouts, activeLayoutIndex,
+    orientation,
     optionalText1, optionalText2, optionalText3, setOptionalText,
     isSingleProduct
   } = useStore();
@@ -33,7 +34,7 @@ const CanvasPreview = ({ id = "placa" }: { id?: string }) => {
   const [autoScale, setAutoScale] = useState(1);
   if (!activeLayout) return null;
 
-  const isLandscape = activeLayoutIndex === 10;
+  const isLandscape = orientation === 'landscape';
   const currentWidth = isLandscape ? A4_HEIGHT : A4_WIDTH;
   const currentHeight = isLandscape ? A4_WIDTH : A4_HEIGHT;
 
@@ -224,7 +225,7 @@ const CanvasPreview = ({ id = "placa" }: { id?: string }) => {
     const prodImg = slot === 1 ? prodImg1 : slot === 2 ? prodImg2 : prodImg3;
     const imgRef = slot === 1 ? productImg1Ref : slot === 2 ? productImg2Ref : productImg3Ref;
 
-    if (!productImage.visible) return null;
+    if (!productImage.visible || (slot > 1 && isSingleProduct)) return null;
 
     const currentLayout = layouts[activeLayoutIndex];
     const hasThird = currentLayout?.hasThirdProduct ?? true;
@@ -539,7 +540,7 @@ const CanvasPreview = ({ id = "placa" }: { id?: string }) => {
             )}
 
             {/* Single Product Overlay - Blank lower half */}
-            {isSingleProduct && !isThreeProduct(activeLayout.name, activeLayoutIndex) && (
+            {isSingleProduct && (!isThreeProduct(activeLayout.name, activeLayoutIndex) || activeLayout.name.toUpperCase() === 'PADRÃO ULTRA') && (
               <Rect
                 x={0}
                 y={currentHeight / 2}

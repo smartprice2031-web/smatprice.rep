@@ -67,6 +67,7 @@ export interface Layout {
     price: TextSettings;
   };
   hasThirdProduct?: boolean;
+  orientation?: 'portrait' | 'landscape';
   optionalText1?: {
     text: string;
     active: boolean;
@@ -213,7 +214,9 @@ interface AppState {
 
   activeLayoutIndex: number;
   layouts: Layout[];
+  orientation: 'portrait' | 'landscape';
   setActiveLayout: (index: number) => void;
+  setLayoutOrientation: (index: number, orientation: 'portrait' | 'landscape') => void;
   setLayoutName: (index: number, name: string) => void;
   setLayoutBandeira: (index: number, bandeira: string) => void;
   setLayoutLocalidade: (index: number, localidade: string) => void;
@@ -368,6 +371,7 @@ export const createDefaultLayout = (name: string, index?: number): Layout => {
     name,
     sortOrder: index ?? 0,
     hasThirdProduct: showThird,
+    orientation: 'portrait',
     background: {
       url: null,
       mode: 'cover',
@@ -458,6 +462,7 @@ export const useStore = create<AppState>()(
       toggleTheme: () => set((state) => ({ theme: state.theme === 'light' ? 'dark' : 'light' })),
 
       activeLayoutIndex: 0,
+      orientation: 'portrait',
       optionalText1: {
         text: '',
         active: false,
@@ -533,6 +538,31 @@ export const useStore = create<AppState>()(
         createDefaultLayout('Modelo 48', 47),
         createDefaultLayout('Modelo 49', 48),
         createDefaultLayout('Modelo 50', 49),
+        createDefaultLayout('Modelo 51', 50),
+        createDefaultLayout('Modelo 52', 51),
+        createDefaultLayout('Modelo 53', 52),
+        createDefaultLayout('Modelo 54', 53),
+        createDefaultLayout('Modelo 55', 54),
+        createDefaultLayout('Modelo 56', 55),
+        createDefaultLayout('Modelo 57', 56),
+        createDefaultLayout('Modelo 58', 57),
+        createDefaultLayout('Modelo 59', 58),
+        createDefaultLayout('Modelo 60', 59),
+        createDefaultLayout('Modelo 61', 60),
+        createDefaultLayout('Modelo 62', 61),
+        createDefaultLayout('Modelo 63', 62),
+        createDefaultLayout('Modelo 64', 63),
+        createDefaultLayout('Modelo 65', 64),
+        createDefaultLayout('Modelo 66', 65),
+        createDefaultLayout('Modelo 67', 66),
+        createDefaultLayout('Modelo 68', 67),
+        createDefaultLayout('Modelo 69', 68),
+        createDefaultLayout('Modelo 70', 69),
+        createDefaultLayout('Modelo 71', 70),
+        createDefaultLayout('Modelo 72', 71),
+        createDefaultLayout('Modelo 73', 72),
+        createDefaultLayout('Modelo 74', 73),
+        createDefaultLayout('Modelo 75', 74),
       ],
 
       background: {
@@ -602,6 +632,7 @@ export const useStore = create<AppState>()(
         const currentLayout: Layout = {
           ...state.layouts[state.activeLayoutIndex],
           name: state.layouts[state.activeLayoutIndex]?.name || `Modelo ${state.activeLayoutIndex + 1}`,
+          orientation: state.orientation,
           background: state.background,
           productImage1: state.productImage1,
           productImage2: state.productImage2,
@@ -624,6 +655,7 @@ export const useStore = create<AppState>()(
         set({
           activeLayoutIndex: index,
           layouts: newLayouts,
+          orientation: nextLayout.orientation || 'portrait',
           background: nextLayout.background ? { ...defaultNext.background, ...nextLayout.background } : defaultNext.background,
           productImage1: nextLayout.productImage1 ? { ...defaultNext.productImage1, ...nextLayout.productImage1 } : defaultNext.productImage1,
           productImage2: nextLayout.productImage2 ? { ...defaultNext.productImage2, ...nextLayout.productImage2 } : defaultNext.productImage2,
@@ -636,6 +668,18 @@ export const useStore = create<AppState>()(
           optionalText3: nextLayout.optionalText3 ? { ...defaultNext.optionalText3, ...nextLayout.optionalText3 } : defaultNext.optionalText3,
         });
         get().saveLayout();
+      },
+
+      setLayoutOrientation: (index, orientation) => {
+        set((state) => {
+          const newLayouts = [...state.layouts];
+          newLayouts[index] = { ...newLayouts[index], orientation };
+          return { 
+            layouts: newLayouts,
+            orientation: index === state.activeLayoutIndex ? orientation : state.orientation
+          };
+        });
+        get().saveLayoutDebounced();
       },
 
       setLayoutName: (index, name) => {
@@ -987,9 +1031,9 @@ export const useStore = create<AppState>()(
             // Trust the layouts from the database, but ensure they have all properties
             let rawLayouts = layout.layouts || currentState.layouts;
             
-            // Ensure we have at least 50 layouts
-            if (rawLayouts.length < 50) {
-              const missingCount = 50 - rawLayouts.length;
+            // Ensure we have at least 75 layouts
+            if (rawLayouts.length < 75) {
+              const missingCount = 75 - rawLayouts.length;
               const missing = Array.from({ length: missingCount }, (_, i) => {
                 const idx = rawLayouts.length + i;
                 return createDefaultLayout(`Modelo ${idx + 1}`, idx);
@@ -1231,9 +1275,9 @@ export const useStore = create<AppState>()(
             const currentState = get();
             let loadedLayouts = data.value.layouts || currentState.layouts;
             
-            // Ensure we have at least 50 layouts
-            if (loadedLayouts.length < 50) {
-              const missingCount = 50 - loadedLayouts.length;
+            // Ensure we have at least 75 layouts
+            if (loadedLayouts.length < 75) {
+              const missingCount = 75 - loadedLayouts.length;
               const missing = Array.from({ length: missingCount }, (_, i) => {
                 const idx = loadedLayouts.length + i;
                 return createDefaultLayout(`Modelo ${idx + 1}`, idx);
