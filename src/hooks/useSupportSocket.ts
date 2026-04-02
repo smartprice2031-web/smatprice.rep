@@ -63,19 +63,20 @@ export function useSupportSocket() {
     if (!normalizedCnpj) return null;
     
     try {
-      // Try to find existing open conversation
+      // Try to find existing open conversation - take the most recent one
       const { data: existing, error: findError } = await supabase
         .from('support_conversations')
         .select('id')
         .eq('user_id', normalizedCnpj)
         .eq('status', 'open')
-        .maybeSingle();
+        .order('updated_at', { ascending: false })
+        .limit(1);
 
-      if (findError && findError.code !== 'PGRST116') {
+      if (findError) {
         console.error('Error finding conversation:', findError);
       }
 
-      if (existing) return existing.id;
+      if (existing && existing.length > 0) return existing[0].id;
 
       // Create new one if not found
       const { data: created, error: createError } = await supabase
@@ -201,7 +202,19 @@ export function useSupportSocket() {
               fetchConversations();
             }
 
-            if (activeConversationIdRef.current && String(newMessage.conversation_id) === String(activeConversationIdRef.current)) {
+            const isForActiveConversation = activeConversationIdRef.current && String(newMessage.conversation_id) === String(activeConversationIdRef.current);
+            const normalizedSelectedCnpj = useStore.getState().selectedUserCnpj?.replace(/[^\d]/g, '');
+            const isFromSelectedUser = userRole === 'admin' && normalizedSelectedCnpj && newMessage.sender_id === normalizedSelectedCnpj;
+
+            if (isForActiveConversation || isFromSelectedUser) {
+              // If it's from the selected user but a different conversation ID, switch to it
+              if (isFromSelectedUser && !isForActiveConversation) {
+                setActiveConversationId(newMessage.conversation_id);
+                activeConversationIdRef.current = newMessage.conversation_id;
+                fetchMessages(newMessage.conversation_id);
+                return;
+              }
+
               const mappedMessage: Message = {
                 id: newMessage.id,
                 conversation_id: newMessage.conversation_id,
@@ -243,7 +256,8 @@ export function useSupportSocket() {
 
   const handleNewMessageNotification = (msg: any) => {
     const state = useStore.getState();
-    const isFromMe = msg.sender_id === (userRole === 'admin' ? 'admin' : currentUser?.cnpj?.replace(/[^\d]/g, ''));
+    const normalizedUserCnpj = currentUser?.cnpj?.replace(/[^\d]/g, '');
+    const isFromMe = msg.sender_id === (userRole === 'admin' ? 'admin' : normalizedUserCnpj);
     
     if (isFromMe) return;
 
@@ -251,7 +265,10 @@ export function useSupportSocket() {
     const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3');
     audio.play().catch(() => {});
 
-    if (!state.isSupportChatOpen || (userRole === 'admin' && msg.sender_id !== state.selectedUserCnpj?.replace(/[^\d]/g, ''))) {
+    const normalizedSelectedCnpj = state.selectedUserCnpj?.replace(/[^\d]/g, '');
+    const isSelectedUser = userRole === 'admin' && msg.sender_id === normalizedSelectedCnpj;
+
+    if (!state.isSupportChatOpen || (userRole === 'admin' && !isSelectedUser)) {
       if (userRole === 'admin') {
         setUnreadPerUser(msg.sender_id, prev => (typeof prev === 'number' ? prev + 1 : 1));
       }

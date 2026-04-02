@@ -81,17 +81,23 @@ export default function SupportChat() {
   const chatUsers = useMemo(() => {
     if (userRole !== 'admin') return [];
     
-    // Map conversations to user list
-    return conversations.map(conv => {
-      const store = allowedStores.find(s => s.cnpj?.replace(/[^\d]/g, '') === conv.user_id);
-      return {
-        cnpj: conv.user_id,
-        name: store?.bandeira || conv.user_name || 'Usuário',
-        lastMessage: 'Conversa ativa',
-        timestamp: conv.updated_at,
-        unread: unreadPerUser[conv.user_id] || 0
-      };
-    }).sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+    // Group conversations by user_id to avoid duplicates
+    const uniqueUsers: Record<string, any> = {};
+    
+    conversations.forEach(conv => {
+      if (!uniqueUsers[conv.user_id] || new Date(conv.updated_at) > new Date(uniqueUsers[conv.user_id].timestamp)) {
+        const store = allowedStores.find(s => s.cnpj?.replace(/[^\d]/g, '') === conv.user_id);
+        uniqueUsers[conv.user_id] = {
+          cnpj: conv.user_id,
+          name: store?.bandeira || conv.user_name || 'Usuário',
+          lastMessage: 'Conversa ativa',
+          timestamp: conv.updated_at,
+          unread: unreadPerUser[conv.user_id] || 0
+        };
+      }
+    });
+
+    return Object.values(uniqueUsers).sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
   }, [conversations, allowedStores, unreadPerUser, userRole]);
 
   const handleClearChat = () => {
