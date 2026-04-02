@@ -42,7 +42,7 @@ export default function App() {
     isSupportChatOpen, setSupportChatOpen, unreadSupportCount,
     activeLayoutIndex, layouts, setActiveLayout,
     currentUser, allowedStores, lastLoginTimestamp,
-    saveUsersAndFlags, loadUsersAndFlags,
+    saveUsersAndFlags, saveLayout, loadUsersAndFlags,
     announcements, seenAnnouncements, setSeenAnnouncements,
     isAnnouncementModalOpen, setAnnouncementModalOpen
   } = useStore();
@@ -182,14 +182,31 @@ export default function App() {
             if (payload.new && payload.new.value) {
               // Update store with new settings
               const newValue = payload.new.value;
+              const currentState = useStore.getState();
+              const newLayouts = newValue.layouts || currentState.layouts;
+              const activeLayout = newLayouts[currentState.activeLayoutIndex];
+
               useStore.setState({
                 allowedStores: newValue.allowedStores || [],
-                flags: newValue.flags || useStore.getState().flags,
+                flags: newValue.flags || currentState.flags,
                 userGroups: newValue.userGroups || [],
-                encartes: newValue.encartes || useStore.getState().encartes,
-                selectedEncarteModel: newValue.selectedEncarteModel || useStore.getState().selectedEncarteModel,
-                layouts: newValue.layouts || useStore.getState().layouts,
-                announcements: newValue.announcements || []
+                encartes: newValue.encartes || currentState.encartes,
+                selectedEncarteModel: newValue.selectedEncarteModel || currentState.selectedEncarteModel,
+                layouts: newLayouts,
+                announcements: newValue.announcements || [],
+                // Update current elements if they are in the new layouts to ensure real-time sync
+                ...(activeLayout ? {
+                  background: activeLayout.background || currentState.background,
+                  productImage1: activeLayout.productImage1 || currentState.productImage1,
+                  productImage2: activeLayout.productImage2 || currentState.productImage2,
+                  productImage3: activeLayout.productImage3 || currentState.productImage3,
+                  textElements1: activeLayout.textElements1 || currentState.textElements1,
+                  textElements2: activeLayout.textElements2 || currentState.textElements2,
+                  textElements3: activeLayout.textElements3 || currentState.textElements3,
+                  optionalText1: activeLayout.optionalText1 || currentState.optionalText1,
+                  optionalText2: activeLayout.optionalText2 || currentState.optionalText2,
+                  optionalText3: activeLayout.optionalText3 || currentState.optionalText3,
+                } : {})
               });
             }
           }
@@ -540,11 +557,13 @@ export default function App() {
                 {userRole === 'admin' && (
                   <button 
                     onClick={async () => {
+                      const toastId = toast.loading('Enviando modificações...');
                       try {
                         await saveUsersAndFlags();
-                        toast.success('Modificações enviadas com sucesso!');
+                        await saveLayout();
+                        toast.success('Modificações enviadas com sucesso!', { id: toastId });
                       } catch (error) {
-                        toast.error('Erro ao enviar modificações.');
+                        toast.error('Erro ao enviar modificações.', { id: toastId });
                       }
                     }}
                     className="flex items-center gap-1 px-2 py-0.5 bg-emerald-600 text-white rounded-md hover:bg-emerald-700 transition-all text-[9px] font-black uppercase tracking-tighter shadow-sm"
