@@ -203,13 +203,14 @@ export function useSupportSocket() {
             }
 
             const isForActiveConversation = activeConversationIdRef.current && String(newMessage.conversation_id) === String(activeConversationIdRef.current);
+            
+            // For admin, we also want to handle messages from the selected user even if the conversation ID changed
             const normalizedSelectedCnpj = useStore.getState().selectedUserCnpj?.replace(/[^\d]/g, '');
             const isFromSelectedUser = userRole === 'admin' && normalizedSelectedCnpj && newMessage.sender_id === normalizedSelectedCnpj;
-            const isFromAdminForUser = userRole !== 'admin' && newMessage.sender_type === 'admin';
 
-            if (isForActiveConversation || isFromSelectedUser || isFromAdminForUser) {
-              // If it's from the selected user (admin view) or from admin (user view) but a different conversation ID, switch to it
-              if ((isFromSelectedUser || isFromAdminForUser) && !isForActiveConversation) {
+            if (isForActiveConversation || isFromSelectedUser) {
+              // If it's from the selected user (admin view) but a different conversation ID, switch to it
+              if (isFromSelectedUser && !isForActiveConversation) {
                 setActiveConversationId(newMessage.conversation_id);
                 activeConversationIdRef.current = newMessage.conversation_id;
                 fetchMessages(newMessage.conversation_id);
@@ -241,8 +242,17 @@ export function useSupportSocket() {
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'support_conversations' },
-        () => {
-          if (userRole === 'admin') fetchConversations();
+        (payload: any) => {
+          if (userRole === 'admin') {
+            fetchConversations();
+          } else if (payload.new && payload.new.user_id === currentUser?.cnpj?.replace(/[^\d]/g, '')) {
+            // If a conversation for this user was updated or created
+            if (payload.new.status === 'open' && String(payload.new.id) !== String(activeConversationIdRef.current)) {
+              setActiveConversationId(payload.new.id);
+              activeConversationIdRef.current = payload.new.id;
+              fetchMessages(payload.new.id);
+            }
+          }
         }
       )
       .subscribe((status) => {
@@ -262,26 +272,45 @@ export function useSupportSocket() {
     
     if (isFromMe) return;
 
-    // Play sound
-    const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3');
-    audio.play().catch(() => {});
-
     const normalizedSelectedCnpj = state.selectedUserCnpj?.replace(/[^\d]/g, '');
-    const isSelectedUser = userRole === 'admin' && msg.sender_id === normalizedSelectedCnpj;
+    const isForMe = userRole !== 'admin' && String(msg.conversation_id) === String(activeConversationIdRef.current);
+    const isFromSelectedUser = userRole === 'admin' && msg.sender_id === normalizedSelectedCnpj;
 
-    if (!state.isSupportChatOpen || (userRole === 'admin' && !isSelectedUser)) {
-      if (userRole === 'admin') {
+    // Only notify if it's relevant to the current user
+    if (userRole === 'admin') {
+      if (!isFromSelectedUser || !state.isSupportChatOpen) {
         setUnreadPerUser(msg.sender_id, prev => (typeof prev === 'number' ? prev + 1 : 1));
+        setUnreadSupportCount(prev => (typeof prev === 'number' ? prev + 1 : 1));
+        
+        toast.info(`Nova mensagem de ${msg.sender_name}`, {
+          description: msg.message,
+          action: {
+            label: 'Ver',
+            onClick: () => {
+              state.setSelectedUserCnpj(msg.sender_id);
+              state.setSupportChatOpen(true);
+            }
+          }
+        });
       }
-      setUnreadSupportCount(prev => (typeof prev === 'number' ? prev + 1 : 1));
-      
-      toast.info(`Nova mensagem de ${msg.sender_name}`, {
-        description: msg.message,
-        action: {
-          label: 'Ver',
-          onClick: () => state.setSupportChatOpen(true)
-        }
-      });
+    } else {
+      if (isForMe && !state.isSupportChatOpen) {
+        setUnreadSupportCount(prev => (typeof prev === 'number' ? prev + 1 : 1));
+        
+        toast.info(`Nova mensagem do Suporte`, {
+          description: msg.message,
+          action: {
+            label: 'Ver',
+            onClick: () => state.setSupportChatOpen(true)
+          }
+        });
+      }
+    }
+
+    // Play sound for any relevant incoming message
+    if (isForMe || isFromSelectedUser || (userRole === 'admin' && !state.isSupportChatOpen)) {
+      const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3');
+      audio.play().catch(() => {});
     }
   };
 
