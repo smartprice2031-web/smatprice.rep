@@ -205,10 +205,11 @@ export function useSupportSocket() {
             const isForActiveConversation = activeConversationIdRef.current && String(newMessage.conversation_id) === String(activeConversationIdRef.current);
             const normalizedSelectedCnpj = useStore.getState().selectedUserCnpj?.replace(/[^\d]/g, '');
             const isFromSelectedUser = userRole === 'admin' && normalizedSelectedCnpj && newMessage.sender_id === normalizedSelectedCnpj;
+            const isFromAdminForUser = userRole !== 'admin' && newMessage.sender_type === 'admin';
 
-            if (isForActiveConversation || isFromSelectedUser) {
-              // If it's from the selected user but a different conversation ID, switch to it
-              if (isFromSelectedUser && !isForActiveConversation) {
+            if (isForActiveConversation || isFromSelectedUser || isFromAdminForUser) {
+              // If it's from the selected user (admin view) or from admin (user view) but a different conversation ID, switch to it
+              if ((isFromSelectedUser || isFromAdminForUser) && !isForActiveConversation) {
                 setActiveConversationId(newMessage.conversation_id);
                 activeConversationIdRef.current = newMessage.conversation_id;
                 fetchMessages(newMessage.conversation_id);
