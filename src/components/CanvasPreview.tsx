@@ -69,7 +69,7 @@ const CanvasPreview = ({ id = "placa" }: { id?: string }) => {
       resizeObserver.disconnect();
       clearTimeout(timer);
     };
-  }, []);
+  }, [currentWidth, currentHeight]);
 
   useEffect(() => {
     if (selectedId && trRef.current) {

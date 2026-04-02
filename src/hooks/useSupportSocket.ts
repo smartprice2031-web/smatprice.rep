@@ -194,7 +194,7 @@ export function useSupportSocket() {
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'support_messages' },
-        (payload: any) => {
+        async (payload: any) => {
           if (payload.event === 'INSERT') {
             const newMessage = payload.new;
             
@@ -208,7 +208,36 @@ export function useSupportSocket() {
             const normalizedSelectedCnpj = useStore.getState().selectedUserCnpj?.replace(/[^\d]/g, '');
             const isFromSelectedUser = userRole === 'admin' && normalizedSelectedCnpj && newMessage.sender_id === normalizedSelectedCnpj;
 
-            if (isForActiveConversation || isFromSelectedUser) {
+            // For user, if message is from admin, check if it's for them
+            let isForMe = false;
+            if (userRole !== 'admin' && newMessage.sender_type === 'admin') {
+              if (isForActiveConversation) {
+                isForMe = true;
+              } else {
+                // Verify if this conversation belongs to the user
+                try {
+                  const { data: conv } = await supabase
+                    .from('support_conversations')
+                    .select('user_id')
+                    .eq('id', newMessage.conversation_id)
+                    .single();
+                  
+                  if (conv && conv.user_id === currentUser?.cnpj?.replace(/[^\d]/g, '')) {
+                    isForMe = true;
+                    // Switch to this conversation
+                    setActiveConversationId(newMessage.conversation_id);
+                    activeConversationIdRef.current = newMessage.conversation_id;
+                    await fetchMessages(newMessage.conversation_id);
+                    handleNewMessageNotification(newMessage);
+                    return;
+                  }
+                } catch (err) {
+                  console.error('Error verifying conversation for user:', err);
+                }
+              }
+            }
+
+            if (isForActiveConversation || isFromSelectedUser || isForMe) {
               // If it's from the selected user (admin view) but a different conversation ID, switch to it
               if (isFromSelectedUser && !isForActiveConversation) {
                 setActiveConversationId(newMessage.conversation_id);

@@ -992,6 +992,7 @@ export const useStore = create<AppState>()(
           optionalText3: state.optionalText3,
           isSingleProduct: state.isSingleProduct,
           showOptionalTextControl: state.showOptionalTextControl,
+          orientation: state.orientation,
           updated_at: timestamp
         };
         
@@ -1075,6 +1076,7 @@ export const useStore = create<AppState>()(
               optionalText3: layout.optionalText3 || currentState.optionalText3 || activeLayout.optionalText3,
               activeLayoutIndex: layout.activeLayoutIndex !== undefined ? layout.activeLayoutIndex : currentState.activeLayoutIndex,
               layouts: loadedLayouts,
+              orientation: layout.orientation || activeLayout.orientation || currentState.orientation,
               isSingleProduct: layout.isSingleProduct !== undefined ? layout.isSingleProduct : currentState.isSingleProduct,
               showOptionalTextControl: layout.showOptionalTextControl !== undefined ? layout.showOptionalTextControl : currentState.showOptionalTextControl,
               lastUpdateTimestamp: layout.updated_at || null
