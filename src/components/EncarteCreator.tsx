@@ -160,6 +160,19 @@ export default function EncarteCreator() {
     productCount: 12,
     extraProducts: []
   };
+
+  // Pre-load background images
+  useEffect(() => {
+    if (currentEncarte.frontBgUrl) {
+      const img = new Image();
+      img.src = currentEncarte.frontBgUrl;
+    }
+    if (currentEncarte.backBgUrl) {
+      const img = new Image();
+      img.src = currentEncarte.backBgUrl;
+    }
+  }, [currentEncarte.frontBgUrl, currentEncarte.backBgUrl]);
+
   const currentProducts = (currentSide === 'frente' ? currentEncarte.frontProducts : currentEncarte.backProducts)?.slice(0, currentEncarte.productCount) || [];
 
   const getAdaptiveStyles = (count: number) => {
@@ -602,7 +615,13 @@ export default function EncarteCreator() {
                           <div className="flex items-center gap-3">
                             <div className="w-12 h-12 bg-white dark:bg-zinc-900 rounded-xl flex items-center justify-center border border-zinc-100 dark:border-zinc-700 flex-shrink-0">
                               {product.image ? (
-                                <img src={product.image} className="w-full h-full object-contain p-1" referrerPolicy="no-referrer" />
+                                <img 
+                                  src={product.image} 
+                                  className="w-full h-full object-contain p-1" 
+                                  referrerPolicy="no-referrer" 
+                                  loading="lazy"
+                                  decoding="async"
+                                />
                               ) : (
                                 <Package className="w-6 h-6 text-black dark:text-white opacity-40" />
                               )}
@@ -1136,6 +1155,8 @@ export default function EncarteCreator() {
                   className="w-full h-full object-cover"
                   referrerPolicy="no-referrer"
                   crossOrigin="anonymous"
+                  loading="eager"
+                  fetchPriority="high"
                 />
               </div>
             )}
@@ -1374,6 +1395,8 @@ export default function EncarteCreator() {
                                   className="max-w-full max-h-full object-contain drop-shadow-md bg-transparent" 
                                   referrerPolicy="no-referrer" 
                                   crossOrigin="anonymous"
+                                  loading="lazy"
+                                  decoding="async"
                                 />
                               ) : (
                                 <Package className="w-12 h-12 text-zinc-200 dark:text-zinc-700" />

@@ -9,6 +9,7 @@ import UserManagement from './components/UserManagement';
 import AnnouncementManager from './components/AnnouncementManager';
 import UserAnnouncementModal from './components/UserAnnouncementModal';
 import SupportChat from './components/SupportChat';
+import LayoutSelectorModal from './components/LayoutSelectorModal';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import Login from './components/Login';
 import EncarteCreator from './components/EncarteCreator';
@@ -17,7 +18,7 @@ import {
   LayoutDashboard, Package, Settings as SettingsIcon,
   ShoppingBag, Search, Database, X, ListPlus, LayoutGrid,
   ArrowLeft, LogOut, Users, MessageCircle, AlertTriangle,
-  RefreshCw, Layout, Megaphone, Flag, MapPin
+  RefreshCw, Layout, Megaphone, Flag, MapPin, Moon, Sun
 } from 'lucide-react';
 import { jsPDF } from 'jspdf';
 import { clsx, type ClassValue } from 'clsx';
@@ -44,10 +45,12 @@ export default function App() {
     currentUser, allowedStores, lastLoginTimestamp,
     saveUsersAndFlags, saveLayout, loadUsersAndFlags,
     announcements, seenAnnouncements, setSeenAnnouncements,
-    isAnnouncementModalOpen, setAnnouncementModalOpen
+    isAnnouncementModalOpen, setAnnouncementModalOpen,
+    orientation
   } = useStore();
   const [activeTab, setActiveTab] = useState<'select' | 'adjustments'>('select');
   const [pendingAnnouncements, setPendingAnnouncements] = useState<any[]>([]);
+  const [isLayoutModalOpen, setLayoutModalOpen] = useState(false);
 
   // Filter layouts based on user permissions
   const filteredLayouts = React.useMemo(() => {
@@ -91,6 +94,15 @@ export default function App() {
 
   // Initialize support socket globally for background notifications
   useSupportSocket();
+
+  // Pre-load active layout background
+  useEffect(() => {
+    const activeLayout = layouts[activeLayoutIndex];
+    if (activeLayout?.background?.url) {
+      const img = new Image();
+      img.src = activeLayout.background.url;
+    }
+  }, [activeLayoutIndex, layouts]);
 
   useEffect(() => {
     if (userRole !== 'admin' && activeTab === 'adjustments') {
@@ -319,7 +331,7 @@ export default function App() {
           toast.error('Erro ao capturar imagem.', { id: toastId });
           return;
         }
-        addToQueue(canvasData, activeLayoutIndex === 10);
+        addToQueue(canvasData, orientation === 'landscape');
         toast.success('Adicionado à fila com sucesso!', { id: toastId });
       } catch (error) {
         console.error('Erro ao adicionar à fila:', error);
@@ -353,7 +365,7 @@ export default function App() {
           </div>
         )}
 
-        {isPrinting && (
+        {isPrinting && currentView === 'editor' && (
           <div className="fixed inset-0 bg-zinc-100 dark:bg-zinc-950 z-[9999999] overflow-y-auto no-scrollbar no-print">
             <div className="sticky top-0 z-[10000] bg-white/80 dark:bg-zinc-900/80 backdrop-blur-md border-b border-zinc-200 dark:border-zinc-800 p-4 flex items-center justify-between">
               <div className="flex items-center gap-4">
@@ -534,15 +546,25 @@ export default function App() {
                 )}
               </button>
 
-              <button 
-                onClick={() => {
-                  toast.info('O app agora está configurado para usar o Supabase (PostgreSQL na nuvem). Certifique-se de criar as tabelas "products" e "settings" no seu painel do Supabase.');
-                }}
-                className="p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-full transition-colors text-zinc-400"
-                title="Info sobre Supabase"
-              >
-                <Database className="w-5 h-5" />
-              </button>
+              {userRole === 'admin' ? (
+                <button 
+                  onClick={() => {
+                    toast.info('O app agora está configurado para usar o Supabase (PostgreSQL na nuvem). Certifique-se de criar as tabelas "products" e "settings" no seu painel do Supabase.');
+                  }}
+                  className="p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-full transition-colors text-zinc-400"
+                  title="Info sobre Supabase"
+                >
+                  <Database className="w-5 h-5" />
+                </button>
+              ) : (
+                <button 
+                  onClick={toggleTheme}
+                  className="p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-full transition-all text-zinc-400 hover:text-blue-600 dark:hover:text-blue-400"
+                  title={theme === 'dark' ? "Ativar Modo Claro" : "Ativar Modo Escuro"}
+                >
+                  {theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+                </button>
+              )}
 
               <div className="flex flex-col items-center gap-1">
                 <button 
@@ -662,51 +684,61 @@ export default function App() {
 
               {/* Layout Switcher Buttons */}
               <div className="p-3 border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-800/20">
-                <div className="max-h-80 overflow-y-auto pr-1 custom-scrollbar space-y-4">
-                  {Object.entries(
-                    filteredLayouts.reduce((acc, layout) => {
-                      const key = layout.bandeira || 'Sem Bandeira';
-                      if (!acc[key]) acc[key] = {};
-                      const subKey = layout.localidade || 'Geral';
-                      if (!acc[key][subKey]) acc[key][subKey] = [];
-                      acc[key][subKey].push(layout);
-                      return acc;
-                    }, {} as Record<string, Record<string, typeof filteredLayouts>>)
-                  ).map(([bandeira, localidades]) => (
-                    <div key={bandeira} className="space-y-2">
-                      <div className="flex items-center gap-2 px-1">
-                        <Flag className="w-3 h-3 text-blue-600" />
-                        <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500">{bandeira}</span>
-                      </div>
-                      
-                      {Object.entries(localidades).map(([localidade, layouts]) => (
-                        <div key={localidade} className="pl-2 space-y-1">
-                          <div className="flex items-center gap-1 px-1">
-                            <MapPin className="w-2 h-2 text-zinc-400" />
-                            <span className="text-[8px] font-bold uppercase text-zinc-400">{localidade}</span>
-                          </div>
-                          <div className="grid grid-cols-4 gap-1.5">
-                            {layouts.map((layout) => (
-                              <button
-                                key={`${layout.name}-${layout.originalIndex}`}
-                                onClick={() => handleLayoutSelect(layout.originalIndex)}
-                                className={cn(
-                                  "py-2 px-0.5 text-[8px] font-black uppercase tracking-tighter rounded-lg border transition-all truncate",
-                                  activeLayoutIndex === layout.originalIndex
-                                    ? "bg-blue-600 border-blue-600 text-white shadow-md shadow-blue-500/20"
-                                    : "bg-white dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 text-black dark:text-white opacity-60 hover:border-zinc-400"
-                                )}
-                                title={layout.name}
-                              >
-                                {layout.name.replace('Modelo ', '')}
-                              </button>
-                            ))}
-                          </div>
+                {userRole === 'admin' ? (
+                  <div className="max-h-80 overflow-y-auto pr-1 custom-scrollbar space-y-4">
+                    {Object.entries(
+                      filteredLayouts.reduce((acc, layout) => {
+                        const key = layout.bandeira || 'Sem Bandeira';
+                        if (!acc[key]) acc[key] = {};
+                        const subKey = layout.localidade || 'Geral';
+                        if (!acc[key][subKey]) acc[key][subKey] = [];
+                        acc[key][subKey].push(layout);
+                        return acc;
+                      }, {} as Record<string, Record<string, typeof filteredLayouts>>)
+                    ).map(([bandeira, localidades]) => (
+                      <div key={bandeira} className="space-y-2">
+                        <div className="flex items-center gap-2 px-1">
+                          <Flag className="w-3 h-3 text-blue-600" />
+                          <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500">{bandeira}</span>
                         </div>
-                      ))}
-                    </div>
-                  ))}
-                </div>
+                        
+                        {Object.entries(localidades).map(([localidade, layouts]) => (
+                          <div key={localidade} className="pl-2 space-y-1">
+                            <div className="flex items-center gap-1 px-1">
+                              <MapPin className="w-2 h-2 text-zinc-400" />
+                              <span className="text-[8px] font-bold uppercase text-zinc-400">{localidade}</span>
+                            </div>
+                            <div className="grid grid-cols-4 gap-1.5">
+                              {layouts.map((layout) => (
+                                <button
+                                  key={`${layout.name}-${layout.originalIndex}`}
+                                  onClick={() => handleLayoutSelect(layout.originalIndex)}
+                                  className={cn(
+                                    "py-2 px-0.5 text-[8px] font-black uppercase tracking-tighter rounded-lg border transition-all truncate",
+                                    activeLayoutIndex === layout.originalIndex
+                                      ? "bg-blue-600 border-blue-600 text-white shadow-md shadow-blue-500/20"
+                                      : "bg-white dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 text-black dark:text-white opacity-60 hover:border-zinc-400"
+                                  )}
+                                  title={layout.name}
+                                >
+                                  {layout.name.replace('Modelo ', '')}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <button 
+                    onClick={() => setLayoutModalOpen(true)}
+                    className="w-full py-4 bg-blue-600 text-white rounded-2xl font-black uppercase tracking-tighter shadow-xl shadow-blue-500/20 hover:bg-blue-700 transition-all active:scale-95 flex items-center justify-center gap-3"
+                  >
+                    <Layout className="w-5 h-5" />
+                    Modelos Disponíveis
+                  </button>
+                )}
               </div>
 
               {/* Tab Content */}
@@ -822,6 +854,15 @@ export default function App() {
           </div>
         </div>
       )}
+
+      {/* Layout Selector Modal for Users */}
+      <LayoutSelectorModal 
+        isOpen={isLayoutModalOpen}
+        onClose={() => setLayoutModalOpen(false)}
+        layouts={filteredLayouts}
+        onSelect={handleLayoutSelect}
+        activeLayoutIndex={activeLayoutIndex}
+      />
 
       <Toaster position="top-right" richColors closeButton />
     </>

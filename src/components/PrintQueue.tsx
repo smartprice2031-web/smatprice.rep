@@ -97,7 +97,7 @@ const PrintQueue = () => {
           <div className="flex items-center gap-4">
             <button 
               onClick={() => setPrinting(false)}
-              className="p-2 hover:bg-zinc-200 dark:hover:bg-zinc-800 rounded-full transition-colors"
+              className="p-2 hover:bg-zinc-200 dark:hover:bg-zinc-800 rounded-full transition-colors text-black dark:text-white"
             >
               <ArrowLeft className="w-5 h-5" />
             </button>
@@ -151,7 +151,7 @@ const PrintQueue = () => {
           <div className="flex items-center gap-4">
             <button 
               onClick={() => setView('editor')}
-              className="p-2 hover:bg-zinc-200 dark:hover:bg-zinc-800 rounded-full transition-colors"
+              className="p-2 hover:bg-zinc-200 dark:hover:bg-zinc-800 rounded-full transition-colors text-black dark:text-white"
             >
               <ArrowLeft className="w-6 h-6" />
             </button>

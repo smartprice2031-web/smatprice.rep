@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useStore } from '../store';
-import { ShoppingBag, Building2, Flag, User, Lock, ArrowRight } from 'lucide-react';
+import { ShoppingBag, Building2, Flag, User, Lock, ArrowRight, History } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
@@ -17,6 +17,15 @@ export default function Login() {
     password: ''
   });
   const [error, setError] = useState('');
+  const [lastCnpj, setLastCnpj] = useState<string | null>(null);
+  const [showSuggestion, setShowSuggestion] = useState(false);
+
+  useEffect(() => {
+    const savedCnpj = localStorage.getItem('smartprice_last_cnpj');
+    if (savedCnpj) {
+      setLastCnpj(savedCnpj);
+    }
+  }, []);
 
   const isAdmin = formData.username.toLowerCase() === 'adm';
 
@@ -43,6 +52,9 @@ export default function Login() {
         const isAllowed = allowedStores.some(store => store.cnpj?.replace(/[^\d]/g, '') === normalizedInputCnpj);
         
         if (isAllowed) {
+          // Save last used CNPJ
+          localStorage.setItem('smartprice_last_cnpj', formData.cnpj);
+          
           login('user', {
             username: formData.username,
             cnpj: formData.cnpj,
@@ -86,7 +98,27 @@ export default function Login() {
                       className="w-full bg-zinc-800/50 border border-zinc-700 rounded-2xl py-4 pl-12 pr-4 text-sm text-white placeholder:text-zinc-500 focus:ring-2 focus:ring-blue-500 outline-none transition-all"
                       value={formData.cnpj}
                       onChange={(e) => setFormData({ ...formData, cnpj: e.target.value })}
+                      onFocus={() => lastCnpj && setShowSuggestion(true)}
+                      onBlur={() => setTimeout(() => setShowSuggestion(false), 200)}
                     />
+                    {showSuggestion && lastCnpj && (
+                      <div className="absolute top-full left-0 right-0 mt-2 bg-zinc-800 border border-zinc-700 rounded-xl shadow-xl z-50 overflow-hidden animate-in fade-in slide-in-from-top-1 duration-200">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setFormData({ ...formData, cnpj: lastCnpj });
+                            setShowSuggestion(false);
+                          }}
+                          className="w-full flex items-center gap-3 px-4 py-3 hover:bg-zinc-700 transition-colors text-left"
+                        >
+                          <History className="w-4 h-4 text-blue-500" />
+                          <div className="flex flex-col">
+                            <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Último usado</span>
+                            <span className="text-sm font-bold text-white">{lastCnpj}</span>
+                          </div>
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </div>
 

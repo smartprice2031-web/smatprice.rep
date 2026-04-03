@@ -76,7 +76,13 @@ const ProductSelector: React.FC<{ onSelect?: (product: Product) => void }> = ({ 
             >
               <div className="w-12 h-12 rounded-xl bg-zinc-100 dark:bg-zinc-800 overflow-hidden flex-shrink-0">
                 {product.image ? (
-                  <img src={product.image} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                  <img 
+                    src={product.image} 
+                    className="w-full h-full object-cover" 
+                    referrerPolicy="no-referrer" 
+                    loading="lazy"
+                    decoding="async"
+                  />
                 ) : (
                   <Package className="w-full h-full p-2 text-black dark:text-white opacity-40" />
                 )}
@@ -419,7 +425,13 @@ const ProductSlot = ({
             >
               <div className="w-8 h-8 rounded-lg bg-zinc-100 dark:bg-zinc-800 overflow-hidden flex-shrink-0">
                 {product.image ? (
-                  <img src={product.image} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                  <img 
+                    src={product.image} 
+                    className="w-full h-full object-cover" 
+                    referrerPolicy="no-referrer" 
+                    loading="lazy"
+                    decoding="async"
+                  />
                 ) : (
                   <Package className="w-full h-full p-1.5 text-black dark:text-white opacity-40" />
                 )}
