@@ -546,7 +546,15 @@ export default function App() {
                 )}
               </button>
 
-              {userRole === 'admin' ? (
+              <button 
+                onClick={toggleTheme}
+                className="p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-full transition-all text-zinc-400 hover:text-blue-600 dark:hover:text-blue-400"
+                title={theme === 'dark' ? "Ativar Modo Claro" : "Ativar Modo Escuro"}
+              >
+                {theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+              </button>
+
+              {userRole === 'admin' && (
                 <button 
                   onClick={() => {
                     toast.info('O app agora está configurado para usar o Supabase (PostgreSQL na nuvem). Certifique-se de criar as tabelas "products" e "settings" no seu painel do Supabase.');
@@ -555,14 +563,6 @@ export default function App() {
                   title="Info sobre Supabase"
                 >
                   <Database className="w-5 h-5" />
-                </button>
-              ) : (
-                <button 
-                  onClick={toggleTheme}
-                  className="p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-full transition-all text-zinc-400 hover:text-blue-600 dark:hover:text-blue-400"
-                  title={theme === 'dark' ? "Ativar Modo Claro" : "Ativar Modo Escuro"}
-                >
-                  {theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
                 </button>
               )}
 

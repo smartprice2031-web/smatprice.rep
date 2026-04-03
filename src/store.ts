@@ -1371,12 +1371,18 @@ export const useStore = create<AppState>()(
         get().saveUsersAndFlagsDebounced();
       },
 
-      login: (role, user) => set({ 
-        isAuthenticated: true, 
-        userRole: role, 
-        currentUser: user,
-        lastLoginTimestamp: Date.now() 
-      }),
+      login: async (role, user) => {
+        set({ 
+          isAuthenticated: true, 
+          userRole: role, 
+          currentUser: user,
+          lastLoginTimestamp: Date.now() 
+        });
+        // Automatically load latest data on login
+        await get().loadUsersAndFlags();
+        await get().loadLayout();
+        await get().fetchProducts();
+      },
       logout: () => set({ 
         isAuthenticated: false, 
         userRole: null, 
