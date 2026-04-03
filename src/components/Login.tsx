@@ -82,15 +82,8 @@ export default function Login() {
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
-        {/* Logo and Theme Toggle */}
+        {/* Logo */}
         <div className="flex flex-col items-center mb-8 relative">
-          <button 
-            onClick={toggleTheme}
-            className="absolute -top-2 -right-2 p-2 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-lg text-zinc-500 hover:text-blue-600 dark:hover:text-blue-400 transition-all active:scale-95"
-            title={theme === 'dark' ? "Ativar Modo Claro" : "Ativar Modo Escuro"}
-          >
-            {theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
-          </button>
           <div className="w-16 h-16 bg-blue-600 rounded-2xl flex items-center justify-center text-white shadow-xl shadow-blue-500/20 mb-4">
             <ShoppingBag className="w-10 h-10" />
           </div>
@@ -122,7 +115,8 @@ export default function Login() {
                       <div className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl shadow-xl z-50 overflow-hidden animate-in fade-in slide-in-from-top-1 duration-200">
                         <button
                           type="button"
-                          onClick={() => {
+                          onMouseDown={(e) => {
+                            e.preventDefault(); // Prevent input blur before click
                             setFormData({ ...formData, cnpj: lastCnpj });
                             setShowSuggestion(false);
                           }}
