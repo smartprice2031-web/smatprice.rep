@@ -27,11 +27,85 @@ export function useSupportSocket() {
   } = useStore();
 
   const activeConversationIdRef = useRef<string | null>(null);
+  const processedMessageIds = useRef<Set<string>>(new Set());
+  const lastPollTimeRef = useRef<string>(new Date().toISOString());
 
   // Keep ref in sync
   useEffect(() => {
     activeConversationIdRef.current = activeConversationId;
   }, [activeConversationId]);
+
+  const handleNewMessageNotification = (msg: any) => {
+    if (processedMessageIds.current.has(msg.id)) return;
+    processedMessageIds.current.add(msg.id);
+
+    const state = useStore.getState();
+    const normalizedUserCnpj = currentUser?.cnpj?.replace(/[^\d]/g, '');
+    const isFromMe = msg.sender_id === (userRole === 'admin' ? 'admin' : normalizedUserCnpj);
+    
+    if (isFromMe) return;
+
+    const normalizedSelectedCnpj = state.selectedUserCnpj?.replace(/[^\d]/g, '');
+    const isForActiveConversation = activeConversationIdRef.current && String(msg.conversation_id) === String(activeConversationIdRef.current);
+    const isFromSelectedUser = userRole === 'admin' && msg.sender_id === normalizedSelectedCnpj;
+
+    // Only notify if it's relevant to the current user
+    if (userRole === 'admin') {
+      // If it's from a user and either chat is closed or it's not the selected user
+      if (!isFromSelectedUser || !state.isSupportChatOpen) {
+        setUnreadPerUser(msg.sender_id, prev => (typeof prev === 'number' ? prev + 1 : 1));
+        setUnreadSupportCount(prev => (typeof prev === 'number' ? prev + 1 : 1));
+        
+        toast.info(`Nova mensagem de ${msg.sender_name}`, {
+          description: msg.message,
+          action: {
+            label: 'Ver',
+            onClick: () => {
+              useStore.getState().setSelectedUserCnpj(msg.sender_id);
+              useStore.getState().setSupportChatOpen(true);
+            }
+          }
+        });
+
+        // Browser notification
+        if ("Notification" in window && Notification.permission === "granted") {
+          new Notification(`SmartPrice: Nova mensagem de ${msg.sender_name}`, {
+            body: msg.message,
+            icon: 'https://cdn-icons-png.flaticon.com/512/1041/1041916.png'
+          });
+        }
+      }
+    } else {
+      // For user, if message is from admin and chat is closed
+      if (msg.sender_type === 'admin' && !state.isSupportChatOpen) {
+        setUnreadSupportCount(prev => (typeof prev === 'number' ? prev + 1 : 1));
+        
+        toast.success(`Nova mensagem do Suporte`, {
+          description: msg.message,
+          duration: 5000,
+          action: {
+            label: 'Ver Agora',
+            onClick: () => useStore.getState().setSupportChatOpen(true)
+          }
+        });
+
+        // Browser notification
+        if ("Notification" in window && Notification.permission === "granted") {
+          new Notification(`SmartPrice: Nova mensagem do Suporte`, {
+            body: msg.message,
+            icon: 'https://cdn-icons-png.flaticon.com/512/1041/1041916.png'
+          });
+        }
+      }
+    }
+
+    // Play sound for any relevant incoming message
+    const isRelevant = (userRole === 'admin' && msg.sender_type === 'user') || (userRole === 'user' && msg.sender_type === 'admin');
+    if (isRelevant && (!state.isSupportChatOpen || (userRole === 'admin' && !isFromSelectedUser))) {
+      const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3');
+      audio.play().catch(() => {});
+    }
+  };
 
   const fetchConversations = async () => {
     if (!isSupabaseConfigured || userRole !== 'admin') return;
@@ -176,6 +250,42 @@ export function useSupportSocket() {
       // Refresh conversations for admin
       if (userRole === 'admin') {
         await fetchConversations();
+        
+        // Admin: Poll for ANY new messages from users across all conversations
+        try {
+          const { data: newMsgs } = await supabase
+            .from('support_messages')
+            .select('*')
+            .eq('sender_type', 'user')
+            .gt('created_at', lastPollTimeRef.current)
+            .order('created_at', { ascending: true });
+          
+          if (newMsgs && newMsgs.length > 0) {
+            newMsgs.forEach(msg => handleNewMessageNotification(msg));
+            lastPollTimeRef.current = newMsgs[newMsgs.length - 1].created_at;
+          }
+        } catch (err) {
+          console.error('Error polling for new messages (admin):', err);
+        }
+      } else {
+        // User: Poll for ANY new messages from admin for this user
+        try {
+          const userCnpj = currentUser?.cnpj?.replace(/[^\d]/g, '');
+          const { data: newMsgs } = await supabase
+            .from('support_messages')
+            .select('*, support_conversations!inner(user_id)')
+            .eq('sender_type', 'admin')
+            .eq('support_conversations.user_id', userCnpj)
+            .gt('created_at', lastPollTimeRef.current)
+            .order('created_at', { ascending: true });
+
+          if (newMsgs && newMsgs.length > 0) {
+            newMsgs.forEach(msg => handleNewMessageNotification(msg));
+            lastPollTimeRef.current = newMsgs[newMsgs.length - 1].created_at;
+          }
+        } catch (err) {
+          console.error('Error polling for new messages (user):', err);
+        }
       }
 
       // Refresh messages for active conversation
@@ -336,72 +446,6 @@ export function useSupportSocket() {
       supabase.removeChannel(channel);
     };
   }, [currentUser?.cnpj, userRole, selectedUserCnpj]); // Re-init when user or selection changes
-
-  const handleNewMessageNotification = (msg: any) => {
-    const state = useStore.getState();
-    const normalizedUserCnpj = currentUser?.cnpj?.replace(/[^\d]/g, '');
-    const isFromMe = msg.sender_id === (userRole === 'admin' ? 'admin' : normalizedUserCnpj);
-    
-    if (isFromMe) return;
-
-    const normalizedSelectedCnpj = state.selectedUserCnpj?.replace(/[^\d]/g, '');
-    const isForMe = userRole !== 'admin' && String(msg.conversation_id) === String(activeConversationIdRef.current);
-    const isFromSelectedUser = userRole === 'admin' && msg.sender_id === normalizedSelectedCnpj;
-
-    // Only notify if it's relevant to the current user
-    if (userRole === 'admin') {
-      if (!isFromSelectedUser || !state.isSupportChatOpen) {
-        setUnreadPerUser(msg.sender_id, prev => (typeof prev === 'number' ? prev + 1 : 1));
-        setUnreadSupportCount(prev => (typeof prev === 'number' ? prev + 1 : 1));
-        
-        toast.info(`Nova mensagem de ${msg.sender_name}`, {
-          description: msg.message,
-          action: {
-            label: 'Ver',
-            onClick: () => {
-              state.setSelectedUserCnpj(msg.sender_id);
-              state.setSupportChatOpen(true);
-            }
-          }
-        });
-
-        // Browser notification
-        if ("Notification" in window && Notification.permission === "granted") {
-          new Notification(`SmartPrice: Nova mensagem de ${msg.sender_name}`, {
-            body: msg.message,
-            icon: 'https://cdn-icons-png.flaticon.com/512/1041/1041916.png'
-          });
-        }
-      }
-    } else {
-      if (isForMe && !state.isSupportChatOpen) {
-        setUnreadSupportCount(prev => (typeof prev === 'number' ? prev + 1 : 1));
-        
-        toast.success(`Nova mensagem do Suporte`, {
-          description: msg.message,
-          duration: 5000,
-          action: {
-            label: 'Ver Agora',
-            onClick: () => state.setSupportChatOpen(true)
-          }
-        });
-
-        // Browser notification
-        if ("Notification" in window && Notification.permission === "granted") {
-          new Notification(`SmartPrice: Nova mensagem do Suporte`, {
-            body: msg.message,
-            icon: 'https://cdn-icons-png.flaticon.com/512/1041/1041916.png'
-          });
-        }
-      }
-    }
-
-    // Play sound for any relevant incoming message
-    if (isForMe || isFromSelectedUser || (userRole === 'admin' && !state.isSupportChatOpen)) {
-      const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3');
-      audio.play().catch(() => {});
-    }
-  };
 
   const sendMessage = async (text: string, toCnpj?: string) => {
     if (!isSupabaseConfigured || !currentUser || !activeConversationId) {
