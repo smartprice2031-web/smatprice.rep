@@ -418,17 +418,17 @@ export default function App() {
 
         {/* Header */}
         {!isPrinting && (
-          <header className="h-16 border-b border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 flex items-center justify-between px-6 sticky top-0 z-40 no-print">
+          <header className="h-14 border-b border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 flex items-center justify-between px-3 sticky top-0 z-40 no-print">
             <div className="flex items-center gap-2">
-              <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-blue-500/20">
-                <ShoppingBag className="w-6 h-6" />
+              <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white shadow-lg shadow-blue-500/20">
+                <ShoppingBag className="w-5 h-5" />
               </div>
-              <h1 className="text-xl font-black tracking-tighter">
+              <h1 className="text-lg font-black tracking-tighter">
                 SMART<span className="text-blue-600">PRICE</span>
               </h1>
               
               {/* User Info Badge */}
-              <div className="hidden lg:flex flex-col items-start ml-4 pl-4 border-l border-zinc-200 dark:border-zinc-800">
+              <div className="hidden lg:flex flex-col items-start ml-2 pl-2 border-l border-zinc-200 dark:border-zinc-800">
                 <span className="text-[9px] font-black uppercase tracking-widest text-black dark:text-white opacity-40 leading-none mb-1">Acesso Identificado</span>
                 <div className="flex items-center gap-2">
                   <div className="flex flex-col">
@@ -442,26 +442,26 @@ export default function App() {
               </div>
             </div>
 
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
               <div className="flex items-center gap-2 bg-zinc-100 dark:bg-zinc-800 p-1 rounded-lg">
                 <button 
                   type="button"
                   onClick={handlePrint}
-                  className="flex items-center gap-2 px-3 py-1.5 hover:bg-white dark:hover:bg-zinc-700 rounded-md transition-all text-sm font-bold"
+                  className="flex items-center gap-1 px-2 py-1 hover:bg-white dark:hover:bg-zinc-700 rounded-md transition-all text-[10px] font-bold"
                 >
                   <Printer className="w-4 h-4" />
                   Imprimir
                 </button>
                 <button 
                   onClick={handleDownloadPDF}
-                  className="flex items-center gap-2 px-3 py-1.5 bg-blue-600 text-white rounded-md shadow-md shadow-blue-500/20 hover:bg-blue-700 transition-all text-sm font-bold"
+                  className="flex items-center gap-1 px-2 py-1 bg-blue-600 text-white rounded-md shadow-md shadow-blue-500/20 hover:bg-blue-700 transition-all text-[10px] font-bold"
                 >
                   <FileDown className="w-4 h-4" />
                   PDF
                 </button>
                 <button 
                   onClick={handleAddToQueue}
-                  className="flex items-center gap-2 px-3 py-1.5 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 rounded-md shadow-md hover:scale-105 transition-all text-sm font-bold"
+                  className="flex items-center gap-1 px-2 py-1 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 rounded-md shadow-md hover:scale-105 transition-all text-[10px] font-bold"
                   title="Adicionar à Fila Silenciosamente"
                 >
                   <ListPlus className="w-4 h-4" />
@@ -469,7 +469,7 @@ export default function App() {
                 </button>
                 <button 
                   onClick={() => setView('queue')}
-                  className="flex items-center gap-2 px-3 py-1.5 bg-zinc-200 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 rounded-md shadow-md hover:bg-zinc-300 dark:hover:bg-zinc-700 transition-all text-sm font-bold"
+                  className="flex items-center gap-1 px-2 py-1 bg-zinc-200 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 rounded-md shadow-md hover:bg-zinc-300 dark:hover:bg-zinc-700 transition-all text-[10px] font-bold"
                 >
                   <LayoutGrid className="w-4 h-4" />
                   Ir para a Fila
@@ -486,7 +486,7 @@ export default function App() {
                 <button 
                   onClick={() => setView('encarte')}
                   className={cn(
-                    "flex items-center gap-2 px-4 py-2 rounded-xl transition-all text-xs font-black uppercase tracking-tighter shadow-lg hover:scale-105 active:scale-95",
+                    "flex items-center gap-1 px-2 py-1.5 rounded-xl transition-all text-[10px] font-black uppercase tracking-tighter shadow-lg hover:scale-105 active:scale-95",
                     (currentView as string) === 'encarte'
                       ? "bg-emerald-600 text-white"
                       : "bg-white dark:bg-zinc-800 text-emerald-600 border border-emerald-600/20"
@@ -502,7 +502,7 @@ export default function App() {
               {userRole === 'admin' && (
                 <button 
                   onClick={() => setProductModalOpen(true)}
-                  className="flex items-center gap-2 px-4 py-2 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 rounded-xl transition-all text-xs font-black uppercase tracking-tighter shadow-lg hover:scale-105 active:scale-95"
+                  className="flex items-center gap-1 px-2 py-1.5 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 rounded-xl transition-all text-[10px] font-black uppercase tracking-tighter shadow-lg hover:scale-105 active:scale-95"
                 >
                   <Database className="w-4 h-4" />
                   Gerenciador de Produtos
@@ -512,17 +512,17 @@ export default function App() {
               {userRole === 'admin' && (
                 <button 
                   onClick={() => setAnnouncementModalOpen(true)}
-                  className="flex items-center justify-center w-10 h-10 bg-amber-500 text-white rounded-xl transition-all shadow-lg hover:bg-amber-600 hover:scale-105 active:scale-95"
+                  className="flex items-center justify-center w-8 h-8 bg-amber-500 text-white rounded-xl transition-all shadow-lg hover:bg-amber-600 hover:scale-105 active:scale-95"
                   title="Comunicados"
                 >
-                  <Megaphone className="w-5 h-5" />
+                  <Megaphone className="w-4 h-4" />
                 </button>
               )}
 
               {userRole === 'admin' && (
                 <button 
                   onClick={() => setUserModalOpen(true)}
-                  className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl transition-all text-xs font-black uppercase tracking-tighter shadow-lg hover:bg-blue-700 hover:scale-105 active:scale-95"
+                  className="flex items-center gap-1 px-2 py-1.5 bg-blue-600 text-white rounded-xl transition-all text-[10px] font-black uppercase tracking-tighter shadow-lg hover:bg-blue-700 hover:scale-105 active:scale-95"
                 >
                   <Users className="w-4 h-4" />
                   Gerenciar Usuários
@@ -537,7 +537,7 @@ export default function App() {
                   }
                 }}
                 className={cn(
-                  "relative flex items-center gap-2 px-4 py-2 rounded-xl transition-all text-xs font-black uppercase tracking-tighter shadow-lg hover:scale-105 active:scale-95",
+                  "relative flex items-center gap-1 px-2 py-1.5 rounded-xl transition-all text-[10px] font-black uppercase tracking-tighter shadow-lg hover:scale-105 active:scale-95",
                   userRole === 'admin' 
                     ? "bg-zinc-800 dark:bg-zinc-100 text-white dark:text-zinc-900" 
                     : "bg-blue-600 text-white"
@@ -576,10 +576,10 @@ export default function App() {
               <div className="flex flex-col items-center gap-1">
                 <button 
                   onClick={() => window.location.reload()}
-                  className="flex items-center gap-2 px-3 py-1.5 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-all text-zinc-600 dark:text-zinc-400 text-xs font-black uppercase tracking-tighter"
+                  className="flex items-center gap-1 px-2 py-1 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-all text-zinc-600 dark:text-zinc-400 text-[10px] font-black uppercase tracking-tighter"
                   title="Atualizar Página (F5)"
                 >
-                  <RefreshCw className="w-4 h-4" />
+                  <RefreshCw className="w-3 h-3" />
                   Atualizar
                 </button>
                 
@@ -608,7 +608,7 @@ export default function App() {
 
               <button 
                 onClick={logout}
-                className="flex items-center gap-2 px-3 py-1.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/10 rounded-lg transition-all text-xs font-black uppercase tracking-tighter"
+                className="flex items-center gap-1 px-2 py-1 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/10 rounded-lg transition-all text-[10px] font-black uppercase tracking-tighter"
                 title="Sair do Sistema"
               >
                 <LogOut className="w-4 h-4" />
