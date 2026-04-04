@@ -50,6 +50,7 @@ export function useSupportSocket() {
     const isForActiveConversation = activeConversationIdRef.current && String(msg.conversation_id) === String(activeConversationIdRef.current);
     
     if (state.isSupportChatOpen && isForActiveConversation) {
+      // Mark as read immediately when a message for the active conversation arrives
       markMessagesAsRead(msg.conversation_id);
     }
 
@@ -427,6 +428,7 @@ export function useSupportSocket() {
             handleNewMessageNotification(newMessage);
           } else if (payload.event === 'UPDATE') {
             const updatedMessage = payload.new;
+            console.log('Message updated:', updatedMessage.id, 'is_read:', updatedMessage.is_read);
             setMessages(prev => prev.map(m => 
               m.id === updatedMessage.id 
                 ? { ...m, read: updatedMessage.is_read || false } 
@@ -469,6 +471,14 @@ export function useSupportSocket() {
     try {
       const senderTypeToMark = userRole === 'admin' ? 'user' : 'admin';
       
+      // First check if there are actually unread messages to avoid unnecessary updates
+      const { data: unreadCount } = await supabase
+        .from('support_messages')
+        .select('id', { count: 'exact', head: true })
+        .eq('conversation_id', conversationId)
+        .eq('sender_type', senderTypeToMark)
+        .eq('is_read', false);
+
       const { error } = await supabase
         .from('support_messages')
         .update({ is_read: true })
@@ -477,9 +487,9 @@ export function useSupportSocket() {
         .eq('is_read', false);
 
       if (error) {
-        // Silent fail for marking read
+        console.error('Error marking messages as read:', error);
       } else {
-        // Update local state
+        // Update local state immediately for better UX
         setMessages(prev => prev.map(m => 
           m.conversation_id === conversationId && m.sender_type === senderTypeToMark 
             ? { ...m, read: true } 
@@ -497,7 +507,7 @@ export function useSupportSocket() {
         }
       }
     } catch (err) {
-      // Silent fail
+      console.error('Exception in markMessagesAsRead:', err);
     }
   };
 
