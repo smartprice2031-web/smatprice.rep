@@ -547,7 +547,7 @@ export default function App() {
                 <MessageCircle className="w-4 h-4" />
                 {userRole === 'admin' ? "Central de Suporte" : "Suporte"}
                 {unreadSupportCount > 0 && (
-                  <span className="absolute -top-2 -right-2 bg-red-600 text-white text-[11px] font-black w-6 h-6 rounded-full flex items-center justify-center animate-bounce shadow-lg border-2 border-white dark:border-zinc-900 ring-4 ring-red-500/20">
+                  <span className="absolute -top-2 -right-2 bg-red-600 text-white text-[10px] font-black px-1.5 min-w-[22px] h-[22px] rounded-full flex items-center justify-center animate-bounce shadow-lg border-2 border-white dark:border-zinc-900 ring-4 ring-red-500/20">
                     {unreadSupportCount}
                   </span>
                 )}
