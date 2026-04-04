@@ -474,7 +474,7 @@ export default function App() {
                   <LayoutGrid className="w-4 h-4" />
                   Ir para a Fila
                   {printQueue.length > 0 && (
-                    <span className="bg-red-500 text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center">
+                    <span className="bg-red-600 text-white text-[10px] font-black w-5 h-5 rounded-full flex items-center justify-center shadow-sm ml-1">
                       {printQueue.length}
                     </span>
                   )}
@@ -547,7 +547,7 @@ export default function App() {
                 <MessageCircle className="w-4 h-4" />
                 {userRole === 'admin' ? "Central de Suporte" : "Suporte"}
                 {unreadSupportCount > 0 && (
-                  <span className="absolute -top-2 -right-2 bg-red-600 text-white text-[10px] font-black px-1.5 min-w-[22px] h-[22px] rounded-full flex items-center justify-center animate-bounce shadow-lg border-2 border-white dark:border-zinc-900 ring-4 ring-red-500/20">
+                  <span className="absolute -top-2 -right-2 bg-red-600 text-white text-[10px] font-black px-1.5 min-w-[22px] h-[22px] rounded-full flex items-center justify-center animate-bounce shadow-lg border-2 border-white dark:border-zinc-900 ring-4 ring-red-600/20">
                     {unreadSupportCount}
                   </span>
                 )}

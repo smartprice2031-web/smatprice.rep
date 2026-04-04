@@ -201,7 +201,7 @@ export default function SupportChat() {
                       <p className="text-[9px] text-black dark:text-white truncate">{user.cnpj}</p>
                     </div>
                     {unreadPerUser[user.cnpj?.replace(/[^\d]/g, '') || ''] > 0 && (
-                      <div className="bg-red-600 text-white text-[9px] font-black px-1.5 min-w-[18px] h-[18px] rounded-full flex items-center justify-center flex-shrink-0 shadow-sm ring-2 ring-red-500/10">
+                      <div className="bg-red-600 text-white text-[10px] font-black px-1.5 min-w-[20px] h-[20px] rounded-full flex items-center justify-center flex-shrink-0 shadow-md ring-2 ring-red-600/20">
                         {unreadPerUser[user.cnpj?.replace(/[^\d]/g, '') || '']}
                       </div>
                     )}
