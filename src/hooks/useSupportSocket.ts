@@ -244,7 +244,8 @@ export function useSupportSocket() {
   useEffect(() => {
     if (!isSupabaseConfigured || !currentUser) return;
 
-    const pollInterval = isSupportChatOpen ? 1000 : 60000;
+    // Faster polling: 500ms when open, 3s when closed
+    const pollInterval = isSupportChatOpen ? 500 : 3000;
     
     const interval = setInterval(async () => {
       // Refresh conversations for admin
@@ -265,7 +266,7 @@ export function useSupportSocket() {
             lastPollTimeRef.current = newMsgs[newMsgs.length - 1].created_at;
           }
         } catch (err) {
-          console.error('Error polling for new messages (admin):', err);
+          // Silent fail for polling
         }
       } else {
         // User: Poll for ANY new messages from admin for this user
@@ -284,7 +285,7 @@ export function useSupportSocket() {
             lastPollTimeRef.current = newMsgs[newMsgs.length - 1].created_at;
           }
         } catch (err) {
-          console.error('Error polling for new messages (user):', err);
+          // Silent fail for polling
         }
       }
 
