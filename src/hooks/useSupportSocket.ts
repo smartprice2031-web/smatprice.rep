@@ -110,7 +110,7 @@ export function useSupportSocket() {
     }
   };
 
-  const fetchMessages = async (conversationId: string) => {
+  const fetchMessages = async (conversationId: string, silent = false) => {
     if (!isSupabaseConfigured || !conversationId) return;
     
     try {
@@ -121,7 +121,7 @@ export function useSupportSocket() {
         .order('created_at', { ascending: true });
 
       if (error) {
-        if (error.code === '42P01') {
+        if (error.code === '42P01' && !silent) {
           toast.error('Tabela support_messages não encontrada.');
         }
         throw error;
@@ -137,12 +137,40 @@ export function useSupportSocket() {
           text: m.message,
           timestamp: m.created_at
         }));
-        setMessages(mappedMessages);
+        
+        // Only update if there are changes to avoid unnecessary re-renders
+        const currentMessages = useStore.getState().messages;
+        if (JSON.stringify(mappedMessages) !== JSON.stringify(currentMessages)) {
+          setMessages(mappedMessages);
+        }
       }
     } catch (err) {
-      console.error('Error fetching messages:', err);
+      if (!silent) console.error('Error fetching messages:', err);
     }
   };
+
+  const { isSupportChatOpen } = useStore();
+
+  // Polling mechanism for "always online" feel
+  useEffect(() => {
+    if (!isSupabaseConfigured || !currentUser) return;
+
+    const pollInterval = isSupportChatOpen ? 1000 : 60000;
+    
+    const interval = setInterval(async () => {
+      // Refresh conversations for admin
+      if (userRole === 'admin') {
+        await fetchConversations();
+      }
+
+      // Refresh messages for active conversation
+      if (activeConversationIdRef.current) {
+        await fetchMessages(activeConversationIdRef.current, true);
+      }
+    }, pollInterval);
+
+    return () => clearInterval(interval);
+  }, [isSupportChatOpen, userRole, currentUser, isSupabaseConfigured]);
 
   useEffect(() => {
     if (!currentUser || !isSupabaseConfigured) return;
