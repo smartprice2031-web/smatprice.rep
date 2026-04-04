@@ -12,6 +12,7 @@ export interface Message {
   text: string;
   timestamp: string;
   pending?: boolean;
+  read?: boolean;
 }
 
 export function useSupportSocket() {
@@ -47,6 +48,11 @@ export function useSupportSocket() {
 
     const normalizedSelectedCnpj = state.selectedUserCnpj?.replace(/[^\d]/g, '');
     const isForActiveConversation = activeConversationIdRef.current && String(msg.conversation_id) === String(activeConversationIdRef.current);
+    
+    if (state.isSupportChatOpen && isForActiveConversation) {
+      markMessagesAsRead(msg.conversation_id);
+    }
+
     const isFromSelectedUser = userRole === 'admin' && msg.sender_id === normalizedSelectedCnpj;
 
     // Only notify if it's relevant to the current user
@@ -209,7 +215,8 @@ export function useSupportSocket() {
           sender_name: m.sender_name,
           sender_type: m.sender_type as 'user' | 'admin',
           text: m.message,
-          timestamp: m.created_at
+          timestamp: m.created_at,
+          read: m.is_read || false
         }));
         
         // Only update if there are changes to avoid unnecessary re-renders
@@ -407,7 +414,8 @@ export function useSupportSocket() {
                 sender_name: newMessage.sender_name,
                 sender_type: newMessage.sender_type as 'user' | 'admin',
                 text: newMessage.message,
-                timestamp: newMessage.created_at
+                timestamp: newMessage.created_at,
+                read: newMessage.is_read || false
               };
 
               setMessages(prev => {
@@ -417,6 +425,13 @@ export function useSupportSocket() {
             }
 
             handleNewMessageNotification(newMessage);
+          } else if (payload.event === 'UPDATE') {
+            const updatedMessage = payload.new;
+            setMessages(prev => prev.map(m => 
+              m.id === updatedMessage.id 
+                ? { ...m, read: updatedMessage.is_read || false } 
+                : m
+            ));
           } else if (payload.event === 'DELETE') {
             setMessages(prev => prev.filter(m => m.id !== payload.old.id));
           }
@@ -447,6 +462,44 @@ export function useSupportSocket() {
       supabase.removeChannel(channel);
     };
   }, [currentUser?.cnpj, userRole, selectedUserCnpj]); // Re-init when user or selection changes
+
+  const markMessagesAsRead = async (conversationId: string) => {
+    if (!isSupabaseConfigured || !conversationId) return;
+    
+    try {
+      const senderTypeToMark = userRole === 'admin' ? 'user' : 'admin';
+      
+      const { error } = await supabase
+        .from('support_messages')
+        .update({ is_read: true })
+        .eq('conversation_id', conversationId)
+        .eq('sender_type', senderTypeToMark)
+        .eq('is_read', false);
+
+      if (error) {
+        // Silent fail for marking read
+      } else {
+        // Update local state
+        setMessages(prev => prev.map(m => 
+          m.conversation_id === conversationId && m.sender_type === senderTypeToMark 
+            ? { ...m, read: true } 
+            : m
+        ));
+        
+        // Update unread counts
+        if (userRole === 'admin') {
+          const normalizedSelectedCnpj = selectedUserCnpj?.replace(/[^\d]/g, '');
+          if (normalizedSelectedCnpj) {
+            setUnreadPerUser(normalizedSelectedCnpj, 0);
+          }
+        } else {
+          setUnreadSupportCount(0);
+        }
+      }
+    } catch (err) {
+      // Silent fail
+    }
+  };
 
   const sendMessage = async (text: string, toCnpj?: string) => {
     if (!isSupabaseConfigured || !currentUser || !activeConversationId) {
@@ -499,7 +552,8 @@ export function useSupportSocket() {
           sender_name: data.sender_name,
           sender_type: data.sender_type as 'user' | 'admin',
           text: data.message,
-          timestamp: data.created_at
+          timestamp: data.created_at,
+          read: data.is_read || false
         };
 
         setMessages(prev => {
@@ -551,6 +605,7 @@ export function useSupportSocket() {
     messages, 
     sendMessage, 
     clearMessages, 
+    markMessagesAsRead,
     isConnected: isChatConnected,
     isLoading,
     activeConversationId,
