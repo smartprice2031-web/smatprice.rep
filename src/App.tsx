@@ -275,6 +275,13 @@ export default function App() {
     }
   }, [isPrinting]);
 
+  useEffect(() => {
+    const title = unreadSupportCount > 0 
+      ? `(${unreadSupportCount}) SmartPrice - Suporte` 
+      : 'SmartPrice - Gestão de Etiquetas';
+    document.title = title;
+  }, [unreadSupportCount]);
+
   const handlePrint = () => {
     setSelectedId(null);
     setPrinting(true);
@@ -540,7 +547,7 @@ export default function App() {
                 <MessageCircle className="w-4 h-4" />
                 {userRole === 'admin' ? "Central de Suporte" : "Suporte"}
                 {unreadSupportCount > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center animate-bounce border-2 border-white dark:border-zinc-900">
+                  <span className="absolute -top-2 -right-2 bg-red-600 text-white text-[11px] font-black w-6 h-6 rounded-full flex items-center justify-center animate-bounce shadow-lg border-2 border-white dark:border-zinc-900 ring-4 ring-red-500/20">
                     {unreadSupportCount}
                   </span>
                 )}

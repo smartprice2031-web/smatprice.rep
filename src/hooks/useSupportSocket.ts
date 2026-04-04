@@ -141,6 +141,21 @@ export function useSupportSocket() {
         // Only update if there are changes to avoid unnecessary re-renders
         const currentMessages = useStore.getState().messages;
         if (JSON.stringify(mappedMessages) !== JSON.stringify(currentMessages)) {
+          // If we have new messages that weren't in the state before
+          if (currentMessages.length > 0 && mappedMessages.length > currentMessages.length) {
+            const newMessages = mappedMessages.slice(currentMessages.length);
+            newMessages.forEach(msg => {
+              handleNewMessageNotification({
+                id: msg.id,
+                conversation_id: msg.conversation_id,
+                sender_id: msg.sender_id,
+                sender_name: msg.sender_name,
+                sender_type: msg.sender_type,
+                message: msg.text,
+                created_at: msg.timestamp
+              });
+            });
+          }
           setMessages(mappedMessages);
         }
       }
@@ -349,18 +364,35 @@ export function useSupportSocket() {
             }
           }
         });
+
+        // Browser notification
+        if ("Notification" in window && Notification.permission === "granted") {
+          new Notification(`SmartPrice: Nova mensagem de ${msg.sender_name}`, {
+            body: msg.message,
+            icon: 'https://cdn-icons-png.flaticon.com/512/1041/1041916.png'
+          });
+        }
       }
     } else {
       if (isForMe && !state.isSupportChatOpen) {
         setUnreadSupportCount(prev => (typeof prev === 'number' ? prev + 1 : 1));
         
-        toast.info(`Nova mensagem do Suporte`, {
+        toast.success(`Nova mensagem do Suporte`, {
           description: msg.message,
+          duration: 5000,
           action: {
-            label: 'Ver',
+            label: 'Ver Agora',
             onClick: () => state.setSupportChatOpen(true)
           }
         });
+
+        // Browser notification
+        if ("Notification" in window && Notification.permission === "granted") {
+          new Notification(`SmartPrice: Nova mensagem do Suporte`, {
+            body: msg.message,
+            icon: 'https://cdn-icons-png.flaticon.com/512/1041/1041916.png'
+          });
+        }
       }
     }
 

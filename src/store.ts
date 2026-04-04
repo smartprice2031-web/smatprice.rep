@@ -1419,6 +1419,8 @@ export const useStore = create<AppState>()(
         isSingleProduct: state.isSingleProduct,
         showOptionalTextControl: state.showOptionalTextControl,
         printQueue: state.printQueue,
+        unreadSupportCount: state.unreadSupportCount,
+        unreadPerUser: state.unreadPerUser,
       }),
     }
   )
