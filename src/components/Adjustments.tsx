@@ -66,29 +66,33 @@ const Adjustments = () => {
             <Type className="w-3.5 h-3.5 text-blue-500" />
             {label}
           </h4>
-          <button 
-            onClick={() => setElement(slot, elementKey, { visible: !el.visible })}
-            className="p-1 hover:bg-zinc-200 dark:hover:bg-zinc-700 rounded"
-          >
-            {el.visible ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5 text-zinc-400" />}
-          </button>
+          {userRole === 'admin' && (
+            <button 
+              onClick={() => setElement(slot, elementKey, { visible: !el.visible })}
+              className="p-1 hover:bg-zinc-200 dark:hover:bg-zinc-700 rounded"
+            >
+              {el.visible ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5 text-zinc-400" />}
+            </button>
+          )}
         </div>
 
         <div className="space-y-2">
-          {elementKey === 'description' ? (
-            <textarea 
-              rows={3}
-              value={el.text}
-              onChange={(e) => setElement(slot, elementKey, { text: e.target.value })}
-              className="w-full px-2 py-1 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded text-xs resize-none"
-            />
-          ) : (
-            <input 
-              type="text" 
-              value={el.text}
-              onChange={(e) => setElement(slot, elementKey, { text: e.target.value })}
-              className="w-full px-2 py-1 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded text-xs"
-            />
+          {userRole === 'admin' && (
+            elementKey === 'description' ? (
+              <textarea 
+                rows={3}
+                value={el.text}
+                onChange={(e) => setElement(slot, elementKey, { text: e.target.value })}
+                className="w-full px-2 py-1 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded text-xs resize-none"
+              />
+            ) : (
+              <input 
+                type="text" 
+                value={el.text}
+                onChange={(e) => setElement(slot, elementKey, { text: e.target.value })}
+                className="w-full px-2 py-1 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded text-xs"
+              />
+            )
           )}
 
           <div className="grid grid-cols-2 gap-2">
@@ -206,26 +210,28 @@ const Adjustments = () => {
       </h2>
 
       {/* Editor Settings Section */}
-      <section className="space-y-4">
-        <h3 className="text-sm font-black uppercase tracking-widest text-black dark:text-white opacity-60 flex items-center gap-2">
-          <Settings className="w-4 h-4" />
-          Configurações do Editor
-        </h3>
-        <div className="p-4 bg-zinc-50 dark:bg-zinc-800/50 rounded-xl border border-zinc-200 dark:border-zinc-700 space-y-4">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold uppercase tracking-tight opacity-80">Mostrar Texto Opcional no Editor</span>
-            <label className="relative inline-flex items-center cursor-pointer">
-              <input 
-                type="checkbox" 
-                className="sr-only peer"
-                checked={showOptionalTextControl}
-                onChange={(e) => setShowOptionalTextControl(e.target.checked)}
-              />
-              <div className="w-11 h-6 bg-zinc-200 peer-focus:outline-none rounded-full peer dark:bg-zinc-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
-            </label>
+      {userRole === 'admin' && (
+        <section className="space-y-4">
+          <h3 className="text-sm font-black uppercase tracking-widest text-black dark:text-white opacity-60 flex items-center gap-2">
+            <Settings className="w-4 h-4" />
+            Configurações do Editor
+          </h3>
+          <div className="p-4 bg-zinc-50 dark:bg-zinc-800/50 rounded-xl border border-zinc-200 dark:border-zinc-700 space-y-4">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold uppercase tracking-tight opacity-80">Mostrar Texto Opcional no Editor</span>
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input 
+                  type="checkbox" 
+                  className="sr-only peer"
+                  checked={showOptionalTextControl}
+                  onChange={(e) => setShowOptionalTextControl(e.target.checked)}
+                />
+                <div className="w-11 h-6 bg-zinc-200 peer-focus:outline-none rounded-full peer dark:bg-zinc-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
+              </label>
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* Admin: Rename Layouts */}
       {userRole === 'admin' && (
@@ -327,66 +333,68 @@ const Adjustments = () => {
       )}
 
       {/* Background Section */}
-      <section className="space-y-4">
-        <h3 className="text-sm font-black uppercase tracking-widest text-black dark:text-white opacity-60 flex items-center gap-2">
-          <Layout className="w-4 h-4" />
-          Fundo Geral
-        </h3>
-        <div className="p-4 bg-zinc-50 dark:bg-zinc-800/50 rounded-xl border border-zinc-200 dark:border-zinc-700 space-y-4">
-          <div className="flex items-center gap-4">
-            <div className="flex-grow">
-              <label className="block text-xs font-medium mb-1">URL da Imagem de Fundo (A4)</label>
-              <input 
-                type="url" 
-                placeholder="https://exemplo.com/fundo.jpg"
-                value={background.url || ''}
-                onChange={(e) => handleBackgroundUrlChange(e.target.value)}
-                className="w-full px-3 py-1.5 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded text-xs outline-none focus:ring-1 focus:ring-blue-500"
-              />
-            </div>
-          </div>
-          
-          <div className="flex items-center justify-between">
-            <div className="flex gap-2">
-              <button 
-                onClick={() => setBackground({ mode: 'cover' })}
-                className={`px-3 py-1 text-xs rounded-full border ${background.mode === 'cover' ? 'bg-blue-600 text-white' : 'bg-white dark:bg-zinc-900'}`}
-              >
-                Cover
-              </button>
-              <button 
-                onClick={() => setBackground({ mode: 'contain' })}
-                className={`px-3 py-1 text-xs rounded-full border ${background.mode === 'contain' ? 'bg-blue-600 text-white' : 'bg-white dark:bg-zinc-900'}`}
-              >
-                Contain
-              </button>
-            </div>
-            <div className="flex gap-2 items-center">
-              <span className="text-[10px] font-bold uppercase opacity-60">Orientação:</span>
-              <div className="flex border border-zinc-200 dark:border-zinc-700 rounded-full overflow-hidden">
-                <button 
-                  onClick={() => setLayoutOrientation(activeLayoutIndex, 'portrait')}
-                  className={`px-3 py-1 text-[10px] font-bold uppercase ${orientation === 'portrait' ? 'bg-blue-600 text-white' : 'bg-white dark:bg-zinc-900 text-zinc-500'}`}
-                >
-                  Retrato
-                </button>
-                <button 
-                  onClick={() => setLayoutOrientation(activeLayoutIndex, 'landscape')}
-                  className={`px-3 py-1 text-[10px] font-bold uppercase ${orientation === 'landscape' ? 'bg-blue-600 text-white' : 'bg-white dark:bg-zinc-900 text-zinc-500'}`}
-                >
-                  Paisagem
-                </button>
+      {userRole === 'admin' && (
+        <section className="space-y-4">
+          <h3 className="text-sm font-black uppercase tracking-widest text-black dark:text-white opacity-60 flex items-center gap-2">
+            <Layout className="w-4 h-4" />
+            Fundo Geral
+          </h3>
+          <div className="p-4 bg-zinc-50 dark:bg-zinc-800/50 rounded-xl border border-zinc-200 dark:border-zinc-700 space-y-4">
+            <div className="flex items-center gap-4">
+              <div className="flex-grow">
+                <label className="block text-xs font-medium mb-1">URL da Imagem de Fundo (A4)</label>
+                <input 
+                  type="url" 
+                  placeholder="https://exemplo.com/fundo.jpg"
+                  value={background.url || ''}
+                  onChange={(e) => handleBackgroundUrlChange(e.target.value)}
+                  className="w-full px-3 py-1.5 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded text-xs outline-none focus:ring-1 focus:ring-blue-500"
+                />
               </div>
             </div>
-            <button 
-              onClick={() => setBackground({ locked: !background.locked })}
-              className={`p-2 rounded ${background.locked ? 'text-blue-600' : 'text-zinc-400'}`}
-            >
-              {background.locked ? <Lock className="w-4 h-4" /> : <Unlock className="w-4 h-4" />}
-            </button>
+            
+            <div className="flex items-center justify-between">
+              <div className="flex gap-2">
+                <button 
+                  onClick={() => setBackground({ mode: 'cover' })}
+                  className={`px-3 py-1 text-xs rounded-full border ${background.mode === 'cover' ? 'bg-blue-600 text-white' : 'bg-white dark:bg-zinc-900'}`}
+                >
+                  Cover
+                </button>
+                <button 
+                  onClick={() => setBackground({ mode: 'contain' })}
+                  className={`px-3 py-1 text-xs rounded-full border ${background.mode === 'contain' ? 'bg-blue-600 text-white' : 'bg-white dark:bg-zinc-900'}`}
+                >
+                  Contain
+                </button>
+              </div>
+              <div className="flex gap-2 items-center">
+                <span className="text-[10px] font-bold uppercase opacity-60">Orientação:</span>
+                <div className="flex border border-zinc-200 dark:border-zinc-700 rounded-full overflow-hidden">
+                  <button 
+                    onClick={() => setLayoutOrientation(activeLayoutIndex, 'portrait')}
+                    className={`px-3 py-1 text-[10px] font-bold uppercase ${orientation === 'portrait' ? 'bg-blue-600 text-white' : 'bg-white dark:bg-zinc-900 text-zinc-500'}`}
+                  >
+                    Retrato
+                  </button>
+                  <button 
+                    onClick={() => setLayoutOrientation(activeLayoutIndex, 'landscape')}
+                    className={`px-3 py-1 text-[10px] font-bold uppercase ${orientation === 'landscape' ? 'bg-blue-600 text-white' : 'bg-white dark:bg-zinc-900 text-zinc-500'}`}
+                  >
+                    Paisagem
+                  </button>
+                </div>
+              </div>
+              <button 
+                onClick={() => setBackground({ locked: !background.locked })}
+                className={`p-2 rounded ${background.locked ? 'text-blue-600' : 'text-zinc-400'}`}
+              >
+                {background.locked ? <Lock className="w-4 h-4" /> : <Unlock className="w-4 h-4" />}
+              </button>
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* Product 1 Section */}
       <section className="space-y-4">
@@ -396,7 +404,7 @@ const Adjustments = () => {
           </h3>
         </div>
         <div className="space-y-4">
-          <ProductImageControl slot={1} productImage={productImage1} />
+          {userRole === 'admin' && <ProductImageControl slot={1} productImage={productImage1} />}
           <TextControl slot={1} label="Nome" elementKey="name" textElements={textElements1} />
           <TextControl slot={1} label="Subtítulo" elementKey="subtitle" textElements={textElements1} />
           <TextControl slot={1} label="Descrição" elementKey="description" textElements={textElements1} />
@@ -416,7 +424,7 @@ const Adjustments = () => {
               </h3>
             </div>
             <div className="space-y-4">
-              <ProductImageControl slot={2} productImage={productImage2} />
+              {userRole === 'admin' && <ProductImageControl slot={2} productImage={productImage2} />}
               <TextControl slot={2} label="Nome" elementKey="name" textElements={textElements2} />
               <TextControl slot={2} label="Subtítulo" elementKey="subtitle" textElements={textElements2} />
               <TextControl slot={2} label="Descrição" elementKey="description" textElements={textElements2} />
@@ -436,18 +444,20 @@ const Adjustments = () => {
               <h3 className="text-sm font-black uppercase tracking-widest text-blue-600 flex items-center gap-2">
                 Produto Central (Opcional)
               </h3>
-              <button 
-                onClick={() => setSlotVisibility(3, !showThirdProduct)}
-                className={`p-1.5 rounded-lg transition-colors ${showThirdProduct ? 'text-blue-600 bg-blue-50 dark:bg-blue-900/20' : 'text-zinc-400 bg-zinc-100 dark:bg-zinc-800'}`}
-                title={showThirdProduct ? "Ocultar Produto Central" : "Mostrar Produto Central"}
-              >
-                {showThirdProduct ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
-              </button>
+              {userRole === 'admin' && (
+                <button 
+                  onClick={() => setSlotVisibility(3, !showThirdProduct)}
+                  className={`p-1.5 rounded-lg transition-colors ${showThirdProduct ? 'text-blue-600 bg-blue-50 dark:bg-blue-900/20' : 'text-zinc-400 bg-zinc-100 dark:bg-zinc-800'}`}
+                  title={showThirdProduct ? "Ocultar Produto Central" : "Mostrar Produto Central"}
+                >
+                  {showThirdProduct ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+                </button>
+              )}
             </div>
             
             {showThirdProduct && (
               <div className="space-y-4">
-                <ProductImageControl slot={3} productImage={productImage3} />
+                {userRole === 'admin' && <ProductImageControl slot={3} productImage={productImage3} />}
                 <TextControl slot={3} label="Nome" elementKey="name" textElements={textElements3} />
                 <TextControl slot={3} label="Subtítulo" elementKey="subtitle" textElements={textElements3} />
                 <TextControl slot={3} label="Descrição" elementKey="description" textElements={textElements3} />

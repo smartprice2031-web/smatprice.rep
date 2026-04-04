@@ -104,11 +104,6 @@ export default function App() {
     }
   }, [activeLayoutIndex, layouts]);
 
-  useEffect(() => {
-    if (userRole !== 'admin' && activeTab === 'adjustments') {
-      setActiveTab('select');
-    }
-  }, [userRole, activeTab]);
 
   useEffect(() => {
     if (isAuthenticated && userRole !== 'admin' && currentUser) {
@@ -673,20 +668,18 @@ export default function App() {
                   <Search className="w-4 h-4" />
                   SELECIONAR
                 </button>
-                {userRole === 'admin' && (
-                  <button 
-                    onClick={() => setActiveTab('adjustments')}
-                    className={cn(
-                      "flex-1 py-4 text-sm font-bold flex items-center justify-center gap-2 border-b-2 transition-all",
-                      activeTab === 'adjustments' 
-                        ? "border-blue-600 text-blue-600 bg-blue-50/50 dark:bg-blue-900/10" 
-                        : "border-transparent text-black dark:text-white opacity-60 hover:opacity-100"
-                    )}
-                  >
-                    <SettingsIcon className="w-4 h-4" />
-                    AJUSTES
-                  </button>
-                )}
+                <button 
+                  onClick={() => setActiveTab('adjustments')}
+                  className={cn(
+                    "flex-1 py-4 text-sm font-bold flex items-center justify-center gap-2 border-b-2 transition-all",
+                    activeTab === 'adjustments' 
+                      ? "border-blue-600 text-blue-600 bg-blue-50/50 dark:bg-blue-900/10" 
+                      : "border-transparent text-black dark:text-white opacity-60 hover:opacity-100"
+                  )}
+                >
+                  <SettingsIcon className="w-4 h-4" />
+                  AJUSTES
+                </button>
               </div>
 
               {/* Layout Switcher Buttons */}
