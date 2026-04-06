@@ -125,7 +125,7 @@ const PrintQueue = () => {
                 {index + 1}
               </div>
               <div className={`bg-white shadow-[0_0_50px_rgba(0,0,0,0.1)] ${item.isLandscape ? 'w-[297mm] h-[210mm]' : 'w-[210mm] h-[297mm]'} flex items-center justify-center overflow-hidden border border-zinc-200`}>
-                <img src={item.imageData} className="w-full h-full object-contain" alt={`Plaquinha ${index + 1}`} />
+                <img src={item.imageData} className="w-full h-full object-contain" alt={`Plaquinha ${index + 1}`} crossOrigin="anonymous" />
               </div>
             </div>
           ))}
@@ -135,7 +135,7 @@ const PrintQueue = () => {
         <div id="print-queue-area" className="hidden print:block">
           {printQueue.map((item, index) => (
             <div key={index} className={`print-page ${item.isLandscape ? 'landscape' : ''}`}>
-              <img src={item.imageData} alt={`Print Tag ${index + 1}`} />
+              <img src={item.imageData} alt={`Print Tag ${index + 1}`} crossOrigin="anonymous" />
             </div>
           ))}
         </div>
@@ -193,7 +193,7 @@ const PrintQueue = () => {
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 no-print">
           {printQueue.map((item, index) => (
             <div key={index} className="group relative bg-white dark:bg-zinc-900 rounded-2xl shadow-xl overflow-hidden border border-zinc-200 dark:border-zinc-800 transition-all hover:shadow-2xl hover:-translate-y-1">
-              <img src={item.imageData} alt={`Tag ${index + 1}`} className="w-full h-auto" />
+              <img src={item.imageData} alt={`Tag ${index + 1}`} className="w-full h-auto" crossOrigin="anonymous" />
               <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-4">
                 <button 
                   onClick={() => handleExportSinglePDF(item, index)}

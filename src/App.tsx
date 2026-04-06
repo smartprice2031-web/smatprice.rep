@@ -21,15 +21,10 @@ import {
   RefreshCw, Layout, Megaphone, Flag, MapPin, Moon, Sun
 } from 'lucide-react';
 import { jsPDF } from 'jspdf';
-import { clsx, type ClassValue } from 'clsx';
-import { twMerge } from 'tailwind-merge';
 import { Toaster } from 'sonner';
+import { cn } from './lib/utils';
 import { useSupportSocket } from './hooks/useSupportSocket';
 import { supabase, isSupabaseConfigured } from './lib/supabase';
-
-function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs));
-}
 
 import { toast } from 'sonner';
 

@@ -1,13 +1,8 @@
 import React from 'react';
 import { useStore, TextSettings, createDefaultLayout, Layout as LayoutType, isThreeProduct } from '../store';
-import { Settings, Type, Image as ImageIcon, Layout, Eye, EyeOff, Lock, Unlock, AlignLeft, AlignCenter, AlignRight, Bold, AlertTriangle, ChevronUp, ChevronDown, Flag, MapPin } from 'lucide-react';
+import { Settings, Type, Image as ImageIcon, Layout, Eye, EyeOff, Lock, Unlock, AlignLeft, AlignCenter, AlignRight, Bold, AlertTriangle, ChevronUp, ChevronDown, Flag, MapPin, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
-import { clsx, type ClassValue } from 'clsx';
-import { twMerge } from 'tailwind-merge';
-
-function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs));
-}
+import { cn, isValidImageUrl } from '../lib/utils';
 
 const Adjustments = () => {
   const { 
@@ -173,12 +168,22 @@ const Adjustments = () => {
         <div>
           <label className="text-[10px] text-black dark:text-white opacity-60 block mb-1">URL da Imagem</label>
           <input 
-            type="url" 
+            type="text" 
             placeholder="https://exemplo.com/imagem.jpg"
             value={productImage.url || ''}
             onChange={(e) => handleProductImageUrlChange(slot, e.target.value)}
-            className="w-full px-2 py-1 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded text-[10px] text-black dark:text-white outline-none focus:ring-1 focus:ring-blue-500"
+            className={`w-full px-2 py-1 bg-white dark:bg-zinc-900 border rounded text-[10px] text-black dark:text-white outline-none focus:ring-1 transition-all ${
+              productImage.url && !isValidImageUrl(productImage.url)
+                ? 'border-red-500 focus:ring-red-500'
+                : 'border-zinc-200 dark:border-zinc-700 focus:ring-blue-500'
+            }`}
           />
+          {productImage.url && !isValidImageUrl(productImage.url) && (
+            <p className="text-[8px] text-red-500 font-bold flex items-center gap-1 mt-1">
+              <AlertCircle className="w-2.5 h-2.5" />
+              URL de imagem possivelmente inválida.
+            </p>
+          )}
         </div>
         <div>
           <label className="text-[10px] text-black dark:text-white opacity-60 block mb-0.5">Opacidade: {Math.round(productImage.opacity * 100)}%</label>
@@ -344,12 +349,22 @@ const Adjustments = () => {
               <div className="flex-grow">
                 <label className="block text-xs font-medium mb-1">URL da Imagem de Fundo (A4)</label>
                 <input 
-                  type="url" 
+                  type="text" 
                   placeholder="https://exemplo.com/fundo.jpg"
                   value={background.url || ''}
                   onChange={(e) => handleBackgroundUrlChange(e.target.value)}
-                  className="w-full px-3 py-1.5 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded text-xs outline-none focus:ring-1 focus:ring-blue-500"
+                  className={`w-full px-3 py-1.5 bg-white dark:bg-zinc-900 border rounded text-xs outline-none focus:ring-1 transition-all ${
+                    background.url && !isValidImageUrl(background.url)
+                      ? 'border-red-500 focus:ring-red-500'
+                      : 'border-zinc-200 dark:border-zinc-700 focus:ring-blue-500'
+                  }`}
                 />
+                {background.url && !isValidImageUrl(background.url) && (
+                  <p className="text-[10px] text-red-500 font-bold flex items-center gap-1 mt-1">
+                    <AlertCircle className="w-3 h-3" />
+                    URL de imagem possivelmente inválida.
+                  </p>
+                )}
               </div>
             </div>
             

@@ -1,12 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useStore } from '../store';
 import { ShoppingBag, Building2, Flag, User, Lock, ArrowRight, Moon, Sun, Loader2 } from 'lucide-react';
-import { clsx, type ClassValue } from 'clsx';
-import { twMerge } from 'tailwind-merge';
-
-function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs));
-}
+import { cn } from '../lib/utils';
 
 export default function Login() {
   const { login, allowedStores, flags, theme, toggleTheme } = useStore();

@@ -2,12 +2,7 @@ import React, { useState } from 'react';
 import { useStore } from '../store';
 import { Plus, Trash2, Shield, Store, Search, X, User, Flag, Pencil, Save, Loader2, Settings as SettingsIcon, Layout as LayoutGrid, Layout, Users } from 'lucide-react';
 import { toast } from 'sonner';
-import { clsx, type ClassValue } from 'clsx';
-import { twMerge } from 'tailwind-merge';
-
-function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs));
-}
+import { cn } from '../lib/utils';
 
 export default function UserManagement() {
   const { allowedStores, addAllowedStore, removeAllowedStore, flags, addFlag, removeFlag, updateFlag, saveUsersAndFlags, layouts, toggleEncarteAccess, userGroups, addUserGroup, removeUserGroup, updateUserGroup, setUserGroup } = useStore();

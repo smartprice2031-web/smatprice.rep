@@ -2,14 +2,8 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useStore } from '../store';
 import { useSupportSocket, Message } from '../hooks/useSupportSocket';
 import { MessageCircle, Send, X, User, Trash2, AlertCircle, RefreshCw } from 'lucide-react';
-import { clsx, type ClassValue } from 'clsx';
-import { twMerge } from 'tailwind-merge';
-
+import { cn } from '../lib/utils';
 import { toast } from 'sonner';
-
-function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs));
-}
 
 export default function SupportChat() {
   const { 

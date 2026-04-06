@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { useStore, Product, EncarteSlot, SelectedProduct, EncarteModel } from '../store';
+import { useStore, Product, EncarteSlot, SelectedProduct, EncarteModel, EncarteTab } from '../store';
+import { cn, isValidImageUrl, getProxyUrl } from '../lib/utils';
 import { 
   Plus, 
   Trash2, 
@@ -10,6 +11,7 @@ import {
   X,
   Settings2,
   Layout as LayoutIcon,
+  LayoutGrid,
   Image as ImageIcon,
   ChevronLeft,
   ChevronRight,
@@ -19,19 +21,18 @@ import {
   MoveUp,
   MoveDown,
   MoveLeft,
-  MoveRight
+  MoveRight,
+  Info,
+  Tag,
+  Palette,
+  Type as TypeIcon,
+  AlertCircle
 } from 'lucide-react';
 import { motion } from 'motion/react';
-import { clsx, type ClassValue } from 'clsx';
-import { twMerge } from 'tailwind-merge';
 import ProductSelector from './ProductSelector';
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
 import { toast } from 'sonner';
-
-function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs));
-}
 
 const ENCARTE_MODELS: EncarteModel[] = [
   { id: 'classic', name: 'Clássico Esmeralda', primaryColor: '#059669', secondaryColor: '#10b981', accentColor: '#059669', textColor: '#065f46', bgClass: 'bg-emerald-600', borderClass: 'border-emerald-600' },
@@ -133,20 +134,37 @@ export default function EncarteCreator() {
     encartes, 
     setEncartes, 
     selectedEncarteModel, 
-    setSelectedEncarteModel 
+    setSelectedEncarteModel,
+    activeEncarteTab, 
+    setActiveEncarteTab,
+    encarteThemes, 
+    setEncarteThemes,
+    encarteLogos, 
+    setEncarteLogos,
+    encarteLayouts, 
+    setEncarteLayouts,
+    activeEncarteTheme, 
+    setActiveEncarteTheme,
+    activeEncarteLogo, 
+    setActiveEncarteLogo,
+    activeEncarteLayout, 
+    setActiveEncarteLayout,
+    userRole
   } = useStore();
   
   const [activeEncarteIndex, setActiveEncarteIndex] = useState(0);
   const [currentSide, setCurrentSide] = useState<'frente' | 'verso'>('frente');
   const [isSelectorOpen, setIsSelectorOpen] = useState(false);
   const [activeSlot, setActiveSlot] = useState<number | null>(null);
-  const [activeTab, setActiveTab] = useState<'products' | 'adjustments'>('products');
   const [isExporting, setIsExporting] = useState(false);
   const [hRulers, setHRulers] = useState([150, 300, 450, 600]);
   const [vRulers, setVRulers] = useState([150, 300, 450]);
   const [showHRulers, setShowHRulers] = useState([false, false, false, false]);
   const [showVRulers, setShowVRulers] = useState([false, false, false]);
   const [zoom, setZoom] = useState(100);
+  const [activeThemeCategory, setActiveThemeCategory] = useState<string | null>(null);
+  const [isAddingAsset, setIsAddingAsset] = useState<EncarteTab | null>(null);
+  const [assetUrl, setAssetUrl] = useState('');
 
   const selectedModel = selectedEncarteModel || ENCARTE_MODELS[0];
   const setSelectedModel = setSelectedEncarteModel;
@@ -165,11 +183,13 @@ export default function EncarteCreator() {
   useEffect(() => {
     if (currentEncarte.frontBgUrl) {
       const img = new Image();
-      img.src = currentEncarte.frontBgUrl;
+      img.crossOrigin = "anonymous";
+      img.src = getProxyUrl(currentEncarte.frontBgUrl);
     }
     if (currentEncarte.backBgUrl) {
       const img = new Image();
-      img.src = currentEncarte.backBgUrl;
+      img.crossOrigin = "anonymous";
+      img.src = getProxyUrl(currentEncarte.backBgUrl);
     }
   }, [currentEncarte.frontBgUrl, currentEncarte.backBgUrl]);
 
@@ -504,98 +524,386 @@ export default function EncarteCreator() {
         </div>
       </header>
 
-      <main className="flex-grow p-8 flex gap-8 overflow-hidden">
-        {/* Controls */}
-        <div className="w-96 flex flex-col gap-6 overflow-y-auto pr-2 no-print">
-          {/* Tabs */}
-          <div className="flex p-1 bg-zinc-200 dark:bg-zinc-800 rounded-2xl">
-            <button
-              onClick={() => setActiveTab('products')}
-              className={cn(
-                "flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all",
-                activeTab === 'products' 
-                  ? "bg-white dark:bg-zinc-700 shadow-sm text-zinc-900 dark:text-white" 
-                  : "text-black dark:text-white opacity-60 hover:opacity-100"
-              )}
-            >
-              <Package className="w-4 h-4" />
-              Produtos
-            </button>
-            <button
-              onClick={() => setActiveTab('adjustments')}
-              className={cn(
-                "flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all",
-                activeTab === 'adjustments' 
-                  ? "bg-white dark:bg-zinc-700 shadow-sm text-zinc-900 dark:text-white" 
-                  : "text-black dark:text-white opacity-60 hover:opacity-100"
-              )}
-            >
-              <Settings2 className="w-4 h-4" />
-              Ajustes
-            </button>
-          </div>
+      <main className="flex-grow flex overflow-hidden">
+        {/* Sidebar */}
+        <div className="w-20 bg-white dark:bg-zinc-900 border-r border-zinc-200 dark:border-zinc-800 flex flex-col items-center py-6 gap-6 no-print">
+          <button 
+            onClick={() => setActiveEncarteTab('themes')}
+            className={cn(
+              "p-3 rounded-2xl transition-all flex flex-col items-center gap-1",
+              activeEncarteTab === 'themes' ? "bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600" : "text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300"
+            )}
+          >
+            <LayoutIcon className="w-6 h-6" />
+            <span className="text-[8px] font-black uppercase tracking-widest">Temas</span>
+          </button>
+          <button 
+            onClick={() => setActiveEncarteTab('layouts')}
+            className={cn(
+              "p-3 rounded-2xl transition-all flex flex-col items-center gap-1",
+              activeEncarteTab === 'layouts' ? "bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600" : "text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300"
+            )}
+          >
+            <LayoutGrid className="w-6 h-6" />
+            <span className="text-[8px] font-black uppercase tracking-widest">Layouts</span>
+          </button>
+          <button 
+            onClick={() => setActiveEncarteTab('products')}
+            className={cn(
+              "p-3 rounded-2xl transition-all flex flex-col items-center gap-1",
+              activeEncarteTab === 'products' ? "bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600" : "text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300"
+            )}
+          >
+            <Package className="w-6 h-6" />
+            <span className="text-[8px] font-black uppercase tracking-widest">Produtos</span>
+          </button>
+          <button 
+            onClick={() => setActiveEncarteTab('info')}
+            className={cn(
+              "p-3 rounded-2xl transition-all flex flex-col items-center gap-1",
+              activeEncarteTab === 'info' ? "bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600" : "text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300"
+            )}
+          >
+            <Info className="w-6 h-6" />
+            <span className="text-[8px] font-black uppercase tracking-widest">Info</span>
+          </button>
+          <button 
+            onClick={() => setActiveEncarteTab('labels')}
+            className={cn(
+              "p-3 rounded-2xl transition-all flex flex-col items-center gap-1",
+              activeEncarteTab === 'labels' ? "bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600" : "text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300"
+            )}
+          >
+            <Tag className="w-6 h-6" />
+            <span className="text-[8px] font-black uppercase tracking-widest">Etiquetas</span>
+          </button>
+          <button 
+            onClick={() => setActiveEncarteTab('colors')}
+            className={cn(
+              "p-3 rounded-2xl transition-all flex flex-col items-center gap-1",
+              activeEncarteTab === 'colors' ? "bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600" : "text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300"
+            )}
+          >
+            <Palette className="w-6 h-6" />
+            <span className="text-[8px] font-black uppercase tracking-widest">Cores</span>
+          </button>
+          <button 
+            onClick={() => setActiveEncarteTab('fonts')}
+            className={cn(
+              "p-3 rounded-2xl transition-all flex flex-col items-center gap-1",
+              activeEncarteTab === 'fonts' ? "bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600" : "text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300"
+            )}
+          >
+            <TypeIcon className="w-6 h-6" />
+            <span className="text-[8px] font-black uppercase tracking-widest">Fontes</span>
+          </button>
+          <button 
+            onClick={() => setActiveEncarteTab('logo')}
+            className={cn(
+              "p-3 rounded-2xl transition-all flex flex-col items-center gap-1",
+              activeEncarteTab === 'logo' ? "bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600" : "text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300"
+            )}
+          >
+            <ImageIcon className="w-6 h-6" />
+            <span className="text-[8px] font-black uppercase tracking-widest">Logo</span>
+          </button>
+        </div>
 
-          {activeTab === 'products' ? (
-            <>
-              <div className="bg-white dark:bg-zinc-900 p-6 rounded-3xl border border-zinc-200 dark:border-zinc-800 shadow-sm">
-                <h3 className="text-xs font-black uppercase tracking-widest text-black dark:text-white opacity-40 mb-4">Configuração Geral</h3>
-                
-                <div className="space-y-4">
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-black uppercase tracking-widest text-black dark:text-white opacity-60 ml-1">Data do Encarte</label>
-                    <input 
-                      type="text"
-                      placeholder="Ex: Ofertas válidas até 25/03"
-                      value={currentEncarte.date || ''}
-                      onChange={(e) => updateActiveEncarte({ date: e.target.value })}
-                      className="w-full px-4 py-2.5 bg-zinc-50 dark:bg-zinc-800 border-none rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none transition-all font-bold text-black dark:text-white"
-                    />
-                  </div>
+        {/* Panel Content */}
+        <div className="w-96 flex flex-col bg-white dark:bg-zinc-900 border-r border-zinc-200 dark:border-zinc-800 overflow-y-auto no-print">
+          {activeEncarteTab === 'themes' && (
+            <div className="p-6 space-y-8">
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-black uppercase tracking-widest">Temas</h3>
+                <div className="flex items-center gap-2">
+                  {activeThemeCategory && (
+                    <button 
+                      onClick={() => setActiveThemeCategory(null)}
+                      className="text-[10px] font-black uppercase tracking-widest text-emerald-600 flex items-center gap-1"
+                    >
+                      <ArrowLeft className="w-3 h-3" />
+                      Voltar
+                    </button>
+                  )}
+                  <button 
+                    onClick={() => setIsAddingAsset('themes')}
+                    className="p-1.5 bg-zinc-100 dark:bg-zinc-800 rounded-lg text-zinc-500 hover:text-emerald-600 transition-colors"
+                    title="Adicionar Tema via URL"
+                  >
+                    <Plus className="w-4 h-4" />
+                  </button>
                 </div>
-                <p className="mt-3 text-[10px] font-bold text-black dark:text-white opacity-40 uppercase text-center">
-                  Editando: <span className="text-black dark:text-white opacity-100">{currentEncarte.name}</span>
-                </p>
               </div>
 
-              <div className="bg-white dark:bg-zinc-900 p-6 rounded-3xl border border-zinc-200 dark:border-zinc-800 shadow-sm flex-grow overflow-hidden flex flex-col">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-xs font-black uppercase tracking-widest text-black dark:text-white opacity-40 mb-4">Produtos ({currentSide})</h3>
-                  <div className="flex items-center gap-2">
-                    <button 
-                      onClick={() => {
-                        setActiveSlot(null);
-                        setIsSelectorOpen(true);
-                      }}
-                      className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-all text-[10px] font-black uppercase tracking-widest shadow-sm"
-                    >
-                      <Plus className="w-3 h-3" />
-                      Adicionar
-                    </button>
-                    <select 
-                      value={currentEncarte.productCount}
-                      onChange={(e) => updateActiveEncarte({ productCount: parseInt(e.target.value) })}
-                      className="text-[10px] font-black uppercase tracking-widest bg-zinc-100 dark:bg-zinc-800 px-2 py-1 rounded-lg outline-none border-none text-black dark:text-white"
-                    >
-                      {[4, 6, 8, 10, 12].map(n => (
-                        <option key={n} value={n} className="bg-white dark:bg-zinc-800">{n} Itens</option>
-                      ))}
-                    </select>
-                    <button 
-                      onClick={() => {
-                        if (currentSide === 'frente') {
-                          updateActiveEncarte({ frontProducts: Array(12).fill(null) });
-                        } else {
-                          updateActiveEncarte({ backProducts: Array(12).fill(null) });
-                        }
-                      }}
-                      className="text-[10px] font-black uppercase tracking-widest text-red-500 hover:text-red-600 transition-colors"
-                    >
-                      Limpar
-                    </button>
-                  </div>
+              {!activeThemeCategory ? (
+                <div className="space-y-8">
+                  {encarteThemes.map((category) => (
+                    <div key={category.id} className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <h4 className="text-xs font-black uppercase tracking-widest opacity-40">{category.name}</h4>
+                        <button 
+                          onClick={() => setActiveThemeCategory(category.id)}
+                          className="text-[10px] font-black uppercase tracking-widest text-emerald-600"
+                        >
+                          Ver Tudo
+                        </button>
+                      </div>
+                      <div className="grid grid-cols-2 gap-3">
+                        {category.themes.slice(0, 4).map((theme) => (
+                          <button
+                            key={theme.id}
+                            onClick={() => {
+                              setActiveEncarteTheme(theme);
+                              updateActiveEncarte({ frontBgUrl: theme.imageUrl });
+                            }}
+                            className={cn(
+                              "relative aspect-[3/4] rounded-xl overflow-hidden border-2 transition-all group",
+                              activeEncarteTheme?.id === theme.id ? "border-emerald-500 ring-2 ring-emerald-500/20" : "border-transparent hover:border-zinc-200 dark:hover:border-zinc-700"
+                            )}
+                          >
+                            <img src={getProxyUrl(theme.imageUrl)} className="w-full h-full object-cover" referrerPolicy="no-referrer" crossOrigin="anonymous" />
+                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                              <span className="text-[10px] font-black uppercase text-white tracking-widest">Aplicar</span>
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
                 </div>
-                
-                <div className="flex-grow overflow-y-auto space-y-4 pr-2">
+              ) : (
+                <div className="grid grid-cols-2 gap-4">
+                  {encarteThemes.find(c => c.id === activeThemeCategory)?.themes.map((theme) => (
+                    <button
+                      key={theme.id}
+                      onClick={() => {
+                        setActiveEncarteTheme(theme);
+                        updateActiveEncarte({ frontBgUrl: theme.imageUrl });
+                      }}
+                      className={cn(
+                        "relative aspect-[3/4] rounded-xl overflow-hidden border-2 transition-all group",
+                        activeEncarteTheme?.id === theme.id ? "border-emerald-500 ring-2 ring-emerald-500/20" : "border-transparent hover:border-zinc-200 dark:hover:border-zinc-700"
+                      )}
+                    >
+                      <img src={getProxyUrl(theme.imageUrl)} className="w-full h-full object-cover" referrerPolicy="no-referrer" crossOrigin="anonymous" />
+                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                        <span className="text-[10px] font-black uppercase text-white tracking-widest">Aplicar</span>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {activeEncarteTab === 'layouts' && (
+            <div className="p-6 space-y-8">
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-black uppercase tracking-widest">Layouts</h3>
+                <button 
+                  onClick={() => setIsAddingAsset('layouts')}
+                  className="p-1.5 bg-zinc-100 dark:bg-zinc-800 rounded-lg text-zinc-500 hover:text-emerald-600 transition-colors"
+                  title="Adicionar Layout via URL"
+                >
+                  <Plus className="w-4 h-4" />
+                </button>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                {encarteLayouts.map((layout, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => {
+                      setActiveEncarteLayout(layout);
+                      updateActiveEncarte({ frontBgUrl: layout });
+                    }}
+                    className={cn(
+                      "aspect-[3/4] rounded-xl border-2 transition-all overflow-hidden",
+                      activeEncarteLayout === layout ? "border-emerald-500 ring-2 ring-emerald-500/20" : "border-zinc-100 dark:border-zinc-800 hover:border-zinc-200 dark:hover:border-zinc-700"
+                    )}
+                  >
+                    <img src={getProxyUrl(layout)} className="w-full h-full object-cover" referrerPolicy="no-referrer" crossOrigin="anonymous" />
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {activeEncarteTab === 'products' && (
+            <div className="p-6 space-y-6">
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-black uppercase tracking-widest">Produtos</h3>
+                <button 
+                  onClick={() => updateActiveEncarte({ frontProducts: Array(12).fill(null) })}
+                  className="text-[10px] font-black uppercase tracking-widest text-red-500 hover:text-red-600 transition-colors"
+                >
+                  Limpar Tudo
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                <button 
+                  onClick={() => {
+                    setActiveSlot(null);
+                    setIsSelectorOpen(true);
+                  }}
+                  className="w-full py-4 border-2 border-dashed border-zinc-200 dark:border-zinc-800 rounded-2xl text-zinc-400 hover:text-emerald-500 hover:border-emerald-500/50 transition-all flex flex-col items-center gap-1"
+                >
+                  <Plus className="w-5 h-5" />
+                  <span className="text-[10px] font-black uppercase tracking-widest">Adicionar Produto</span>
+                </button>
+
+                <div className="space-y-3">
+                  {currentProducts.map((product, index) => (
+                    <div key={index} className="p-3 bg-zinc-50 dark:bg-zinc-800 rounded-xl border border-zinc-100 dark:border-zinc-700 flex items-center gap-3 group">
+                      <div className="w-10 h-10 bg-white dark:bg-zinc-900 rounded-lg flex items-center justify-center border border-zinc-100 dark:border-zinc-700 flex-shrink-0">
+                        {product?.image ? (
+                          <img src={product.image} className="w-full h-full object-contain p-1" referrerPolicy="no-referrer" crossOrigin="anonymous" />
+                        ) : (
+                          <Package className="w-5 h-5 text-zinc-300" />
+                        )}
+                      </div>
+                      <div className="flex-grow min-w-0">
+                        <p className="text-[10px] font-black uppercase truncate">{product?.name || `Posição ${index + 1}`}</p>
+                        {product && <p className="text-[9px] font-bold text-emerald-600">{product.price}</p>}
+                      </div>
+                      {product && (
+                        <button 
+                          onClick={() => handleRemoveProduct(index)}
+                          className="p-1.5 text-zinc-400 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeEncarteTab === 'info' && (
+            <div className="p-6 space-y-6">
+              <h3 className="text-sm font-black uppercase tracking-widest">Informações</h3>
+              <div className="space-y-4">
+                <div className="space-y-1">
+                  <label className="text-[10px] font-black uppercase tracking-widest opacity-40 ml-1">Data do Encarte</label>
+                  <input 
+                    type="text"
+                    placeholder="Ex: Ofertas válidas até 25/03"
+                    value={currentEncarte.date || ''}
+                    onChange={(e) => updateActiveEncarte({ date: e.target.value })}
+                    className="w-full px-4 py-2.5 bg-zinc-50 dark:bg-zinc-800 border-none rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none transition-all font-bold"
+                  />
+                </div>
+                {/* Add more info fields as needed */}
+              </div>
+            </div>
+          )}
+
+          {activeEncarteTab === 'labels' && (
+            <div className="p-6 space-y-6">
+              <h3 className="text-sm font-black uppercase tracking-widest">Etiquetas</h3>
+              <div className="grid grid-cols-2 gap-3">
+                {BUBBLE_SHAPES.map((shape) => (
+                  <button
+                    key={shape.id}
+                    onClick={() => updateActiveEncarte({ bubbleShape: shape.id as any })}
+                    className={cn(
+                      "p-4 rounded-2xl border-2 transition-all flex flex-col items-center gap-2",
+                      currentEncarte.bubbleShape === shape.id ? "border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20" : "border-zinc-100 dark:border-zinc-800 hover:border-zinc-200 dark:hover:border-zinc-700"
+                    )}
+                  >
+                    <div className={cn("w-10 h-10 bg-red-600 shadow-sm", getBubbleClass(shape.id))} style={getBubbleStyle(shape.id)} />
+                    <span className="text-[9px] font-black uppercase tracking-widest">{shape.name}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {activeEncarteTab === 'colors' && (
+            <div className="p-6 space-y-6">
+              <h3 className="text-sm font-black uppercase tracking-widest">Cores</h3>
+              <div className="space-y-4">
+                <div className="flex items-center justify-between p-3 bg-zinc-50 dark:bg-zinc-800 rounded-xl">
+                  <span className="text-[10px] font-black uppercase tracking-widest opacity-60">Cor do Fundo</span>
+                  <input type="color" className="w-8 h-8 rounded-lg cursor-pointer border-none bg-transparent" />
+                </div>
+                <div className="flex items-center justify-between p-3 bg-zinc-50 dark:bg-zinc-800 rounded-xl">
+                  <span className="text-[10px] font-black uppercase tracking-widest opacity-60">Cor dos Produtos</span>
+                  <input type="color" className="w-8 h-8 rounded-lg cursor-pointer border-none bg-transparent" />
+                </div>
+                <div className="flex items-center justify-between p-3 bg-zinc-50 dark:bg-zinc-800 rounded-xl">
+                  <span className="text-[10px] font-black uppercase tracking-widest opacity-60">Cor dos Preços</span>
+                  <input type="color" className="w-8 h-8 rounded-lg cursor-pointer border-none bg-transparent" />
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeEncarteTab === 'fonts' && (
+            <div className="p-6 space-y-6">
+              <h3 className="text-sm font-black uppercase tracking-widest">Fontes</h3>
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black uppercase tracking-widest opacity-40 ml-1">Fonte dos Produtos</label>
+                  <select className="w-full px-4 py-2.5 bg-zinc-50 dark:bg-zinc-800 border-none rounded-xl outline-none font-bold">
+                    <option>Inter</option>
+                    <option>Roboto</option>
+                    <option>Oswald</option>
+                  </select>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black uppercase tracking-widest opacity-40 ml-1">Fonte dos Preços</label>
+                  <select className="w-full px-4 py-2.5 bg-zinc-50 dark:bg-zinc-800 border-none rounded-xl outline-none font-bold">
+                    <option>Inter</option>
+                    <option>Roboto</option>
+                    <option>Oswald</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeEncarteTab === 'logo' && (
+            <div className="p-6 space-y-6">
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-black uppercase tracking-widest">Logo</h3>
+                <button 
+                  onClick={() => setIsAddingAsset('logo')}
+                  className="p-1.5 bg-zinc-100 dark:bg-zinc-800 rounded-lg text-zinc-500 hover:text-emerald-600 transition-colors"
+                  title="Adicionar Logo via URL"
+                >
+                  <Plus className="w-4 h-4" />
+                </button>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                {encarteLogos.map((logo, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => setActiveEncarteLogo(logo)}
+                    className={cn(
+                      "aspect-square rounded-2xl border-2 transition-all p-4 flex items-center justify-center bg-white dark:bg-zinc-800",
+                      activeEncarteLogo === logo ? "border-emerald-500 ring-2 ring-emerald-500/20" : "border-zinc-100 dark:border-zinc-800 hover:border-zinc-200 dark:hover:border-zinc-700"
+                    )}
+                  >
+                    <img src={getProxyUrl(logo)} className="max-w-full max-h-full object-contain" referrerPolicy="no-referrer" crossOrigin="anonymous" />
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Preview Area */}
+        <div className={cn(
+          "p-8 overflow-hidden flex flex-col gap-6 transition-all duration-300",
+          (activeEncarteTab === 'products' || activeEncarteTab === 'layouts') ? "flex-grow" : "w-0 p-0 opacity-0 pointer-events-none"
+        )}>
+          {activeEncarteTab === 'products' ? (
+            <>
+              <div className="flex-grow overflow-y-auto pr-2 custom-scrollbar">
+                <div className="grid grid-cols-2 gap-4">
                   {currentProducts.map((product, index) => (
                     <div key={index} className="space-y-2">
                       <div className="flex items-center justify-between px-2">
@@ -616,9 +924,10 @@ export default function EncarteCreator() {
                             <div className="w-12 h-12 bg-white dark:bg-zinc-900 rounded-xl flex items-center justify-center border border-zinc-100 dark:border-zinc-700 flex-shrink-0">
                               {product.image ? (
                                 <img 
-                                  src={product.image} 
+                                  src={getProxyUrl(product.image)} 
                                   className="w-full h-full object-contain p-1" 
                                   referrerPolicy="no-referrer" 
+                                  crossOrigin="anonymous"
                                   loading="lazy"
                                   decoding="async"
                                 />
@@ -735,7 +1044,7 @@ export default function EncarteCreator() {
                 </div>
               </div>
             </>
-          ) : (
+          ) : activeEncarteTab === 'layouts' ? (
             <div className="space-y-6">
               {/* Model Selection */}
               <div className="bg-white dark:bg-zinc-900 p-6 rounded-3xl border border-zinc-200 dark:border-zinc-800 shadow-sm">
@@ -898,23 +1207,45 @@ export default function EncarteCreator() {
                 <div className="space-y-4">
                   <div className="space-y-1">
                     <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 ml-1">Fundo Frente (A4)</label>
-                    <input 
-                      type="text"
-                      placeholder="URL da imagem..."
-                      value={currentEncarte.frontBgUrl}
-                      onChange={(e) => updateActiveEncarte({ frontBgUrl: e.target.value })}
-                      className="w-full px-4 py-2.5 bg-zinc-50 dark:bg-zinc-800 border-none rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none transition-all font-bold text-zinc-900 dark:text-white"
-                    />
+                    <div className="relative">
+                      <input 
+                        type="text"
+                        placeholder="URL da imagem..."
+                        value={currentEncarte.frontBgUrl}
+                        onChange={(e) => updateActiveEncarte({ frontBgUrl: e.target.value })}
+                        className={cn(
+                          "w-full px-4 py-2.5 bg-zinc-50 dark:bg-zinc-800 border-none rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none transition-all font-bold text-zinc-900 dark:text-white",
+                          currentEncarte.frontBgUrl && !isValidImageUrl(currentEncarte.frontBgUrl) && "ring-2 ring-red-500"
+                        )}
+                      />
+                      {currentEncarte.frontBgUrl && !isValidImageUrl(currentEncarte.frontBgUrl) && (
+                        <div className="absolute right-3 top-1/2 -translate-y-1/2 text-red-500 flex items-center gap-1 pointer-events-none">
+                          <AlertCircle className="w-4 h-4" />
+                          <span className="text-[10px] font-bold">URL Inválida</span>
+                        </div>
+                      )}
+                    </div>
                   </div>
                   <div className="space-y-1">
                     <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 ml-1">Fundo Verso (A4)</label>
-                    <input 
-                      type="text"
-                      placeholder="URL da imagem..."
-                      value={currentEncarte.backBgUrl}
-                      onChange={(e) => updateActiveEncarte({ backBgUrl: e.target.value })}
-                      className="w-full px-4 py-2.5 bg-zinc-50 dark:bg-zinc-800 border-none rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none transition-all font-bold text-zinc-900 dark:text-white"
-                    />
+                    <div className="relative">
+                      <input 
+                        type="text"
+                        placeholder="URL da imagem..."
+                        value={currentEncarte.backBgUrl}
+                        onChange={(e) => updateActiveEncarte({ backBgUrl: e.target.value })}
+                        className={cn(
+                          "w-full px-4 py-2.5 bg-zinc-50 dark:bg-zinc-800 border-none rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none transition-all font-bold text-zinc-900 dark:text-white",
+                          currentEncarte.backBgUrl && !isValidImageUrl(currentEncarte.backBgUrl) && "ring-2 ring-red-500"
+                        )}
+                      />
+                      {currentEncarte.backBgUrl && !isValidImageUrl(currentEncarte.backBgUrl) && (
+                        <div className="absolute right-3 top-1/2 -translate-y-1/2 text-red-500 flex items-center gap-1 pointer-events-none">
+                          <AlertCircle className="w-4 h-4" />
+                          <span className="text-[10px] font-bold">URL Inválida</span>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -962,7 +1293,7 @@ export default function EncarteCreator() {
                             <div className="flex items-center gap-3">
                               <div className="w-10 h-10 bg-white dark:bg-zinc-900 rounded-lg flex items-center justify-center border border-zinc-100 dark:border-zinc-700 flex-shrink-0">
                                 {extra.image ? (
-                                  <img src={extra.image} className="w-full h-full object-contain p-1" referrerPolicy="no-referrer" />
+                                  <img src={getProxyUrl(extra.image)} className="w-full h-full object-contain p-1" referrerPolicy="no-referrer" crossOrigin="anonymous" />
                                 ) : (
                                   <Package className="w-5 h-5 text-zinc-400" />
                                 )}
@@ -1132,11 +1463,55 @@ export default function EncarteCreator() {
                 </div>
               </div>
             </div>
-          )}
+          ) : null}
         </div>
 
         {/* Preview Area */}
         <div className="flex-grow bg-transparent rounded-[2.5rem] p-12 overflow-auto flex flex-col items-center no-print">
+          {/* Top Bar for Format and Quantity */}
+          <div className="w-full max-w-[210mm] flex items-center justify-between mb-8 no-print">
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2 bg-white dark:bg-zinc-900 p-1 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-sm">
+                <button className="px-4 py-1.5 bg-emerald-600 text-white rounded-lg text-[10px] font-black uppercase tracking-widest">Post Quadrado</button>
+                <button className="px-4 py-1.5 text-zinc-500 text-[10px] font-black uppercase tracking-widest">Story</button>
+                <button className="px-4 py-1.5 text-zinc-500 text-[10px] font-black uppercase tracking-widest">A4 Vertical</button>
+              </div>
+
+              <div className="flex items-center gap-2 bg-white dark:bg-zinc-900 p-1 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-sm">
+                {[1, 2, 3, 4, 6, 8, 12].map(n => (
+                  <button 
+                    key={n}
+                    onClick={() => updateActiveEncarte({ productCount: n })}
+                    className={cn(
+                      "px-3 py-1.5 rounded-lg text-[10px] font-black transition-all",
+                      currentEncarte.productCount === n ? "bg-emerald-600 text-white shadow-sm" : "text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300"
+                    )}
+                  >
+                    {n}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2 bg-zinc-100 dark:bg-zinc-800 p-1 rounded-xl">
+                <button 
+                  onClick={() => setZoom(Math.max(25, zoom - 25))}
+                  className="p-1.5 hover:bg-white dark:hover:bg-zinc-700 rounded-lg text-zinc-500 transition-all"
+                >
+                  <MoveDown className="w-3 h-3 rotate-90" />
+                </button>
+                <span className="text-[10px] font-black w-10 text-center">{zoom}%</span>
+                <button 
+                  onClick={() => setZoom(Math.min(200, zoom + 25))}
+                  className="p-1.5 hover:bg-white dark:hover:bg-zinc-700 rounded-lg text-zinc-500 transition-all"
+                >
+                  <MoveUp className="w-3 h-3 rotate-90" />
+                </button>
+              </div>
+            </div>
+          </div>
+
           {/* A4 Page - Current Side */}
           <div 
             className="w-[210mm] h-[297mm] bg-white shadow-2xl p-[10mm] flex flex-col print:shadow-none print:p-0 relative overflow-hidden flex-shrink-0 origin-top" 
@@ -1150,7 +1525,7 @@ export default function EncarteCreator() {
             {(currentSide === 'frente' ? currentEncarte.frontBgUrl : currentEncarte.backBgUrl) && (
               <div className="absolute inset-0 z-0">
                 <img 
-                  src={currentSide === 'frente' ? currentEncarte.frontBgUrl : currentEncarte.backBgUrl} 
+                  src={getProxyUrl(currentSide === 'frente' ? currentEncarte.frontBgUrl : currentEncarte.backBgUrl)} 
                   alt="Background" 
                   className="w-full h-full object-cover"
                   referrerPolicy="no-referrer"
@@ -1242,7 +1617,7 @@ export default function EncarteCreator() {
                         </div>
                         <div className="w-28 h-28 flex-shrink-0">
                           {extra.image && (
-                            <img src={extra.image} className="w-full h-full object-contain" referrerPolicy="no-referrer" />
+                            <img src={extra.image} className="w-full h-full object-contain" referrerPolicy="no-referrer" crossOrigin="anonymous" />
                           )}
                         </div>
                       </motion.div>
@@ -1391,7 +1766,7 @@ export default function EncarteCreator() {
                             <div className={cn("flex-grow flex items-center justify-center bg-transparent", adaptive.img)}>
                               {product.image ? (
                                 <img 
-                                  src={product.image} 
+                                  src={getProxyUrl(product.image)} 
                                   className="max-w-full max-h-full object-contain drop-shadow-md bg-transparent" 
                                   referrerPolicy="no-referrer" 
                                   crossOrigin="anonymous"
@@ -1428,7 +1803,7 @@ export default function EncarteCreator() {
            {currentEncarte.frontBgUrl && (
             <div className="absolute inset-0 z-0">
               <img 
-                src={currentEncarte.frontBgUrl} 
+                src={getProxyUrl(currentEncarte.frontBgUrl)} 
                 className="w-full h-full object-cover" 
                 referrerPolicy="no-referrer" 
                 crossOrigin="anonymous"
@@ -1474,7 +1849,7 @@ export default function EncarteCreator() {
                       </div>
                       <div className="w-20 h-20 flex-shrink-0">
                         {extra.image && (
-                          <img src={extra.image} className="w-full h-full object-contain" referrerPolicy="no-referrer" crossOrigin="anonymous" />
+                          <img src={getProxyUrl(extra.image)} className="w-full h-full object-contain" referrerPolicy="no-referrer" crossOrigin="anonymous" />
                         )}
                       </div>
                     </div>
@@ -1534,7 +1909,7 @@ export default function EncarteCreator() {
                         <div className={cn("flex-grow flex items-center justify-center bg-transparent", adaptive.img)}>
                           {product.image && (
                             <img 
-                              src={product.image} 
+                              src={getProxyUrl(product.image)} 
                               className="max-w-full max-h-full object-contain bg-transparent" 
                               referrerPolicy="no-referrer" 
                               crossOrigin="anonymous"
@@ -1555,7 +1930,7 @@ export default function EncarteCreator() {
            {currentEncarte.backBgUrl && (
             <div className="absolute inset-0 z-0">
               <img 
-                src={currentEncarte.backBgUrl} 
+                src={getProxyUrl(currentEncarte.backBgUrl)} 
                 className="w-full h-full object-cover" 
                 referrerPolicy="no-referrer" 
                 crossOrigin="anonymous"
@@ -1601,7 +1976,7 @@ export default function EncarteCreator() {
                       </div>
                       <div className="w-20 h-20 flex-shrink-0">
                         {extra.image && (
-                          <img src={extra.image} className="w-full h-full object-contain" referrerPolicy="no-referrer" crossOrigin="anonymous" />
+                          <img src={getProxyUrl(extra.image)} className="w-full h-full object-contain" referrerPolicy="no-referrer" crossOrigin="anonymous" />
                         )}
                       </div>
                     </div>
@@ -1661,7 +2036,7 @@ export default function EncarteCreator() {
                         <div className={cn("flex-grow flex items-center justify-center bg-transparent", adaptive.img)}>
                           {product.image && (
                             <img 
-                              src={product.image} 
+                              src={getProxyUrl(product.image)} 
                               className="max-w-full max-h-full object-contain bg-transparent" 
                               referrerPolicy="no-referrer" 
                               crossOrigin="anonymous"
@@ -1677,6 +2052,67 @@ export default function EncarteCreator() {
           </div>
         </div>
       </div>
+
+      {/* Asset URL Modal */}
+      {isAddingAsset && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[110] p-4">
+          <div className="bg-white dark:bg-zinc-900 w-full max-w-md rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col border border-zinc-200 dark:border-zinc-800">
+            <div className="p-6 border-b border-zinc-200 dark:border-zinc-800 flex justify-between items-center">
+              <h3 className="text-xl font-black tracking-tighter uppercase">Adicionar URL Pública</h3>
+              <button 
+                onClick={() => {
+                  setIsAddingAsset(null);
+                  setAssetUrl('');
+                }}
+                className="p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-full transition-colors"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+            
+            <div className="p-6 space-y-4">
+              <div className="space-y-2">
+                <label className="text-[10px] font-black uppercase tracking-widest opacity-40 ml-1">URL da Imagem</label>
+                <input 
+                  type="text"
+                  placeholder="https://exemplo.com/imagem.png"
+                  value={assetUrl}
+                  onChange={(e) => setAssetUrl(e.target.value)}
+                  className="w-full px-4 py-3 bg-zinc-50 dark:bg-zinc-800 border-none rounded-2xl focus:ring-2 focus:ring-emerald-500 outline-none transition-all font-bold"
+                />
+              </div>
+              
+              <button 
+                onClick={() => {
+                  if (!assetUrl) return;
+                  
+                  if (!isValidImageUrl(assetUrl)) {
+                    toast.error('URL de imagem inválida. Certifique-se de que a URL está correta.');
+                    return;
+                  }
+
+                  if (isAddingAsset === 'logo') setEncarteLogos([...encarteLogos, assetUrl]);
+                  if (isAddingAsset === 'layouts') setEncarteLayouts([...encarteLayouts, assetUrl]);
+                  if (isAddingAsset === 'themes') {
+                    const newThemes = [...encarteThemes];
+                    if (newThemes.length === 0) {
+                      newThemes.push({ id: 'custom', name: 'Personalizados', themes: [] });
+                    }
+                    newThemes[0].themes.push({ id: `custom-${Date.now()}`, name: 'Novo Tema', imageUrl: assetUrl, category: 'Personalizados' });
+                    setEncarteThemes(newThemes);
+                  }
+                  setIsAddingAsset(null);
+                  setAssetUrl('');
+                  toast.success('Asset adicionado com sucesso!');
+                }}
+                className="w-full py-4 bg-emerald-600 text-white rounded-2xl font-black uppercase tracking-widest shadow-lg shadow-emerald-600/20 hover:scale-[1.02] active:scale-[0.98] transition-all"
+              >
+                Adicionar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Product Selector Modal */}
       {isSelectorOpen && (

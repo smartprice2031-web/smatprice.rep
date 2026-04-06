@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useStore, Product, isThreeProduct } from '../store';
 import { Search, Package, Check, X, RefreshCw } from 'lucide-react';
+import { getProxyUrl } from '../lib/utils';
 
 const ProductSelector: React.FC<{ onSelect?: (product: Product) => void }> = ({ onSelect }) => {
   const { 
@@ -77,9 +78,10 @@ const ProductSelector: React.FC<{ onSelect?: (product: Product) => void }> = ({ 
               <div className="w-12 h-12 rounded-xl bg-zinc-100 dark:bg-zinc-800 overflow-hidden flex-shrink-0">
                 {product.image ? (
                   <img 
-                    src={product.image} 
+                    src={getProxyUrl(product.image)} 
                     className="w-full h-full object-cover" 
                     referrerPolicy="no-referrer" 
+                    crossOrigin="anonymous"
                     loading="lazy"
                     decoding="async"
                   />
@@ -426,9 +428,10 @@ const ProductSlot = ({
               <div className="w-8 h-8 rounded-lg bg-zinc-100 dark:bg-zinc-800 overflow-hidden flex-shrink-0">
                 {product.image ? (
                   <img 
-                    src={product.image} 
+                    src={getProxyUrl(product.image)} 
                     className="w-full h-full object-cover" 
                     referrerPolicy="no-referrer" 
+                    crossOrigin="anonymous"
                     loading="lazy"
                     decoding="async"
                   />

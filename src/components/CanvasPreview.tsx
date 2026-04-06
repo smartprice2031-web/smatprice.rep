@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Stage, Layer, Image as KonvaImage, Text, Transformer, Rect, Group } from 'react-konva';
 import { useStore, isThreeProduct } from '../store';
 import useImage from 'use-image';
+import { getProxyUrl } from '../lib/utils';
 
 const A4_WIDTH = 794; // 210mm at 96dpi
 const A4_HEIGHT = 1123; // 297mm at 96dpi
@@ -27,10 +28,10 @@ const CanvasPreview = ({ id = "placa" }: { id?: string }) => {
   const trRef = useRef<any>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   
-  const [bgImg] = useImage(background.url || '', 'anonymous');
-  const [prodImg1] = useImage(productImage1.url || '', 'anonymous');
-  const [prodImg2] = useImage(productImage2.url || '', 'anonymous');
-  const [prodImg3] = useImage(productImage3.url || '', 'anonymous');
+  const [bgImg] = useImage(getProxyUrl(background.url) || '', 'anonymous');
+  const [prodImg1] = useImage(getProxyUrl(productImage1.url) || '', 'anonymous');
+  const [prodImg2] = useImage(getProxyUrl(productImage2.url) || '', 'anonymous');
+  const [prodImg3] = useImage(getProxyUrl(productImage3.url) || '', 'anonymous');
   const [autoScale, setAutoScale] = useState(1);
   if (!activeLayout) return null;
 

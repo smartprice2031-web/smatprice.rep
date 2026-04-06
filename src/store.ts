@@ -151,7 +151,23 @@ export interface EncarteModel {
   bgClass: string;
   borderClass: string;
   fontFamily?: string;
+  imageUrl?: string;
 }
+
+export interface Theme {
+  id: string;
+  name: string;
+  imageUrl: string;
+  category: string;
+}
+
+export interface ThemeCategory {
+  id: string;
+  name: string;
+  themes: Theme[];
+}
+
+export type EncarteTab = 'themes' | 'layouts' | 'products' | 'info' | 'labels' | 'colors' | 'fonts' | 'logo';
 
 interface AppState {
   theme: 'light' | 'dark';
@@ -321,6 +337,20 @@ interface AppState {
   setEncartes: (encartes: EncarteSlot[]) => void;
   selectedEncarteModel: EncarteModel | null;
   setSelectedEncarteModel: (model: EncarteModel) => void;
+  activeEncarteTab: EncarteTab;
+  setActiveEncarteTab: (tab: EncarteTab) => void;
+  encarteThemes: ThemeCategory[];
+  setEncarteThemes: (themes: ThemeCategory[]) => void;
+  encarteLogos: string[];
+  setEncarteLogos: (logos: string[]) => void;
+  encarteLayouts: string[];
+  setEncarteLayouts: (layouts: string[]) => void;
+  activeEncarteTheme: Theme | null;
+  setActiveEncarteTheme: (theme: Theme | null) => void;
+  activeEncarteLogo: string | null;
+  setActiveEncarteLogo: (logo: string | null) => void;
+  activeEncarteLayout: string | null;
+  setActiveEncarteLayout: (layout: string | null) => void;
 
   login: (role: 'user' | 'admin', user: { username: string; cnpj: string; bandeira: string }) => void;
   logout: () => void;
@@ -1268,6 +1298,9 @@ export const useStore = create<AppState>()(
                 userGroups: state.userGroups,
                 encartes: state.encartes,
                 selectedEncarteModel: state.selectedEncarteModel,
+                encarteThemes: state.encarteThemes,
+                encarteLogos: state.encarteLogos,
+                encarteLayouts: state.encarteLayouts,
                 layouts: state.layouts,
                 announcements: state.announcements
               } 
@@ -1310,6 +1343,9 @@ export const useStore = create<AppState>()(
               userGroups: data.value.userGroups || [],
               encartes: data.value.encartes || get().encartes,
               selectedEncarteModel: data.value.selectedEncarteModel || get().selectedEncarteModel,
+              encarteThemes: data.value.encarteThemes || [],
+              encarteLogos: data.value.encarteLogos || [],
+              encarteLayouts: data.value.encarteLayouts || [],
               layouts: loadedLayouts,
               announcements: data.value.announcements || []
             });
@@ -1370,6 +1406,29 @@ export const useStore = create<AppState>()(
         set({ selectedEncarteModel: model });
         get().saveUsersAndFlagsDebounced();
       },
+      activeEncarteTab: 'themes',
+      setActiveEncarteTab: (tab) => set({ activeEncarteTab: tab }),
+      encarteThemes: [],
+      setEncarteThemes: (themes) => {
+        set({ encarteThemes: themes });
+        get().saveUsersAndFlagsDebounced();
+      },
+      encarteLogos: [],
+      setEncarteLogos: (logos) => {
+        set({ encarteLogos: logos });
+        get().saveUsersAndFlagsDebounced();
+      },
+      encarteLayouts: [],
+      setEncarteLayouts: (layouts) => {
+        set({ encarteLayouts: layouts });
+        get().saveUsersAndFlagsDebounced();
+      },
+      activeEncarteTheme: null,
+      setActiveEncarteTheme: (theme) => set({ activeEncarteTheme: theme }),
+      activeEncarteLogo: null,
+      setActiveEncarteLogo: (logo) => set({ activeEncarteLogo: logo }),
+      activeEncarteLayout: null,
+      setActiveEncarteLayout: (layout) => set({ activeEncarteLayout: layout }),
 
       login: async (role, user) => {
         set({ 
@@ -1414,6 +1473,9 @@ export const useStore = create<AppState>()(
         currentView: state.currentView,
         encartes: state.encartes,
         selectedEncarteModel: state.selectedEncarteModel,
+        encarteThemes: state.encarteThemes,
+        encarteLogos: state.encarteLogos,
+        encarteLayouts: state.encarteLayouts,
         announcements: state.announcements,
         seenAnnouncements: state.seenAnnouncements,
         isSingleProduct: state.isSingleProduct,

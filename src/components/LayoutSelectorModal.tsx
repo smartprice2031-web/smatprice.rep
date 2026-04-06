@@ -2,12 +2,7 @@ import React from 'react';
 import { useStore, Layout as LayoutType } from '../store';
 import { X, Layout as LayoutIcon, Search, Flag, MapPin, ChevronRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { clsx, type ClassValue } from 'clsx';
-import { twMerge } from 'tailwind-merge';
-
-function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs));
-}
+import { cn } from '../lib/utils';
 
 interface LayoutSelectorModalProps {
   isOpen: boolean;
@@ -145,6 +140,7 @@ export default function LayoutSelectorModal({ isOpen, onClose, layouts, onSelect
                               alt={layout.name}
                               className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
                               referrerPolicy="no-referrer"
+                              crossOrigin="anonymous"
                               loading="lazy"
                               decoding="async"
                             />

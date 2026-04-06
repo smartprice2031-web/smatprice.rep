@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useStore, Product } from '../store';
-import { Plus, Search, Edit2, Trash2, Package, RefreshCw, AlertTriangle } from 'lucide-react';
+import { Plus, Search, Edit2, Trash2, Package, RefreshCw, AlertTriangle, AlertCircle } from 'lucide-react';
+import { cn, isValidImageUrl, getProxyUrl } from '../lib/utils';
 import { supabase } from '../lib/supabase';
 
 import { toast } from 'sonner';
@@ -67,15 +68,35 @@ const ProductManager = () => {
     }
   };
 
+  const [showBulkConfirm, setShowBulkConfirm] = useState(false);
+  const [pendingBulkData, setPendingBulkData] = useState<any[]>([]);
+
   const handleBulkSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
       const productsToInsert = JSON.parse(bulkData);
       if (!Array.isArray(productsToInsert)) throw new Error('O formato deve ser um array de objetos.');
       
+      // Validação básica de URLs de imagem no import em massa
+      const invalidImages = productsToInsert.filter(p => p.image && !isValidImageUrl(p.image));
+      if (invalidImages.length > 0) {
+        setPendingBulkData(productsToInsert);
+        setShowBulkConfirm(true);
+        return;
+      }
+      
+      await executeBulkInsert(productsToInsert);
+    } catch (error: any) {
+      console.error("Error bulk inserting products:", error);
+      toast.error("Erro ao importar produtos. Verifique se o formato JSON está correto.");
+    }
+  };
+
+  const executeBulkInsert = async (data: any[]) => {
+    try {
       const { error } = await supabase
         .from('products')
-        .insert(productsToInsert.map(p => ({
+        .insert(data.map(p => ({
           name: p.name || 'Sem nome',
           description: p.description || '',
           price: p.price || 'R$ 0,00',
@@ -87,12 +108,14 @@ const ProductManager = () => {
       
       setIsBulkModalOpen(false);
       setBulkData('');
+      setShowBulkConfirm(false);
+      setPendingBulkData([]);
       await fetchProducts();
       await fetchProductCount();
       toast.success('Produtos adicionados com sucesso!');
     } catch (error: any) {
       console.error("Error bulk inserting products:", error);
-      toast.error("Erro ao importar produtos. Verifique se o formato JSON está correto.");
+      toast.error("Erro ao inserir produtos no banco de dados.");
     }
   };
 
@@ -120,6 +143,12 @@ const ProductManager = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (formData.image && !isValidImageUrl(formData.image)) {
+      toast.error('URL de imagem inválida. Certifique-se de que a URL está correta.');
+      return;
+    }
+
     try {
       if (editingProduct && editingProduct.id) {
         const { error } = await supabase
@@ -252,10 +281,11 @@ const ProductManager = () => {
               <div className="w-16 h-16 bg-zinc-100 dark:bg-zinc-700 rounded-lg overflow-hidden flex-shrink-0">
                 {product.image ? (
                   <img 
-                    src={product.image} 
+                    src={getProxyUrl(product.image)} 
                     alt={product.name} 
                     className="w-full h-full object-cover" 
                     referrerPolicy="no-referrer" 
+                    crossOrigin="anonymous"
                     loading="lazy"
                     decoding="async"
                   />
@@ -407,20 +437,32 @@ const ProductManager = () => {
                   <label className="block text-sm font-medium mb-1 opacity-60">URL da Imagem do Produto</label>
                   <div className="space-y-3">
                     <input
-                      type="url"
+                      type="text"
                       placeholder="https://exemplo.com/imagem.jpg"
-                      className="w-full px-3 py-2 bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg text-black dark:text-white"
+                      className={`w-full px-3 py-2 bg-zinc-50 dark:bg-zinc-800 border rounded-lg text-black dark:text-white outline-none transition-all ${
+                        formData.image && !isValidImageUrl(formData.image) 
+                          ? 'border-red-500 focus:ring-1 focus:ring-red-500' 
+                          : 'border-zinc-200 dark:border-zinc-700 focus:ring-1 focus:ring-emerald-500'
+                      }`}
                       value={formData.image || ''}
                       onChange={e => setFormData({ ...formData, image: e.target.value })}
                     />
                     
+                    {formData.image && !isValidImageUrl(formData.image) && (
+                      <p className="text-[10px] text-red-500 font-bold flex items-center gap-1">
+                        <AlertCircle className="w-3 h-3" />
+                        URL de imagem possivelmente inválida.
+                      </p>
+                    )}
+                    
                     {formData.image && (
                       <div className="relative inline-block">
                         <img 
-                          src={formData.image} 
+                          src={getProxyUrl(formData.image)} 
                           alt="Preview" 
                           className="h-32 w-32 object-cover rounded-lg border border-zinc-200 dark:border-zinc-700" 
                           referrerPolicy="no-referrer"
+                          crossOrigin="anonymous"
                           onError={(e) => {
                             (e.target as HTMLImageElement).src = 'https://placehold.co/400x400?text=Erro+na+URL';
                           }}
@@ -487,6 +529,40 @@ const ProductManager = () => {
                 className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 text-sm font-bold"
               >
                 Excluir
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {showBulkConfirm && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[70] p-4">
+          <div className="bg-white dark:bg-zinc-900 w-full max-w-md rounded-3xl shadow-2xl p-8 border border-zinc-200 dark:border-zinc-800">
+            <div className="flex items-center gap-4 mb-6 text-amber-500">
+              <div className="p-3 bg-amber-100 dark:bg-amber-900/30 rounded-2xl">
+                <AlertTriangle className="w-8 h-8" />
+              </div>
+              <h3 className="text-xl font-black tracking-tight uppercase">Aviso de Imagens</h3>
+            </div>
+            
+            <p className="text-zinc-600 dark:text-zinc-400 font-bold mb-8 leading-relaxed">
+              Foram encontradas URLs de imagem que parecem inválidas. Deseja continuar a importação assim mesmo?
+            </p>
+            
+            <div className="flex gap-3">
+              <button 
+                onClick={() => {
+                  setShowBulkConfirm(false);
+                  setPendingBulkData([]);
+                }}
+                className="flex-1 px-6 py-4 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 rounded-2xl font-black uppercase tracking-widest text-xs transition-all"
+              >
+                Cancelar
+              </button>
+              <button 
+                onClick={() => executeBulkInsert(pendingBulkData)}
+                className="flex-1 px-6 py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-black uppercase tracking-widest text-xs shadow-lg shadow-blue-500/20 transition-all"
+              >
+                Continuar
               </button>
             </div>
           </div>
