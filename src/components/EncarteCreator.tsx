@@ -356,7 +356,7 @@ export default function EncarteCreator() {
         scale: 2, 
         useCORS: true, 
         backgroundColor: '#ffffff',
-        logging: true,
+        logging: false,
         windowWidth: 794, // 210mm at 96dpi
         windowHeight: 1123 // 297mm at 96dpi
       };
@@ -402,7 +402,7 @@ export default function EncarteCreator() {
         scale: 2, 
         useCORS: true, 
         backgroundColor: '#ffffff',
-        logging: true,
+        logging: false,
         windowWidth: 794,
         windowHeight: 1123
       };
@@ -661,7 +661,7 @@ export default function EncarteCreator() {
                               activeEncarteTheme?.id === theme.id ? "border-emerald-500 ring-2 ring-emerald-500/20" : "border-transparent hover:border-zinc-200 dark:hover:border-zinc-700"
                             )}
                           >
-                            <img src={getProxyUrl(theme.imageUrl)} className="w-full h-full object-cover" referrerPolicy="no-referrer" crossOrigin="anonymous" />
+                            <img src={getProxyUrl(theme.imageUrl, { thumbnail: true })} className="w-full h-full object-cover" referrerPolicy="no-referrer" crossOrigin="anonymous" />
                             <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                               <span className="text-[10px] font-black uppercase text-white tracking-widest">Aplicar</span>
                             </div>
@@ -685,7 +685,7 @@ export default function EncarteCreator() {
                         activeEncarteTheme?.id === theme.id ? "border-emerald-500 ring-2 ring-emerald-500/20" : "border-transparent hover:border-zinc-200 dark:hover:border-zinc-700"
                       )}
                     >
-                      <img src={getProxyUrl(theme.imageUrl)} className="w-full h-full object-cover" referrerPolicy="no-referrer" crossOrigin="anonymous" />
+                      <img src={getProxyUrl(theme.imageUrl, { thumbnail: true })} className="w-full h-full object-cover" referrerPolicy="no-referrer" crossOrigin="anonymous" />
                       <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                         <span className="text-[10px] font-black uppercase text-white tracking-widest">Aplicar</span>
                       </div>
@@ -721,7 +721,7 @@ export default function EncarteCreator() {
                       activeEncarteLayout === layout ? "border-emerald-500 ring-2 ring-emerald-500/20" : "border-zinc-100 dark:border-zinc-800 hover:border-zinc-200 dark:hover:border-zinc-700"
                     )}
                   >
-                    <img src={getProxyUrl(layout)} className="w-full h-full object-cover" referrerPolicy="no-referrer" crossOrigin="anonymous" />
+                    <img src={getProxyUrl(layout, { thumbnail: true })} className="w-full h-full object-cover" referrerPolicy="no-referrer" crossOrigin="anonymous" />
                   </button>
                 ))}
               </div>

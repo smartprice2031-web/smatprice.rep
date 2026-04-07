@@ -89,7 +89,13 @@ const CanvasPreview = ({ id = "placa" }: { id?: string }) => {
 
   const handleExport = () => {
     if (!stageRef.current) return '';
-    return stageRef.current.toDataURL({ pixelRatio: 2 });
+    // Use JPEG with 0.8 quality to significantly reduce memory usage
+    // while maintaining high resolution (pixelRatio: 2)
+    return stageRef.current.toDataURL({ 
+      mimeType: 'image/jpeg', 
+      quality: 0.8, 
+      pixelRatio: 2 
+    });
   };
 
   useEffect(() => {

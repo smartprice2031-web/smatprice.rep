@@ -1480,7 +1480,6 @@ export const useStore = create<AppState>()(
         seenAnnouncements: state.seenAnnouncements,
         isSingleProduct: state.isSingleProduct,
         showOptionalTextControl: state.showOptionalTextControl,
-        printQueue: state.printQueue,
         unreadSupportCount: state.unreadSupportCount,
         unreadPerUser: state.unreadPerUser,
       }),

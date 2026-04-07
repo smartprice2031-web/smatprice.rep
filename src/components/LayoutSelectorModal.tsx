@@ -2,7 +2,7 @@ import React from 'react';
 import { useStore, Layout as LayoutType } from '../store';
 import { X, Layout as LayoutIcon, Search, Flag, MapPin, ChevronRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { cn } from '../lib/utils';
+import { cn, getProxyUrl } from '../lib/utils';
 
 interface LayoutSelectorModalProps {
   isOpen: boolean;
@@ -136,7 +136,7 @@ export default function LayoutSelectorModal({ isOpen, onClose, layouts, onSelect
                         <div className="aspect-[16/9] w-full bg-zinc-100 dark:bg-zinc-900 relative overflow-hidden">
                           {layout.background.url ? (
                             <img 
-                              src={layout.background.url} 
+                              src={getProxyUrl(layout.background.url, { thumbnail: true })} 
                               alt={layout.name}
                               className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
                               referrerPolicy="no-referrer"
