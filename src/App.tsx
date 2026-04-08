@@ -242,7 +242,14 @@ export default function App() {
 
   useEffect(() => {
     const styleId = 'landscape-print-style';
-    if (activeLayoutIndex === 10) {
+    const activeLayout = layouts[activeLayoutIndex];
+    const isQuartSuplemMaxi = activeLayout?.name === 'Quart Suplem Maxi';
+    
+    // Use orientation from store, but force portrait for "Quart Suplem Maxi"
+    // Keep index 10 as landscape for backward compatibility if needed, but only if not Quart Suplem Maxi
+    const isLandscape = !isQuartSuplemMaxi && (orientation === 'landscape' || activeLayoutIndex === 10);
+
+    if (isLandscape) {
       document.body.classList.add('landscape-mode');
       if (!document.getElementById(styleId)) {
         const style = document.createElement('style');
@@ -255,7 +262,7 @@ export default function App() {
       const style = document.getElementById(styleId);
       if (style) style.remove();
     }
-  }, [activeLayoutIndex]);
+  }, [activeLayoutIndex, orientation, layouts]);
 
   useEffect(() => {
     if (isPrinting) {
@@ -294,8 +301,12 @@ export default function App() {
     const toastId = toast.loading('Gerando PDF...');
 
     try {
+      const activeLayout = layouts[activeLayoutIndex];
+      const isQuartSuplemMaxi = activeLayout?.name === 'Quart Suplem Maxi';
+      const isLandscape = !isQuartSuplemMaxi && (orientation === 'landscape' || activeLayoutIndex === 10);
+
       const pdf = new jsPDF({
-        orientation: activeLayoutIndex === 10 ? 'landscape' : 'portrait',
+        orientation: isLandscape ? 'landscape' : 'portrait',
         unit: 'mm',
         format: 'a4'
       });
@@ -328,7 +339,11 @@ export default function App() {
           toast.error('Erro ao capturar imagem.', { id: toastId });
           return;
         }
-        addToQueue(canvasData, orientation === 'landscape');
+        const activeLayout = layouts[activeLayoutIndex];
+        const isQuartSuplemMaxi = activeLayout?.name === 'Quart Suplem Maxi';
+        const isLandscape = !isQuartSuplemMaxi && (orientation === 'landscape' || activeLayoutIndex === 10);
+        
+        addToQueue(canvasData, isLandscape);
         toast.success('Adicionado à fila com sucesso!', { id: toastId });
       } catch (error) {
         console.error('Erro ao adicionar à fila:', error);

@@ -35,7 +35,9 @@ const CanvasPreview = ({ id = "placa" }: { id?: string }) => {
   const [autoScale, setAutoScale] = useState(1);
   if (!activeLayout) return null;
 
-  const isLandscape = orientation === 'landscape';
+  // Force portrait for "Quart Suplem Maxi" as requested by user
+  const isQuartSuplemMaxi = activeLayout.name === 'Quart Suplem Maxi';
+  const isLandscape = !isQuartSuplemMaxi && orientation === 'landscape';
   const currentWidth = isLandscape ? A4_HEIGHT : A4_WIDTH;
   const currentHeight = isLandscape ? A4_WIDTH : A4_HEIGHT;
 
@@ -436,6 +438,17 @@ const CanvasPreview = ({ id = "placa" }: { id?: string }) => {
                 image={bgImg}
                 width={currentWidth}
                 height={currentHeight}
+                crop={(() => {
+                  const scale = Math.max(currentWidth / bgImg.width, currentHeight / bgImg.height);
+                  const cropWidth = currentWidth / scale;
+                  const cropHeight = currentHeight / scale;
+                  return {
+                    x: (bgImg.width - cropWidth) / 2,
+                    y: (bgImg.height - cropHeight) / 2,
+                    width: cropWidth,
+                    height: cropHeight
+                  };
+                })()}
                 onMouseDown={() => setSelectedId(null)}
               />
             )}
