@@ -176,8 +176,45 @@ export default function EncarteCreator() {
     frontProducts: [],
     backProducts: [],
     productCount: 12,
-    extraProducts: []
+    extraProducts: [],
+    format: 'encarte'
   };
+
+  const [bgAspect, setBgAspect] = useState(210 / 297); // Default A4 Portrait
+
+  useEffect(() => {
+    const url = currentSide === 'frente' ? currentEncarte.frontBgUrl : currentEncarte.backBgUrl;
+    if (url) {
+      const img = new Image();
+      img.onload = () => {
+        if (img.width > 0 && img.height > 0) {
+          setBgAspect(img.width / img.height);
+        }
+      };
+      img.src = getProxyUrl(url);
+    }
+  }, [currentEncarte.frontBgUrl, currentEncarte.backBgUrl, currentSide]);
+
+  const getDimensions = () => {
+    switch (currentEncarte.format) {
+      case 'post':
+        return { width: '210mm', height: '210mm', mmWidth: 210, mmHeight: 210, label: 'Post Quadrado' };
+      case 'story':
+        return { width: '210mm', height: '373.33mm', mmWidth: 210, mmHeight: 373.33, label: 'Story' };
+      case 'encarte':
+      default:
+        // Use the background image aspect ratio as base
+        const height = 210 / bgAspect;
+        return { 
+          width: '210mm', 
+          height: `${height}mm`, 
+          mmWidth: 210, 
+          mmHeight: height, 
+          label: 'Encarte' 
+        };
+    }
+  };
+  const dims = getDimensions();
 
   // Pre-load background images
   useEffect(() => {
@@ -1206,7 +1243,7 @@ export default function EncarteCreator() {
                 </div>
                 <div className="space-y-4">
                   <div className="space-y-1">
-                    <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 ml-1">Fundo Frente (A4)</label>
+                    <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 ml-1">Fundo Frente ({dims.label})</label>
                     <div className="relative">
                       <input 
                         type="text"
@@ -1227,7 +1264,7 @@ export default function EncarteCreator() {
                     </div>
                   </div>
                   <div className="space-y-1">
-                    <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 ml-1">Fundo Verso (A4)</label>
+                    <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 ml-1">Fundo Verso ({dims.label})</label>
                     <div className="relative">
                       <input 
                         type="text"
@@ -1472,9 +1509,33 @@ export default function EncarteCreator() {
           <div className="w-full max-w-[210mm] flex items-center justify-between mb-8 no-print">
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2 bg-white dark:bg-zinc-900 p-1 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-sm">
-                <button className="px-4 py-1.5 bg-emerald-600 text-white rounded-lg text-[10px] font-black uppercase tracking-widest">Post Quadrado</button>
-                <button className="px-4 py-1.5 text-zinc-500 text-[10px] font-black uppercase tracking-widest">Story</button>
-                <button className="px-4 py-1.5 text-zinc-500 text-[10px] font-black uppercase tracking-widest">A4 Vertical</button>
+                <button 
+                  onClick={() => updateActiveEncarte({ format: 'post' })}
+                  className={cn(
+                    "px-4 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all",
+                    (currentEncarte.format === 'post' || !currentEncarte.format) ? "bg-emerald-600 text-white shadow-sm" : "text-zinc-500 hover:text-zinc-700"
+                  )}
+                >
+                  Post Quadrado
+                </button>
+                <button 
+                  onClick={() => updateActiveEncarte({ format: 'story' })}
+                  className={cn(
+                    "px-4 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all",
+                    currentEncarte.format === 'story' ? "bg-emerald-600 text-white shadow-sm" : "text-zinc-500 hover:text-zinc-700"
+                  )}
+                >
+                  Story
+                </button>
+                <button 
+                  onClick={() => updateActiveEncarte({ format: 'encarte' })}
+                  className={cn(
+                    "px-4 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all",
+                    currentEncarte.format === 'encarte' ? "bg-emerald-600 text-white shadow-sm" : "text-zinc-500 hover:text-zinc-700"
+                  )}
+                >
+                  Encarte
+                </button>
               </div>
 
               <div className="flex items-center gap-2 bg-white dark:bg-zinc-900 p-1 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-sm">
@@ -1514,20 +1575,22 @@ export default function EncarteCreator() {
 
           {/* A4 Page - Current Side */}
           <div 
-            className="w-[210mm] h-[297mm] bg-white shadow-2xl p-[10mm] flex flex-col print:shadow-none print:p-0 relative overflow-hidden flex-shrink-0 origin-top" 
+            className="bg-white shadow-2xl p-[10mm] flex flex-col print:shadow-none print:p-0 relative overflow-hidden flex-shrink-0 origin-top" 
             id="encarte-page"
             style={{ 
+              width: dims.width,
+              height: dims.height,
               transform: `scale(${zoom / 100})`,
-              marginBottom: `${(zoom / 100 - 1) * 297}mm`
+              marginBottom: `${(zoom / 100 - 1) * dims.mmHeight}mm`
             }}
           >
             {/* Background Image Layer */}
             {(currentSide === 'frente' ? currentEncarte.frontBgUrl : currentEncarte.backBgUrl) && (
-              <div className="absolute inset-0 z-0">
+              <div className="absolute inset-0 z-0 bg-white">
                 <img 
                   src={getProxyUrl(currentSide === 'frente' ? currentEncarte.frontBgUrl : currentEncarte.backBgUrl)} 
                   alt="Background" 
-                  className="w-full h-full object-cover"
+                  className="w-full h-full object-contain"
                   referrerPolicy="no-referrer"
                   crossOrigin="anonymous"
                   loading="eager"
@@ -1799,12 +1862,16 @@ export default function EncarteCreator() {
       {/* Hidden Print Pages - Positioned to allow html2canvas capture but hidden from view */}
       <div className="fixed top-0 left-0 opacity-0 pointer-events-none z-[-10] print:static print:opacity-100 print:z-0 print:pointer-events-auto">
         {/* Page 1 - Frente */}
-        <div className="w-[210mm] h-[297mm] bg-white p-[10mm] flex flex-col relative overflow-hidden print:m-0 print:p-0" id="print-frente">
+        <div 
+          className="bg-white p-[10mm] flex flex-col relative overflow-hidden print:m-0 print:p-0" 
+          id="print-frente"
+          style={{ width: dims.width, height: dims.height }}
+        >
            {currentEncarte.frontBgUrl && (
-            <div className="absolute inset-0 z-0">
+            <div className="absolute inset-0 z-0 bg-white">
               <img 
                 src={getProxyUrl(currentEncarte.frontBgUrl)} 
-                className="w-full h-full object-cover" 
+                className="w-full h-full object-contain" 
                 referrerPolicy="no-referrer" 
                 crossOrigin="anonymous"
               />
@@ -1926,12 +1993,16 @@ export default function EncarteCreator() {
         </div>
 
         {/* Page 2 - Verso */}
-        <div className="w-[210mm] h-[297mm] bg-white p-[10mm] flex flex-col relative overflow-hidden print:m-0 print:p-0 page-break-before" id="print-verso">
+        <div 
+          className="bg-white p-[10mm] flex flex-col relative overflow-hidden print:m-0 print:p-0 page-break-before" 
+          id="print-verso"
+          style={{ width: dims.width, height: dims.height }}
+        >
            {currentEncarte.backBgUrl && (
-            <div className="absolute inset-0 z-0">
+            <div className="absolute inset-0 z-0 bg-white">
               <img 
                 src={getProxyUrl(currentEncarte.backBgUrl)} 
-                className="w-full h-full object-cover" 
+                className="w-full h-full object-contain" 
                 referrerPolicy="no-referrer" 
                 crossOrigin="anonymous"
               />
@@ -2151,17 +2222,17 @@ export default function EncarteCreator() {
           }
           #print-frente {
             position: relative;
-            width: 210mm;
-            height: 297mm;
+            width: ${dims.width};
+            height: ${dims.height};
             page-break-after: always;
           }
           #print-verso {
             position: relative;
-            width: 210mm;
-            height: 297mm;
+            width: ${dims.width};
+            height: ${dims.height};
           }
           @page {
-            size: A4;
+            size: ${dims.width} ${dims.height};
             margin: 0;
           }
           .page-break-before {

@@ -243,18 +243,18 @@ const ProductSlot = ({
         {/* Single Product Toggle */}
         {(!isThreeProduct(layouts?.[activeLayoutIndex || 0]?.name || '', activeLayoutIndex || 0) || (layouts?.[activeLayoutIndex || 0]?.name || '').toUpperCase() === 'PADRÃO ULTRA') ? (
           <div 
-            className="flex items-center justify-between p-2 rounded-xl border border-white/5 shadow-lg bg-[#1a1614]"
+            className="flex items-center justify-between p-1.5 rounded-xl border border-white/5 shadow-lg bg-[#1a1614]"
           >
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5">
               <div 
-                className="w-1.5 h-1.5 rounded-full bg-[#2563eb]" 
-                style={{ boxShadow: `0 0 6px #2563eb99` }} 
+                className="w-1 h-1 rounded-full bg-[#2563eb]" 
+                style={{ boxShadow: `0 0 4px #2563eb99` }} 
               />
-              <span className="text-[9px] font-black uppercase tracking-tight text-[#2563eb] leading-tight">
+              <span className="text-[8px] font-black uppercase tracking-tight text-[#2563eb] leading-tight">
                 (Apenas Um produto)
               </span>
             </div>
-            <label className="relative inline-flex items-center cursor-pointer scale-75 origin-right">
+            <label className="relative inline-flex items-center cursor-pointer scale-[0.65] origin-right">
               <input 
                 type="checkbox" 
                 className="sr-only peer"
@@ -269,18 +269,28 @@ const ProductSlot = ({
         {/* Optional Text Toggle */}
         {showOptionalTextControl && (
           <div 
-            className="flex items-center justify-between p-2 rounded-xl border border-white/5 shadow-lg bg-[#1a1614]"
+            className="flex items-center justify-between p-1.5 rounded-xl border border-white/5 shadow-lg bg-[#1a1614]"
           >
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5">
               <div 
-                className="w-1.5 h-1.5 rounded-full bg-[#ff6600]" 
-                style={{ boxShadow: `0 0 6px #ff660099` }} 
+                className="w-1 h-1 rounded-full bg-[#ff6600]" 
+                style={{ boxShadow: `0 0 4px #ff660099` }} 
               />
-              <span className="text-[9px] font-black uppercase tracking-tight text-[#ff6600] leading-tight">
-                Texto Opcional
-              </span>
+              <div className="flex items-center gap-1">
+                <span className="text-[8px] font-black uppercase tracking-tight text-[#ff6600] leading-tight">
+                  Texto Opcional
+                </span>
+                <div className="relative w-3 h-3 rounded-full border border-white/20 shadow-sm overflow-hidden flex-shrink-0" style={{ backgroundColor: optionalText?.color || '#000000' }}>
+                  <input 
+                    type="color"
+                    value={optionalText?.color || '#000000'}
+                    onChange={(e) => setOptionalText?.({ color: e.target.value })}
+                    className="absolute inset-0 opacity-0 cursor-pointer w-full h-full scale-150"
+                  />
+                </div>
+              </div>
             </div>
-            <label className="relative inline-flex items-center cursor-pointer scale-75 origin-right">
+            <label className="relative inline-flex items-center cursor-pointer scale-[0.65] origin-right">
               <input 
                 type="checkbox" 
                 className="sr-only peer"

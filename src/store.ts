@@ -137,6 +137,7 @@ export interface EncarteSlot {
   frontProducts: (SelectedProduct | null)[];
   backProducts: (SelectedProduct | null)[];
   productCount: number;
+  format?: 'post' | 'story' | 'encarte';
   bubbleShape?: 'rounded' | 'square' | 'circle' | 'pill' | 'burst' | 'badge' | 'diamond' | 'hexagon' | 'star' | 'oval';
   extraProducts?: (SelectedProduct | null)[];
 }
