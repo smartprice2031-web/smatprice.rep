@@ -234,10 +234,13 @@ const CanvasPreview = ({ id = "placa" }: { id?: string }) => {
     const prodImg = slot === 1 ? prodImg1 : slot === 2 ? prodImg2 : prodImg3;
     const imgRef = slot === 1 ? productImg1Ref : slot === 2 ? productImg2Ref : productImg3Ref;
 
-    if (!productImage.visible || (slot > 1 && isSingleProduct)) return null;
-
     const currentLayout = layouts[activeLayoutIndex];
-    const hasThird = currentLayout?.hasThirdProduct ?? true;
+    const isThree = isThreeProduct(currentLayout?.name || '', activeLayoutIndex);
+    const isUltra = currentLayout?.name?.toUpperCase() === 'PADRÃO ULTRA';
+
+    if (!productImage.visible || (slot > 1 && isSingleProduct && (!isThree || isUltra))) return null;
+
+    const hasThird = currentLayout?.hasThirdProduct || isThree;
     
     if (slot === 3 && !hasThird) return null;
 

@@ -791,21 +791,28 @@ export default function EncarteCreator() {
 
                 <div className="space-y-3">
                   {currentProducts.map((product, index) => (
-                    <div key={index} className="p-3 bg-zinc-50 dark:bg-zinc-800 rounded-xl border border-zinc-100 dark:border-zinc-700 flex items-center gap-3 group">
+                    <div 
+                      key={index} 
+                      onClick={() => openSelector(index)}
+                      className="p-3 bg-zinc-50 dark:bg-zinc-800 rounded-xl border border-zinc-100 dark:border-zinc-700 flex items-center gap-3 group hover:border-emerald-500/50 transition-all cursor-pointer"
+                    >
                       <div className="w-10 h-10 bg-white dark:bg-zinc-900 rounded-lg flex items-center justify-center border border-zinc-100 dark:border-zinc-700 flex-shrink-0">
                         {product?.image ? (
-                          <img src={product.image} className="w-full h-full object-contain p-1" referrerPolicy="no-referrer" crossOrigin="anonymous" />
+                          <img src={getProxyUrl(product.image)} className="w-full h-full object-contain p-1" referrerPolicy="no-referrer" crossOrigin="anonymous" />
                         ) : (
                           <Package className="w-5 h-5 text-zinc-300" />
                         )}
                       </div>
                       <div className="flex-grow min-w-0">
-                        <p className="text-[10px] font-black uppercase truncate">{product?.name || `Posição ${index + 1}`}</p>
+                        <p className="text-[10px] font-black uppercase truncate text-black dark:text-white">{product?.name || `Posição ${index + 1}`}</p>
                         {product && <p className="text-[9px] font-bold text-emerald-600">{product.price}</p>}
                       </div>
                       {product && (
                         <button 
-                          onClick={() => handleRemoveProduct(index)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleRemoveProduct(index);
+                          }}
                           className="p-1.5 text-zinc-400 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
@@ -935,7 +942,7 @@ export default function EncarteCreator() {
         {/* Preview Area */}
         <div className={cn(
           "p-8 overflow-hidden flex flex-col gap-6 transition-all duration-300",
-          (activeEncarteTab === 'products' || activeEncarteTab === 'layouts') ? "flex-grow" : "w-0 p-0 opacity-0 pointer-events-none"
+          (activeEncarteTab === 'layouts') ? "flex-grow" : "w-0 p-0 opacity-0 pointer-events-none"
         )}>
           {activeEncarteTab === 'products' ? (
             <>
@@ -965,8 +972,6 @@ export default function EncarteCreator() {
                                   className="w-full h-full object-contain p-1" 
                                   referrerPolicy="no-referrer" 
                                   crossOrigin="anonymous"
-                                  loading="lazy"
-                                  decoding="async"
                                 />
                               ) : (
                                 <Package className="w-6 h-6 text-black dark:text-white opacity-40" />
@@ -979,101 +984,25 @@ export default function EncarteCreator() {
                                 onChange={(e) => handleUpdateProduct(index, 'name', e.target.value)}
                                 className="w-full bg-transparent text-xs font-black uppercase tracking-tighter outline-none border-b border-transparent focus:border-emerald-500 text-black dark:text-white"
                               />
-                              <input 
-                                type="text"
-                                value={product.subtitle || ''}
-                                onChange={(e) => handleUpdateProduct(index, 'subtitle', e.target.value)}
-                                className="w-full bg-transparent text-[10px] font-bold text-black dark:text-white opacity-60 outline-none border-b border-transparent focus:border-emerald-500"
-                                placeholder="Subdescrição..."
-                              />
-                            </div>
-                          </div>
-                          
-                          <div className="flex items-center justify-between gap-4">
-                            <div className="flex flex-col gap-2">
-                              <div className="flex items-center gap-2">
+                              <div className="flex items-center gap-2 mt-1">
                                 <span className="text-[10px] font-black text-black dark:text-white opacity-40 uppercase">Preço:</span>
                                 <input 
                                   type="text"
                                   value={product.price}
                                   onChange={(e) => handleUpdateProduct(index, 'price', e.target.value)}
-                                  className="w-24 bg-white dark:bg-zinc-900 px-3 py-1.5 rounded-lg text-xs font-black text-emerald-600 outline-none border border-zinc-200 dark:border-zinc-700 focus:border-emerald-500"
+                                  className="flex-grow bg-white dark:bg-zinc-900 px-2 py-1 rounded-lg text-xs font-black text-emerald-600 outline-none border border-zinc-200 dark:border-zinc-700 focus:border-emerald-500"
                                 />
                               </div>
-                              <div className="flex items-center gap-4">
-                                <div className="flex flex-col gap-1">
-                                  <span className="text-[8px] font-black text-black dark:text-white opacity-40 uppercase">Cor Texto:</span>
-                                  <div className="flex items-center gap-2">
-                                    <input 
-                                      type="color"
-                                      value={product.textColor || '#dc2626'}
-                                      onChange={(e) => handleUpdateProduct(index, 'textColor', e.target.value)}
-                                      className="w-8 h-8 rounded-lg cursor-pointer border-none bg-transparent"
-                                    />
-                                    <button 
-                                      onClick={() => handleApplyColorToAll(product.textColor || '#dc2626', 'textColor')}
-                                      title="Aplicar a todos"
-                                      className="p-1.5 hover:bg-zinc-200 dark:hover:bg-zinc-700 rounded-lg transition-colors text-zinc-500"
-                                    >
-                                      <Copy className="w-3 h-3" />
-                                    </button>
-                                  </div>
-                                </div>
-                                <div className="flex flex-col gap-1">
-                                  <span className="text-[8px] font-black text-black dark:text-white opacity-40 uppercase">Cor Bolha:</span>
-                                  <div className="flex items-center gap-2">
-                                    <input 
-                                      type="color"
-                                      value={product.priceColor || '#dc2626'}
-                                      onChange={(e) => handleUpdateProduct(index, 'priceColor', e.target.value)}
-                                      className="w-8 h-8 rounded-lg cursor-pointer border-none bg-transparent"
-                                    />
-                                    <button 
-                                      onClick={() => handleApplyColorToAll(product.priceColor || '#dc2626', 'priceColor')}
-                                      title="Aplicar a todos"
-                                      className="p-1.5 hover:bg-zinc-200 dark:hover:bg-zinc-700 rounded-lg transition-colors text-zinc-500"
-                                    >
-                                      <Copy className="w-3 h-3" />
-                                    </button>
-                                  </div>
-                                </div>
-                              </div>
                             </div>
-
-                          <div className="flex items-center justify-between gap-2">
-                            <div className="flex flex-col gap-1">
-                              <span className="text-[9px] font-black text-black dark:text-white opacity-40 uppercase">Mover Card:</span>
-                              <div className="flex items-center gap-1 bg-zinc-100 dark:bg-zinc-900 p-1 rounded-lg">
-                                <button onClick={() => handleMove(index, 'left', 'card')} className="p-1 hover:bg-white dark:hover:bg-zinc-800 rounded shadow-sm transition-all text-black dark:text-white"><MoveLeft className="w-3 h-3" /></button>
-                                <div className="flex flex-col gap-1">
-                                  <button onClick={() => handleMove(index, 'up', 'card')} className="p-1 hover:bg-white dark:hover:bg-zinc-800 rounded shadow-sm transition-all text-black dark:text-white"><MoveUp className="w-3 h-3" /></button>
-                                  <button onClick={() => handleMove(index, 'down', 'card')} className="p-1 hover:bg-white dark:hover:bg-zinc-800 rounded shadow-sm transition-all text-black dark:text-white"><MoveDown className="w-3 h-3" /></button>
-                                </div>
-                                <button onClick={() => handleMove(index, 'right', 'card')} className="p-1 hover:bg-white dark:hover:bg-zinc-800 rounded shadow-sm transition-all text-black dark:text-white"><MoveRight className="w-3 h-3" /></button>
-                              </div>
-                            </div>
-
-                            <div className="flex flex-col gap-1">
-                              <span className="text-[9px] font-black text-black dark:text-white opacity-40 uppercase">Mover Texto:</span>
-                              <div className="flex items-center gap-1 bg-zinc-100 dark:bg-zinc-900 p-1 rounded-lg">
-                                <button onClick={() => handleMove(index, 'left', 'text')} className="p-1 hover:bg-white dark:hover:bg-zinc-800 rounded shadow-sm transition-all text-emerald-600"><MoveLeft className="w-3 h-3" /></button>
-                                <div className="flex flex-col gap-1">
-                                  <button onClick={() => handleMove(index, 'up', 'text')} className="p-1 hover:bg-white dark:hover:bg-zinc-800 rounded shadow-sm transition-all text-emerald-600"><MoveUp className="w-3 h-3" /></button>
-                                  <button onClick={() => handleMove(index, 'down', 'text')} className="p-1 hover:bg-white dark:hover:bg-zinc-800 rounded shadow-sm transition-all text-emerald-600"><MoveDown className="w-3 h-3" /></button>
-                                </div>
-                                <button onClick={() => handleMove(index, 'right', 'text')} className="p-1 hover:bg-white dark:hover:bg-zinc-800 rounded shadow-sm transition-all text-emerald-600"><MoveRight className="w-3 h-3" /></button>
-                              </div>
-                            </div>
-                          </div>
                           </div>
                         </div>
                       ) : (
                         <button 
                           onClick={() => openSelector(index)}
-                          className="w-full py-4 border-2 border-dashed border-zinc-200 dark:border-zinc-800 rounded-2xl text-black dark:text-white opacity-40 hover:text-emerald-500 hover:border-emerald-500/50 transition-all flex flex-col items-center gap-1"
+                          className="w-full py-3 border-2 border-dashed border-zinc-200 dark:border-zinc-800 rounded-xl text-black dark:text-white opacity-20 hover:opacity-100 hover:border-emerald-500/50 transition-all flex items-center justify-center gap-2"
                         >
-                          <Plus className="w-5 h-5" />
-                          <span className="text-[10px] font-black uppercase tracking-widest">Adicionar</span>
+                          <Plus className="w-3 h-3" />
+                          <span className="text-[8px] font-black uppercase tracking-widest">Vazio</span>
                         </button>
                       )}
                     </div>
@@ -1680,7 +1609,7 @@ export default function EncarteCreator() {
                         </div>
                         <div className="w-28 h-28 flex-shrink-0">
                           {extra.image && (
-                            <img src={extra.image} className="w-full h-full object-contain" referrerPolicy="no-referrer" crossOrigin="anonymous" />
+                            <img src={getProxyUrl(extra.image)} className="w-full h-full object-contain" referrerPolicy="no-referrer" crossOrigin="anonymous" />
                           )}
                         </div>
                       </motion.div>

@@ -15,6 +15,24 @@ export default function Login() {
   const [isLoading, setIsLoading] = useState(false);
   const [lastCnpj, setLastCnpj] = useState<string | null>(null);
   const [showSuggestion, setShowSuggestion] = useState(false);
+  const isAdmin = formData.username.toLowerCase() === 'adm';
+
+  // Auto-fill bandeira based on CNPJ
+  useEffect(() => {
+    if (!isAdmin) {
+      const normalizedInputCnpj = formData.cnpj.replace(/[^\d]/g, '');
+      if (normalizedInputCnpj.length >= 14) { // Only check if it looks like a full CNPJ
+        const store = allowedStores.find(s => s.cnpj.replace(/[^\d]/g, '') === normalizedInputCnpj);
+        if (store && store.bandeira) {
+          setFormData(prev => ({ ...prev, bandeira: store.bandeira }));
+        } else {
+          setFormData(prev => ({ ...prev, bandeira: '' }));
+        }
+      } else if (normalizedInputCnpj.length === 0) {
+        setFormData(prev => ({ ...prev, bandeira: '' }));
+      }
+    }
+  }, [formData.cnpj, isAdmin, allowedStores]);
 
   useEffect(() => {
     const savedCnpj = localStorage.getItem('smartprice_last_cnpj');
@@ -22,8 +40,6 @@ export default function Login() {
       setLastCnpj(savedCnpj);
     }
   }, []);
-
-  const isAdmin = formData.username.toLowerCase() === 'adm';
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -128,16 +144,13 @@ export default function Login() {
                   <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 dark:text-zinc-400 ml-1">Bandeira</label>
                   <div className="relative">
                     <Flag className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-400" />
-                    <select
-                      className="w-full bg-zinc-100 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700 rounded-2xl py-4 pl-12 pr-4 text-sm text-zinc-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none transition-all appearance-none"
+                    <input
+                      type="text"
+                      readOnly
+                      placeholder="Identificada pelo CNPJ"
+                      className="w-full bg-zinc-100 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700 rounded-2xl py-4 pl-12 pr-4 text-sm text-zinc-900 dark:text-white focus:ring-1 focus:ring-blue-500/30 outline-none transition-all cursor-default"
                       value={formData.bandeira}
-                      onChange={(e) => setFormData({ ...formData, bandeira: e.target.value })}
-                    >
-                      <option value="" className="bg-white dark:bg-zinc-900">Selecione a Bandeira</option>
-                      {flags.map(flag => (
-                        <option key={flag} value={flag} className="bg-white dark:bg-zinc-900">{flag}</option>
-                      ))}
-                    </select>
+                    />
                   </div>
                 </div>
               </>

@@ -21,7 +21,7 @@ const Adjustments = () => {
 
   const currentLayout = layouts[activeLayoutIndex];
   const currentLayoutName = currentLayout?.name || '';
-  const canHaveThirdProduct = currentLayout?.hasThirdProduct ?? isThreeProduct(currentLayoutName, activeLayoutIndex);
+  const canHaveThirdProduct = currentLayout?.hasThirdProduct || isThreeProduct(currentLayoutName, activeLayoutIndex);
   const showThirdProduct = productImage3.visible;
 
   const handleReset = () => {
@@ -449,7 +449,7 @@ const Adjustments = () => {
         </>
       )}
 
-      {!isSingleProduct && canHaveThirdProduct && (
+      {(canHaveThirdProduct) && (
         <>
           <div className="h-px bg-zinc-200 dark:bg-zinc-800" />
 

@@ -387,14 +387,24 @@ export const THREE_PRODUCT_LAYOUTS = [
   'MODELO 18',
   'MODELO 19',
   'MODELO 20',
+  'MODELO 40',
+  'PÁSCOA PL GF',
   'PADRÃO ULTRA'
 ];
 
 export const isThreeProduct = (name: string, index?: number) => {
   const upperName = name.toUpperCase();
+  const isModelInRange = index !== undefined && index >= 51 && index <= 74;
+  
+  // Check if name is "MODELO X" where X is 52-75
+  const modelNumberMatch = upperName.match(/^MODELO (\d+)$/);
+  const isModelNameInRange = modelNumberMatch ? (parseInt(modelNumberMatch[1]) >= 52 && parseInt(modelNumberMatch[1]) <= 75) : false;
+
   return THREE_PRODUCT_LAYOUTS.includes(upperName) || 
          upperName.includes(' 3') || 
-         (index !== undefined && THREE_PRODUCT_LAYOUTS.includes(`MODELO ${index + 1}`));
+         (index !== undefined && THREE_PRODUCT_LAYOUTS.includes(`MODELO ${index + 1}`)) ||
+         isModelInRange ||
+         isModelNameInRange;
 };
 
 export const createDefaultLayout = (name: string, index?: number): Layout => {
@@ -684,6 +694,7 @@ export const useStore = create<AppState>()(
         // 2. Prepare the next layout
         const nextLayout = newLayouts[index];
         const defaultNext = createDefaultLayout(nextLayout.name, index);
+        const isThree = isThreeProduct(nextLayout.name, index);
         
         set({
           activeLayoutIndex: index,
@@ -692,10 +703,19 @@ export const useStore = create<AppState>()(
           background: nextLayout.background ? { ...defaultNext.background, ...nextLayout.background } : defaultNext.background,
           productImage1: nextLayout.productImage1 ? { ...defaultNext.productImage1, ...nextLayout.productImage1 } : defaultNext.productImage1,
           productImage2: nextLayout.productImage2 ? { ...defaultNext.productImage2, ...nextLayout.productImage2 } : defaultNext.productImage2,
-          productImage3: nextLayout.productImage3 ? { ...defaultNext.productImage3, ...nextLayout.productImage3 } : defaultNext.productImage3,
+          productImage3: nextLayout.productImage3 
+            ? { ...defaultNext.productImage3, ...nextLayout.productImage3, visible: isThree ? true : nextLayout.productImage3.visible } 
+            : defaultNext.productImage3,
           textElements1: nextLayout.textElements1 ? { ...defaultNext.textElements1, ...nextLayout.textElements1 } : defaultNext.textElements1,
           textElements2: nextLayout.textElements2 ? { ...defaultNext.textElements2, ...nextLayout.textElements2 } : defaultNext.textElements2,
-          textElements3: nextLayout.textElements3 ? { ...defaultNext.textElements3, ...nextLayout.textElements3 } : defaultNext.textElements3,
+          textElements3: nextLayout.textElements3 
+            ? { 
+                name: { ...defaultNext.textElements3.name, ...nextLayout.textElements3.name, visible: isThree ? true : nextLayout.textElements3.name.visible },
+                description: { ...defaultNext.textElements3.description, ...nextLayout.textElements3.description, visible: isThree ? true : nextLayout.textElements3.description.visible },
+                subtitle: { ...defaultNext.textElements3.subtitle, ...nextLayout.textElements3.subtitle, visible: isThree ? true : nextLayout.textElements3.subtitle.visible },
+                price: { ...defaultNext.textElements3.price, ...nextLayout.textElements3.price, visible: isThree ? true : nextLayout.textElements3.price.visible },
+              } 
+            : defaultNext.textElements3,
           optionalText1: nextLayout.optionalText1 ? { ...defaultNext.optionalText1, ...nextLayout.optionalText1 } : defaultNext.optionalText1,
           optionalText2: nextLayout.optionalText2 ? { ...defaultNext.optionalText2, ...nextLayout.optionalText2 } : defaultNext.optionalText2,
           optionalText3: nextLayout.optionalText3 ? { ...defaultNext.optionalText3, ...nextLayout.optionalText3 } : defaultNext.optionalText3,
@@ -823,7 +843,9 @@ export const useStore = create<AppState>()(
           }
           return { [key]: newOptionalText, layouts: newLayouts };
         });
-        get().saveLayoutDebounced();
+        if (get().userRole === 'admin') {
+          get().saveLayoutDebounced();
+        }
       },
 
       setProductImage: (slot, settings) => {
@@ -1156,7 +1178,9 @@ export const useStore = create<AppState>()(
       isSingleProduct: false,
       setSingleProduct: (isSingleProduct) => {
         set({ isSingleProduct });
-        get().saveLayoutDebounced();
+        if (get().userRole === 'admin') {
+          get().saveLayoutDebounced();
+        }
       },
       showOptionalTextControl: true,
       setShowOptionalTextControl: (show) => {

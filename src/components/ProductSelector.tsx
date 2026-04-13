@@ -127,7 +127,7 @@ const ProductSelector: React.FC<{ onSelect?: (product: Product) => void }> = ({ 
         showOptionalTextControl={showOptionalTextControl}
       />
       
-      {!isSingleProduct && (
+      {(!isSingleProduct || (isThreeProduct(currentLayoutName, activeLayoutIndex) && currentLayoutName.toUpperCase() !== 'PADRÃO ULTRA')) && (
         <>
           <div className="h-px bg-zinc-200 dark:bg-zinc-800" />
 
@@ -151,7 +151,7 @@ const ProductSelector: React.FC<{ onSelect?: (product: Product) => void }> = ({ 
             showOptionalTextControl={showOptionalTextControl}
           />
 
-          {showThirdProduct && (
+          {(showThirdProduct || (isThreeProduct(currentLayoutName, activeLayoutIndex) && currentLayoutName.toUpperCase() !== 'PADRÃO ULTRA')) && (
             <>
               <div className="h-px bg-zinc-200 dark:bg-zinc-800" />
 
