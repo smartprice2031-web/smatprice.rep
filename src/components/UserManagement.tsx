@@ -18,6 +18,10 @@ export default function UserManagement() {
   const [editingStoreLayouts, setEditingStoreLayouts] = useState<string | null>(null);
   const [editingGroup, setEditingGroup] = useState<string | null>(null);
   const [editGroupName, setEditGroupName] = useState('');
+  const [bulkGroupId, setBulkGroupId] = useState('');
+  const [bulkFlag, setBulkFlag] = useState('');
+  const [isBulkApplyOpen, setIsBulkApplyOpen] = useState(false);
+  const [bulkApplySource, setBulkApplySource] = useState<'new' | string | null>(null);
 
   // Fix: Ensure newBandeira is set when flags are loaded
   React.useEffect(() => {
@@ -71,6 +75,28 @@ export default function UserManagement() {
     });
   };
 
+  const handleBulkApply = (layoutsToApply: number[]) => {
+    if (!bulkGroupId || !bulkFlag) {
+      toast.error('Selecione um grupo e uma bandeira para aplicar.');
+      return;
+    }
+
+    const { bulkUpdateStoreLayouts, allowedStores } = useStore.getState();
+    const matchingStores = allowedStores.filter(s => s.groupId === bulkGroupId && s.bandeira === bulkFlag);
+    
+    if (matchingStores.length === 0) {
+      toast.error('Nenhuma loja encontrada para este grupo e bandeira.');
+      return;
+    }
+
+    bulkUpdateStoreLayouts(bulkGroupId, bulkFlag, layoutsToApply);
+    
+    toast.success(`Modelos aplicados para ${matchingStores.length} lojas do grupo.`);
+    setBulkApplySource(null);
+    setBulkGroupId('');
+    setBulkFlag('');
+  };
+
   const [editingFlag, setEditingFlag] = useState<string | null>(null);
   const [editFlagName, setEditFlagName] = useState('');
 
@@ -107,8 +133,9 @@ export default function UserManagement() {
   const handleSaveAll = async () => {
     setIsSaving(true);
     try {
-      await saveUsersAndFlags();
-      toast.success('Configurações de usuários e bandeiras salvas com sucesso no Supabase!');
+      const { saveAll } = useStore.getState();
+      await saveAll();
+      toast.success('Configurações salvas com sucesso no Supabase!');
     } catch (error) {
       toast.error('Erro ao salvar no Supabase. Verifique sua conexão.');
     } finally {
@@ -267,6 +294,23 @@ export default function UserManagement() {
                     <div className="flex gap-2">
                       <button 
                         type="button"
+                        onClick={() => {
+                          setBulkApplySource(bulkApplySource === 'new' ? null : 'new');
+                          if (bulkApplySource !== 'new') {
+                            setBulkGroupId(newStoreGroupId);
+                            setBulkFlag(newBandeira);
+                          }
+                        } }
+                        className={cn(
+                          "text-[9px] font-black uppercase tracking-tighter hover:opacity-100 transition-all flex items-center gap-1 bg-zinc-100 dark:bg-zinc-800 px-2 py-0.5 rounded",
+                          bulkApplySource === 'new' ? "text-blue-600 opacity-100" : "text-black dark:text-white opacity-40"
+                        )}
+                      >
+                        <Users className="w-2.5 h-2.5" />
+                        Aplicar para grupo
+                      </button>
+                      <button 
+                        type="button"
                         onClick={() => setSelectedLayouts(layouts.map((_, i) => i))}
                         className="text-[9px] font-black text-blue-600 uppercase tracking-tighter hover:underline"
                       >
@@ -281,6 +325,60 @@ export default function UserManagement() {
                       </button>
                     </div>
                   </div>
+
+                  {bulkApplySource === 'new' && (
+                    <div className="mb-3 p-3 bg-blue-50 dark:bg-blue-900/10 border border-blue-200 dark:border-blue-800 rounded-xl space-y-3 animate-in slide-in-from-top-2 duration-300">
+                      <p className="text-[9px] font-black uppercase tracking-widest text-blue-600 flex items-center gap-1.5">
+                        <Users className="w-3 h-3" />
+                        Replicar modelos selecionados para:
+                      </p>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-1">
+                          <label className="text-[8px] font-black uppercase tracking-widest text-blue-600 opacity-60 ml-1">Grupo (Empresa)</label>
+                          <select
+                            value={bulkGroupId}
+                            onChange={(e) => setBulkGroupId(e.target.value)}
+                            className="w-full px-3 py-1.5 bg-white dark:bg-zinc-900 border border-blue-200 dark:border-blue-700 rounded-lg text-[10px] font-bold outline-none focus:ring-1 focus:ring-blue-500 transition-all text-black dark:text-white"
+                          >
+                            <option value="">Selecionar Grupo</option>
+                            {userGroups.map(group => (
+                              <option key={group.id} value={group.id}>{group.name}</option>
+                            ))}
+                          </select>
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-[8px] font-black uppercase tracking-widest text-blue-600 opacity-60 ml-1">Bandeira</label>
+                          <select
+                            value={bulkFlag}
+                            onChange={(e) => setBulkFlag(e.target.value)}
+                            className="w-full px-3 py-1.5 bg-white dark:bg-zinc-900 border border-blue-200 dark:border-blue-700 rounded-lg text-[10px] font-bold outline-none focus:ring-1 focus:ring-blue-500 transition-all text-black dark:text-white"
+                          >
+                            <option value="">Selecionar Bandeira</option>
+                            {flags.map(flag => (
+                              <option key={flag} value={flag}>{flag}</option>
+                            ))}
+                          </select>
+                        </div>
+                      </div>
+                      <div className="flex justify-end gap-2 pt-1">
+                        <button
+                          type="button"
+                          onClick={() => setBulkApplySource(null)}
+                          className="px-3 py-1 text-[9px] font-black uppercase tracking-widest text-zinc-500 hover:text-zinc-700"
+                        >
+                          Cancelar
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleBulkApply(selectedLayouts)}
+                          className="px-4 py-1.5 bg-blue-600 text-white rounded-lg text-[9px] font-black uppercase tracking-widest shadow-md shadow-blue-500/20 hover:bg-blue-700 transition-all active:scale-95"
+                        >
+                          Confirmar Replicação
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
                   <div className="space-y-4 p-4 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-xl max-h-64 overflow-y-auto custom-scrollbar">
                     {Object.entries(groupedLayouts).map(([bandeira, localidades]) => (
                       <div key={bandeira} className="space-y-2">
@@ -434,6 +532,24 @@ export default function UserManagement() {
                             </div>
                             <div className="flex gap-2">
                               <button 
+                                onClick={() => {
+                                  if (bulkApplySource === store.cnpj) {
+                                    setBulkApplySource(null);
+                                  } else {
+                                    setBulkApplySource(store.cnpj);
+                                    setBulkGroupId(store.groupId || '');
+                                    setBulkFlag(store.bandeira);
+                                  }
+                                }}
+                                className={cn(
+                                  "text-[8px] font-black uppercase tracking-tighter hover:opacity-100 transition-all flex items-center gap-1 bg-zinc-100 dark:bg-zinc-800 px-1.5 py-0.5 rounded",
+                                  bulkApplySource === store.cnpj ? "text-blue-600 opacity-100" : "text-black dark:text-white opacity-40"
+                                )}
+                              >
+                                <Users className="w-2 h-2" />
+                                Replicar p/ Grupo
+                              </button>
+                              <button 
                                 onClick={() => addAllowedStore({ ...store, allowedLayouts: layouts.map((_, i) => i) })}
                                 className="text-[8px] font-black text-blue-600 uppercase tracking-tighter hover:underline"
                               >
@@ -447,6 +563,59 @@ export default function UserManagement() {
                               </button>
                             </div>
                           </div>
+
+                          {bulkApplySource === store.cnpj && (
+                            <div className="mb-3 p-3 bg-blue-50 dark:bg-blue-900/10 border border-blue-200 dark:border-blue-800 rounded-xl space-y-3 animate-in slide-in-from-top-2 duration-300">
+                              <p className="text-[9px] font-black uppercase tracking-widest text-blue-600 flex items-center gap-1.5">
+                                <Users className="w-3 h-3" />
+                                Replicar modelos deste CNPJ para o grupo selecionado:
+                              </p>
+                              <div className="grid grid-cols-2 gap-3">
+                                <div className="space-y-1">
+                                  <label className="text-[8px] font-black uppercase tracking-widest text-blue-600 opacity-60 ml-1">Grupo (Empresa)</label>
+                                  <select
+                                    value={bulkGroupId}
+                                    onChange={(e) => setBulkGroupId(e.target.value)}
+                                    className="w-full px-3 py-1.5 bg-white dark:bg-zinc-900 border border-blue-200 dark:border-blue-700 rounded-lg text-[10px] font-bold outline-none focus:ring-1 focus:ring-blue-500 transition-all text-black dark:text-white"
+                                  >
+                                    <option value="">Selecionar Grupo</option>
+                                    {userGroups.map(group => (
+                                      <option key={group.id} value={group.id}>{group.name}</option>
+                                    ))}
+                                  </select>
+                                </div>
+                                <div className="space-y-1">
+                                  <label className="text-[8px] font-black uppercase tracking-widest text-blue-600 opacity-60 ml-1">Bandeira</label>
+                                  <select
+                                    value={bulkFlag}
+                                    onChange={(e) => setBulkFlag(e.target.value)}
+                                    className="w-full px-3 py-1.5 bg-white dark:bg-zinc-900 border border-blue-200 dark:border-blue-700 rounded-lg text-[10px] font-bold outline-none focus:ring-1 focus:ring-blue-500 transition-all text-black dark:text-white"
+                                  >
+                                    <option value="">Selecionar Bandeira</option>
+                                    {flags.map(flag => (
+                                      <option key={flag} value={flag}>{flag}</option>
+                                    ))}
+                                  </select>
+                                </div>
+                              </div>
+                              <div className="flex justify-end gap-2 pt-1">
+                                <button
+                                  type="button"
+                                  onClick={() => setBulkApplySource(null)}
+                                  className="px-3 py-1 text-[9px] font-black uppercase tracking-widest text-zinc-500 hover:text-zinc-700"
+                                >
+                                  Cancelar
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleBulkApply(store.allowedLayouts || layouts.map((_, i) => i))}
+                                  className="px-4 py-1.5 bg-blue-600 text-white rounded-lg text-[9px] font-black uppercase tracking-widest shadow-md shadow-blue-500/20 hover:bg-blue-700 transition-all active:scale-95"
+                                >
+                                  Confirmar Replicação
+                                </button>
+                              </div>
+                            </div>
+                          )}
                           <div className="space-y-4 max-h-64 overflow-y-auto custom-scrollbar p-2">
                             {Object.entries(groupedLayouts).map(([bandeira, localidades]) => (
                               <div key={bandeira} className="space-y-2">

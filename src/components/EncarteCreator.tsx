@@ -26,7 +26,11 @@ import {
   Tag,
   Palette,
   Type as TypeIcon,
-  AlertCircle
+  AlertCircle,
+  Eraser,
+  ImagePlus,
+  ChevronDown,
+  Sliders
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import ProductSelector from './ProductSelector';
@@ -97,6 +101,7 @@ const BUBBLE_SHAPES = [
   { id: 'hexagon', name: 'Hexágono' },
   { id: 'star', name: 'Estrela' },
   { id: 'oval', name: 'Oval' },
+  { id: 'chevron', name: 'Seta' },
 ];
 
 const getBubbleClass = (shape?: string) => {
@@ -110,6 +115,7 @@ const getBubbleClass = (shape?: string) => {
     case 'hexagon': return 'w-14 h-14 flex items-center justify-center';
     case 'star': return 'w-16 h-16 flex items-center justify-center';
     case 'oval': return 'rounded-[100%] px-5 py-2';
+    case 'chevron': return 'rounded-l-2xl pr-8 pl-4 py-2';
     case 'rounded':
     default: return 'rounded-2xl px-3';
   }
@@ -123,6 +129,8 @@ const getBubbleStyle = (shape?: string) => {
       return { clipPath: 'polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%)' };
     case 'star':
       return { clipPath: 'polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%)' };
+    case 'chevron':
+      return { clipPath: 'polygon(0% 0%, 85% 0%, 100% 50%, 85% 100%, 0% 100%)' };
     default:
       return {};
   }
@@ -165,6 +173,8 @@ export default function EncarteCreator() {
   const [activeThemeCategory, setActiveThemeCategory] = useState<string | null>(null);
   const [isAddingAsset, setIsAddingAsset] = useState<EncarteTab | null>(null);
   const [assetUrl, setAssetUrl] = useState('');
+  const [editingProductIndex, setEditingProductIndex] = useState<number | null>(null);
+  const [isEditingModalOpen, setIsEditingModalOpen] = useState(false);
 
   const selectedModel = selectedEncarteModel || ENCARTE_MODELS[0];
   const setSelectedModel = setSelectedEncarteModel;
@@ -468,6 +478,11 @@ export default function EncarteCreator() {
   const openSelector = (index: number) => {
     setActiveSlot(index);
     setIsSelectorOpen(true);
+  };
+
+  const openEditor = (index: number) => {
+    setEditingProductIndex(index);
+    setIsEditingModalOpen(true);
   };
 
   return (
@@ -793,7 +808,7 @@ export default function EncarteCreator() {
                   {currentProducts.map((product, index) => (
                     <div 
                       key={index} 
-                      onClick={() => openSelector(index)}
+                      onClick={() => product ? openEditor(index) : openSelector(index)}
                       className="p-3 bg-zinc-50 dark:bg-zinc-800 rounded-xl border border-zinc-100 dark:border-zinc-700 flex items-center gap-3 group hover:border-emerald-500/50 transition-all cursor-pointer"
                     >
                       <div className="w-10 h-10 bg-white dark:bg-zinc-900 rounded-lg flex items-center justify-center border border-zinc-100 dark:border-zinc-700 flex-shrink-0">
@@ -1692,10 +1707,15 @@ export default function EncarteCreator() {
                             handleUpdateProduct(index, 'offsetY', newY);
                           }
                         }}
-                        className="p-3 bg-transparent rounded-2xl flex flex-col relative border border-transparent cursor-move z-20 w-full h-full"
+                        onClick={(e) => {
+                          // Only open editor if not dragging
+                          openEditor(index);
+                        }}
+                        className="p-3 rounded-2xl flex flex-col relative border border-transparent cursor-pointer z-20 w-full h-full"
                         style={{ 
                           x: product?.offsetX || 0,
-                          y: product?.offsetY || 0
+                          y: product?.offsetY || 0,
+                          backgroundColor: product.backgroundColor || 'transparent'
                         }}
                       >
                         <div className="absolute -top-2 -right-2 flex gap-1 z-30 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -1731,26 +1751,64 @@ export default function EncarteCreator() {
                             <div 
                               className={cn("text-white relative flex items-center justify-center shadow-lg", adaptive.box, getBubbleClass(currentEncarte.bubbleShape))}
                               style={{ 
-                                backgroundColor: product.priceColor || '#dc2626',
-                                ...getBubbleStyle(currentEncarte.bubbleShape)
+                                backgroundColor: product.labelColor || product.priceColor || '#dc2626',
+                                ...getBubbleStyle(currentEncarte.bubbleShape),
+                                transform: `scale(${(product.labelSize || 100) / 100}) ${currentEncarte.bubbleShape === 'diamond' ? 'rotate(45deg)' : ''}`
                               }}
                             >
                               <div className={cn("flex items-center justify-center w-full h-full relative", currentEncarte.bubbleShape === 'diamond' && '-rotate-45')}>
-                                <div className="flex items-center gap-1">
-                                  <div className="flex flex-col items-end leading-none">
-                                    <span className="text-[8px] font-black uppercase">POR</span>
-                                    <span className="text-[10px] font-black">R$</span>
+                                {product.showPercentage ? (
+                                  <div className="flex flex-col items-center justify-center w-full h-full">
+                                    <span className="text-[10px] font-black uppercase leading-none opacity-80 mb-1">DESCONTO</span>
+                                    <div className="flex items-center justify-center bg-white text-red-600 px-2 py-1 rounded-lg shadow-sm">
+                                      <span className="text-3xl font-black leading-none">{product.discountValue || '0%'}</span>
+                                      <span className="text-sm font-black ml-1">OFF</span>
+                                    </div>
                                   </div>
-                                  <span className={cn("font-black tracking-tighter leading-none", adaptive.price)}>
-                                    {formatPrice(product.price).integer}
-                                  </span>
-                                  <div className="flex flex-col items-start justify-between h-full py-1">
-                                    <span className={cn("font-black tracking-tighter leading-none", adaptive.cents)}>
-                                      {formatPrice(product.price).cents}
+                                ) : product.tipo === 'De X por Y' ? (
+                                  <div className="flex flex-col items-start gap-0 w-full pl-1">
+                                    <div className="flex items-center gap-1">
+                                      <span className="text-[10px] font-black uppercase whitespace-nowrap">{product.tituloOriginal || 'DE'} R$</span>
+                                      <span className={cn("font-black tracking-tighter leading-none whitespace-nowrap text-lg", product.strikeThrough && "line-through")}>
+                                        {product.precoOriginal || '0,00'}
+                                      </span>
+                                    </div>
+                                    <div className="flex items-center gap-1 -mt-1">
+                                      <span className="text-[12px] font-black uppercase whitespace-nowrap">{product.tituloDesconto || 'POR'} R$</span>
+                                      <div className="flex items-baseline">
+                                        <span className={cn("font-black tracking-tighter leading-none text-4xl whitespace-nowrap")}>
+                                          {formatPrice(product.precoDesconto || '0,00').integer}
+                                        </span>
+                                        <span className="text-xl font-black tracking-tighter leading-none">
+                                          {formatPrice(product.precoDesconto || '0,00').cents}
+                                        </span>
+                                      </div>
+                                    </div>
+                                    <div className="absolute bottom-1 right-2">
+                                      <span className="text-[9px] font-black uppercase leading-none opacity-90 italic">
+                                        {product.medidaValue ? `${product.medidaValue} ` : ''}{product.medidaUnit || 'cada'}
+                                      </span>
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <div className="flex items-center gap-1">
+                                    <div className="flex flex-col items-end leading-none">
+                                      <span className="text-[8px] font-black uppercase">POR</span>
+                                      <span className="text-[10px] font-black">R$</span>
+                                    </div>
+                                    <span className={cn("font-black tracking-tighter leading-none", adaptive.price)}>
+                                      {formatPrice(product.price).integer}
                                     </span>
-                                    <span className="text-[7px] font-black uppercase leading-none">UNI</span>
+                                    <div className="flex flex-col items-start justify-between h-full py-1">
+                                      <span className={cn("font-black tracking-tighter leading-none", adaptive.cents)}>
+                                        {formatPrice(product.price).cents}
+                                      </span>
+                                      <span className="text-[7px] font-black uppercase leading-none">
+                                        {product.medidaUnit || 'UNI'}
+                                      </span>
+                                    </div>
                                   </div>
-                                </div>
+                                )}
                               </div>
                             </div>
                             
@@ -1760,6 +1818,7 @@ export default function EncarteCreator() {
                                 <img 
                                   src={getProxyUrl(product.image)} 
                                   className="max-w-full max-h-full object-contain drop-shadow-md bg-transparent" 
+                                  style={{ transform: `scale(${(product.productSize || 100) / 100})` }}
                                   referrerPolicy="no-referrer" 
                                   crossOrigin="anonymous"
                                   loading="lazy"
@@ -1856,9 +1915,10 @@ export default function EncarteCreator() {
               {currentEncarte.frontProducts.slice(0, currentEncarte.productCount).map((product, index) => (
                 <div 
                   key={index} 
-                  className="p-2 rounded-xl flex flex-col relative min-h-0 bg-transparent"
+                  className="p-2 rounded-xl flex flex-col relative min-h-0"
                   style={{ 
-                    transform: product ? `translate(${product.offsetX || 0}px, ${product.offsetY || 0}px)` : 'none'
+                    transform: product ? `translate(${product.offsetX || 0}px, ${product.offsetY || 0}px)` : 'none',
+                    backgroundColor: product?.backgroundColor || 'transparent'
                   }}
                 >
                   {product && (
@@ -1886,20 +1946,56 @@ export default function EncarteCreator() {
                         <div 
                           className={cn("text-white relative flex items-center justify-center shadow-lg", adaptive.box, getBubbleClass(currentEncarte.bubbleShape))}
                           style={{ 
-                            backgroundColor: product.priceColor || '#dc2626',
-                            ...getBubbleStyle(currentEncarte.bubbleShape)
+                            backgroundColor: product.labelColor || product.priceColor || '#dc2626',
+                            ...getBubbleStyle(currentEncarte.bubbleShape),
+                            transform: `scale(${(product.labelSize || 100) / 100}) ${currentEncarte.bubbleShape === 'diamond' ? 'rotate(45deg)' : ''}`
                           }}
                         >
                           <div className={cn("flex items-center justify-center w-full h-full relative", currentEncarte.bubbleShape === 'diamond' && '-rotate-45')}>
-                            <div className="flex items-baseline gap-0.5">
-                              <div className="flex flex-col items-start leading-none">
-                                <span className="text-[8px] font-black uppercase">POR</span>
-                                <span className="text-[10px] font-black">R$</span>
+                            {product.showPercentage ? (
+                              <div className="flex flex-col items-center justify-center w-full h-full">
+                                <span className="text-[10px] font-black uppercase leading-none opacity-80 mb-1">DESCONTO</span>
+                                <div className="flex items-center justify-center bg-white text-red-600 px-2 py-1 rounded-lg shadow-sm">
+                                  <span className="text-3xl font-black leading-none">{product.discountValue || '0%'}</span>
+                                  <span className="text-sm font-black ml-1">OFF</span>
+                                </div>
                               </div>
-                              <span className={cn("font-black tracking-tighter leading-none", adaptive.price)}>{formatPrice(product.price).integer}</span>
-                              <span className={cn("font-black tracking-tighter leading-none", adaptive.cents)}>{formatPrice(product.price).cents}</span>
-                            </div>
-                            <span className="absolute bottom-0.5 right-1 text-[7px] font-black uppercase opacity-80">UNI</span>
+                            ) : product.tipo === 'De X por Y' ? (
+                              <div className="flex flex-col items-start gap-0 w-full pl-1">
+                                <div className="flex items-center gap-1">
+                                  <span className="text-[10px] font-black uppercase whitespace-nowrap">{product.tituloOriginal || 'DE'} R$</span>
+                                  <span className={cn("font-black tracking-tighter leading-none whitespace-nowrap text-lg", product.strikeThrough && "line-through")}>
+                                    {product.precoOriginal || '0,00'}
+                                  </span>
+                                </div>
+                                <div className="flex items-center gap-1 -mt-1">
+                                  <span className="text-[12px] font-black uppercase whitespace-nowrap">{product.tituloDesconto || 'POR'} R$</span>
+                                  <div className="flex items-baseline">
+                                    <span className={cn("font-black tracking-tighter leading-none text-4xl whitespace-nowrap")}>
+                                      {formatPrice(product.precoDesconto || '0,00').integer}
+                                    </span>
+                                    <span className="text-xl font-black tracking-tighter leading-none">
+                                      {formatPrice(product.precoDesconto || '0,00').cents}
+                                    </span>
+                                  </div>
+                                </div>
+                                <div className="absolute bottom-1 right-2">
+                                  <span className="text-[9px] font-black uppercase leading-none opacity-90 italic">
+                                    {product.medidaValue ? `${product.medidaValue} ` : ''}{product.medidaUnit || 'cada'}
+                                  </span>
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="flex items-baseline gap-0.5">
+                                <div className="flex flex-col items-start leading-none">
+                                  <span className="text-[8px] font-black uppercase">POR</span>
+                                  <span className="text-[10px] font-black">R$</span>
+                                </div>
+                                <span className={cn("font-black tracking-tighter leading-none", adaptive.price)}>{formatPrice(product.price).integer}</span>
+                                <span className={cn("font-black tracking-tighter leading-none", adaptive.cents)}>{formatPrice(product.price).cents}</span>
+                                <span className="absolute bottom-0.5 right-1 text-[7px] font-black uppercase opacity-80">{product.medidaValue ? `${product.medidaValue} ` : ''}{product.medidaUnit || 'UNI'}</span>
+                              </div>
+                            )}
                           </div>
                         </div>
                         <div className={cn("flex-grow flex items-center justify-center bg-transparent", adaptive.img)}>
@@ -1907,6 +2003,7 @@ export default function EncarteCreator() {
                             <img 
                               src={getProxyUrl(product.image)} 
                               className="max-w-full max-h-full object-contain bg-transparent" 
+                              style={{ transform: `scale(${(product.productSize || 100) / 100})` }}
                               referrerPolicy="no-referrer" 
                               crossOrigin="anonymous"
                             />
@@ -1987,9 +2084,10 @@ export default function EncarteCreator() {
               {currentEncarte.backProducts.slice(0, currentEncarte.productCount).map((product, index) => (
                 <div 
                   key={index} 
-                  className="p-2 rounded-xl flex flex-col relative min-h-0 bg-transparent"
+                  className="p-2 rounded-xl flex flex-col relative min-h-0"
                   style={{ 
-                    transform: product ? `translate(${product.offsetX || 0}px, ${product.offsetY || 0}px)` : 'none'
+                    transform: product ? `translate(${product.offsetX || 0}px, ${product.offsetY || 0}px)` : 'none',
+                    backgroundColor: product?.backgroundColor || 'transparent'
                   }}
                 >
                   {product && (
@@ -2017,20 +2115,56 @@ export default function EncarteCreator() {
                         <div 
                           className={cn("text-white relative flex items-center justify-center shadow-lg", adaptive.box, getBubbleClass(currentEncarte.bubbleShape))}
                           style={{ 
-                            backgroundColor: product.priceColor || '#dc2626',
-                            ...getBubbleStyle(currentEncarte.bubbleShape)
+                            backgroundColor: product.labelColor || product.priceColor || '#dc2626',
+                            ...getBubbleStyle(currentEncarte.bubbleShape),
+                            transform: `scale(${(product.labelSize || 100) / 100}) ${currentEncarte.bubbleShape === 'diamond' ? 'rotate(45deg)' : ''}`
                           }}
                         >
                           <div className={cn("flex items-center justify-center w-full h-full relative", currentEncarte.bubbleShape === 'diamond' && '-rotate-45')}>
-                            <div className="flex items-baseline gap-0.5">
-                              <div className="flex flex-col items-start leading-none">
-                                <span className="text-[8px] font-black uppercase">POR</span>
-                                <span className="text-[10px] font-black">R$</span>
+                            {product.showPercentage ? (
+                              <div className="flex flex-col items-center justify-center w-full h-full">
+                                <span className="text-[10px] font-black uppercase leading-none opacity-80 mb-1">DESCONTO</span>
+                                <div className="flex items-center justify-center bg-white text-red-600 px-2 py-1 rounded-lg shadow-sm">
+                                  <span className="text-3xl font-black leading-none">{product.discountValue || '0%'}</span>
+                                  <span className="text-sm font-black ml-1">OFF</span>
+                                </div>
                               </div>
-                              <span className={cn("font-black tracking-tighter leading-none", adaptive.price)}>{formatPrice(product.price).integer}</span>
-                              <span className={cn("font-black tracking-tighter leading-none", adaptive.cents)}>{formatPrice(product.price).cents}</span>
-                            </div>
-                            <span className="absolute bottom-0.5 right-1 text-[7px] font-black uppercase opacity-80">UNI</span>
+                            ) : product.tipo === 'De X por Y' ? (
+                              <div className="flex flex-col items-start gap-0 w-full pl-1">
+                                <div className="flex items-center gap-1">
+                                  <span className="text-[10px] font-black uppercase whitespace-nowrap">{product.tituloOriginal || 'DE'} R$</span>
+                                  <span className={cn("font-black tracking-tighter leading-none whitespace-nowrap text-lg", product.strikeThrough && "line-through")}>
+                                    {product.precoOriginal || '0,00'}
+                                  </span>
+                                </div>
+                                <div className="flex items-center gap-1 -mt-1">
+                                  <span className="text-[12px] font-black uppercase whitespace-nowrap">{product.tituloDesconto || 'POR'} R$</span>
+                                  <div className="flex items-baseline">
+                                    <span className={cn("font-black tracking-tighter leading-none text-4xl whitespace-nowrap")}>
+                                      {formatPrice(product.precoDesconto || '0,00').integer}
+                                    </span>
+                                    <span className="text-xl font-black tracking-tighter leading-none">
+                                      {formatPrice(product.precoDesconto || '0,00').cents}
+                                    </span>
+                                  </div>
+                                </div>
+                                <div className="absolute bottom-1 right-2">
+                                  <span className="text-[9px] font-black uppercase leading-none opacity-90 italic">
+                                    {product.medidaValue ? `${product.medidaValue} ` : ''}{product.medidaUnit || 'cada'}
+                                  </span>
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="flex items-baseline gap-0.5">
+                                <div className="flex flex-col items-start leading-none">
+                                  <span className="text-[8px] font-black uppercase">POR</span>
+                                  <span className="text-[10px] font-black">R$</span>
+                                </div>
+                                <span className={cn("font-black tracking-tighter leading-none", adaptive.price)}>{formatPrice(product.price).integer}</span>
+                                <span className={cn("font-black tracking-tighter leading-none", adaptive.cents)}>{formatPrice(product.price).cents}</span>
+                                <span className="absolute bottom-0.5 right-1 text-[7px] font-black uppercase opacity-80">{product.medidaValue ? `${product.medidaValue} ` : ''}{product.medidaUnit || 'UNI'}</span>
+                              </div>
+                            )}
                           </div>
                         </div>
                         <div className={cn("flex-grow flex items-center justify-center bg-transparent", adaptive.img)}>
@@ -2038,6 +2172,7 @@ export default function EncarteCreator() {
                             <img 
                               src={getProxyUrl(product.image)} 
                               className="max-w-full max-h-full object-contain bg-transparent" 
+                              style={{ transform: `scale(${(product.productSize || 100) / 100})` }}
                               referrerPolicy="no-referrer" 
                               crossOrigin="anonymous"
                             />
@@ -2109,6 +2244,297 @@ export default function EncarteCreator() {
               >
                 Adicionar
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Product Editor Modal */}
+      {isEditingModalOpen && editingProductIndex !== null && currentProducts[editingProductIndex] && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[120] p-4">
+          <div className="bg-white dark:bg-zinc-900 w-full max-w-lg max-h-[90vh] rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col border border-zinc-200 dark:border-zinc-800">
+            <div className="p-6 border-b border-zinc-200 dark:border-zinc-800 flex justify-between items-center">
+              <h3 className="text-xl font-black tracking-tighter uppercase">Editar Produto</h3>
+              <button 
+                onClick={() => setIsEditingModalOpen(false)}
+                className="p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-full transition-colors"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+            
+            <div className="flex-grow overflow-y-auto p-6 space-y-6 custom-scrollbar">
+              {/* Image and Action Buttons */}
+              <div className="flex gap-6">
+                <div className="w-40 h-40 bg-zinc-100 dark:bg-zinc-800 rounded-3xl border border-zinc-200 dark:border-zinc-700 flex flex-col items-center justify-center p-4 relative group">
+                  {currentProducts[editingProductIndex]?.image ? (
+                    <img 
+                      src={getProxyUrl(currentProducts[editingProductIndex]!.image!)} 
+                      className="w-full h-full object-contain" 
+                      referrerPolicy="no-referrer" 
+                      crossOrigin="anonymous" 
+                    />
+                  ) : (
+                    <Package className="w-12 h-12 text-zinc-300" />
+                  )}
+                  <button 
+                    onClick={() => {
+                      setIsEditingModalOpen(false);
+                      openSelector(editingProductIndex);
+                    }}
+                    className="mt-2 text-[10px] font-black uppercase tracking-widest text-emerald-600 hover:text-emerald-700"
+                  >
+                    Ver mais imagens
+                  </button>
+                </div>
+                
+                <div className="flex-grow space-y-2">
+                  <button className="w-full flex items-center justify-between px-4 py-3 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl text-xs font-bold hover:bg-zinc-50 dark:hover:bg-zinc-700 transition-all">
+                    <div className="flex items-center gap-2">
+                      <Eraser className="w-4 h-4" />
+                      <span>Remover fundo</span>
+                    </div>
+                    <span className="text-amber-500">👑</span>
+                  </button>
+                  <div className="flex items-center justify-between px-4 py-3 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl text-xs font-bold">
+                    <div className="flex items-center gap-2">
+                      <Palette className="w-4 h-4" />
+                      <span>Cor do fundo</span>
+                    </div>
+                    <input 
+                      type="color" 
+                      value={currentProducts[editingProductIndex]?.backgroundColor || '#ffffff'}
+                      onChange={(e) => handleUpdateProduct(editingProductIndex, 'backgroundColor', e.target.value)}
+                      className="w-6 h-6 rounded cursor-pointer border-none bg-transparent" 
+                    />
+                  </div>
+                  <div className="flex items-center justify-between px-4 py-3 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl text-xs font-bold">
+                    <div className="flex items-center gap-2">
+                      <Tag className="w-4 h-4" />
+                      <span>Cor da etiqueta</span>
+                    </div>
+                    <input 
+                      type="color" 
+                      value={currentProducts[editingProductIndex]?.labelColor || '#dc2626'}
+                      onChange={(e) => handleUpdateProduct(editingProductIndex, 'labelColor', e.target.value)}
+                      className="w-6 h-6 rounded cursor-pointer border-none bg-transparent" 
+                    />
+                  </div>
+                  <button 
+                    onClick={() => {
+                      handleRemoveProduct(editingProductIndex);
+                      setIsEditingModalOpen(false);
+                    }}
+                    className="w-full flex items-center gap-2 px-4 py-3 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl text-xs font-bold text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                    <span>Remover produto</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Form Fields */}
+              <div className="space-y-4">
+                <div className="space-y-1">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 ml-1">Nome</label>
+                  <input 
+                    type="text"
+                    value={currentProducts[editingProductIndex]?.name || ''}
+                    onChange={(e) => handleUpdateProduct(editingProductIndex, 'name', e.target.value)}
+                    className="w-full px-4 py-3 bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none transition-all font-bold"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 ml-1">Medida</label>
+                    <div className="flex gap-2">
+                      <div className="relative flex-grow">
+                        <select 
+                          value={currentProducts[editingProductIndex]?.medidaValue || ''}
+                          onChange={(e) => handleUpdateProduct(editingProductIndex, 'medidaValue', e.target.value)}
+                          className="w-full px-4 py-3 bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none transition-all font-bold appearance-none"
+                        >
+                          <option value=""></option>
+                          <option value="1">1</option>
+                          <option value="5">5</option>
+                        </select>
+                        <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400 pointer-events-none" />
+                      </div>
+                      <input 
+                        type="text"
+                        value={currentProducts[editingProductIndex]?.medidaUnit || ''}
+                        onChange={(e) => handleUpdateProduct(editingProductIndex, 'medidaUnit', e.target.value)}
+                        className="w-20 px-4 py-3 bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none transition-all font-bold"
+                        placeholder="kg"
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 ml-1">Tipo</label>
+                    <div className="relative">
+                      <select 
+                        value={currentProducts[editingProductIndex]?.tipo || 'Normal'}
+                        onChange={(e) => handleUpdateProduct(editingProductIndex, 'tipo', e.target.value)}
+                        className="w-full px-4 py-3 bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none transition-all font-bold appearance-none"
+                      >
+                        <option value="Normal">Normal</option>
+                        <option value="De X por Y">De X por Y</option>
+                      </select>
+                      <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400 pointer-events-none" />
+                    </div>
+                  </div>
+                </div>
+
+                {currentProducts[editingProductIndex]?.tipo === 'De X por Y' ? (
+                  <>
+                    <p className="text-[10px] text-zinc-500 font-medium italic">
+                      Irá exibir o preço de oferta e o preço original do produto.
+                    </p>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 ml-1">Título original</label>
+                        <input 
+                          type="text"
+                          value={currentProducts[editingProductIndex]?.tituloOriginal || 'DE'}
+                          onChange={(e) => handleUpdateProduct(editingProductIndex, 'tituloOriginal', e.target.value)}
+                          className="w-full px-4 py-3 bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none transition-all font-bold"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 ml-1">Preço original</label>
+                        <input 
+                          type="text"
+                          value={currentProducts[editingProductIndex]?.precoOriginal || ''}
+                          onChange={(e) => handleUpdateProduct(editingProductIndex, 'precoOriginal', e.target.value)}
+                          className="w-full px-4 py-3 bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none transition-all font-bold"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 ml-1">Título Desconto</label>
+                        <input 
+                          type="text"
+                          value={currentProducts[editingProductIndex]?.tituloDesconto || 'POR'}
+                          onChange={(e) => handleUpdateProduct(editingProductIndex, 'tituloDesconto', e.target.value)}
+                          className="w-full px-4 py-3 bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none transition-all font-bold"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 ml-1">Preço Desconto</label>
+                        <input 
+                          type="text"
+                          value={currentProducts[editingProductIndex]?.precoDesconto || ''}
+                          onChange={(e) => handleUpdateProduct(editingProductIndex, 'precoDesconto', e.target.value)}
+                          className="w-full px-4 py-3 bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none transition-all font-bold"
+                        />
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 ml-1">Preço</label>
+                    <input 
+                      type="text"
+                      value={currentProducts[editingProductIndex]?.price || ''}
+                      onChange={(e) => handleUpdateProduct(editingProductIndex, 'price', e.target.value)}
+                      className="w-full px-4 py-3 bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none transition-all font-bold"
+                    />
+                  </div>
+                )}
+
+                <div className="flex items-center gap-8">
+                  <div className="flex flex-col gap-2">
+                    <label className="flex items-center gap-3 cursor-pointer group">
+                      <div className="relative">
+                        <input 
+                          type="checkbox" 
+                          className="sr-only"
+                          checked={currentProducts[editingProductIndex]?.showPercentage || false}
+                          onChange={(e) => handleUpdateProduct(editingProductIndex, 'showPercentage', e.target.checked)}
+                        />
+                        <div className={cn(
+                          "w-10 h-5 rounded-full transition-colors",
+                          currentProducts[editingProductIndex]?.showPercentage ? "bg-emerald-500" : "bg-zinc-200 dark:bg-zinc-700"
+                        )} />
+                        <div className={cn(
+                          "absolute top-1 left-1 w-3 h-3 bg-white rounded-full transition-transform",
+                          currentProducts[editingProductIndex]?.showPercentage ? "translate-x-5" : "translate-x-0"
+                        )} />
+                      </div>
+                      <span className="text-xs font-bold text-zinc-700 dark:text-zinc-300">% Desconto</span>
+                    </label>
+                    {currentProducts[editingProductIndex]?.showPercentage && (
+                      <input 
+                        type="text"
+                        placeholder="Ex: 20%"
+                        value={currentProducts[editingProductIndex]?.discountValue || ''}
+                        onChange={(e) => handleUpdateProduct(editingProductIndex, 'discountValue', e.target.value)}
+                        className="w-24 px-2 py-1 text-xs bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none transition-all font-bold"
+                      />
+                    )}
+                  </div>
+
+                  <label className="flex items-center gap-3 cursor-pointer group">
+                    <div className="relative">
+                      <input 
+                        type="checkbox" 
+                        className="sr-only"
+                        checked={currentProducts[editingProductIndex]?.strikeThrough || false}
+                        onChange={(e) => handleUpdateProduct(editingProductIndex, 'strikeThrough', e.target.checked)}
+                      />
+                      <div className={cn(
+                        "w-10 h-5 rounded-full transition-colors",
+                        currentProducts[editingProductIndex]?.strikeThrough ? "bg-emerald-500" : "bg-zinc-200 dark:bg-zinc-700"
+                      )} />
+                      <div className={cn(
+                        "absolute top-1 left-1 w-3 h-3 bg-white rounded-full transition-transform",
+                        currentProducts[editingProductIndex]?.strikeThrough ? "translate-x-5" : "translate-x-0"
+                      )} />
+                    </div>
+                    <span className="text-xs font-bold text-zinc-700 dark:text-zinc-300">Riscar Preço</span>
+                  </label>
+                </div>
+
+                <div className="space-y-6 pt-4 border-t border-zinc-100 dark:border-zinc-800">
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-sm font-black uppercase tracking-widest">Tamanhos</h4>
+                    <span className="text-amber-500">👑</span>
+                  </div>
+
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <div className="flex justify-between">
+                        <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Produto</label>
+                      </div>
+                      <input 
+                        type="range"
+                        min="50"
+                        max="150"
+                        value={currentProducts[editingProductIndex]?.productSize || 100}
+                        onChange={(e) => handleUpdateProduct(editingProductIndex, 'productSize', parseInt(e.target.value))}
+                        className="w-full h-1.5 bg-zinc-100 dark:bg-zinc-800 rounded-lg appearance-none cursor-pointer accent-emerald-500"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <div className="flex justify-between">
+                        <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Etiqueta</label>
+                      </div>
+                      <input 
+                        type="range"
+                        min="50"
+                        max="150"
+                        value={currentProducts[editingProductIndex]?.labelSize || 100}
+                        onChange={(e) => handleUpdateProduct(editingProductIndex, 'labelSize', parseInt(e.target.value))}
+                        className="w-full h-1.5 bg-zinc-100 dark:bg-zinc-800 rounded-lg appearance-none cursor-pointer accent-emerald-500"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>

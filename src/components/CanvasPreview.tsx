@@ -214,11 +214,13 @@ const CanvasPreview = ({ id = "placa" }: { id?: string }) => {
           letterSpacing={-2}
         />
 
-        {/* cada text - positioned further down and right */}
+        {/* cada text - aligned with the last digit at the bottom */}
         <Text
           text="cada"
-          x={el.fontSize * 0.6 + (mainValue.length + cents.length + 1) * el.fontSize * 0.45}
-          y={el.fontSize * 0.95}
+          x={el.fontSize * 0.45 + (mainValue.length + cents.length + 1) * el.fontSize * 0.52 - el.fontSize * 0.6}
+          y={el.fontSize * 0.92}
+          width={el.fontSize * 0.6}
+          align="right"
           fontSize={el.fontSize * 0.18}
           fill={el.color}
           fontStyle="bold"

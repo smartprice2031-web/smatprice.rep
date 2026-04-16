@@ -125,6 +125,19 @@ export interface SelectedProduct extends Product {
   height?: number;
   bgColor?: string;
   showBg?: boolean;
+  medidaValue?: string;
+  medidaUnit?: string;
+  tipo?: string;
+  tituloOriginal?: string;
+  precoOriginal?: string;
+  tituloDesconto?: string;
+  precoDesconto?: string;
+  showPercentage?: boolean;
+  strikeThrough?: boolean;
+  productSize?: number;
+  labelSize?: number;
+  backgroundColor?: string;
+  labelColor?: string;
 }
 
 export interface EncarteSlot {
@@ -257,6 +270,7 @@ interface AppState {
   saveLayout: () => Promise<void>;
   saveLayoutDebounced: () => void;
   loadLayout: () => Promise<void>;
+  saveAll: () => Promise<void>;
 
   zoom: number;
   setZoom: (zoom: number) => void;
@@ -357,6 +371,7 @@ interface AppState {
   logout: () => void;
   setSlotVisibility: (slot: 1 | 2 | 3, visible: boolean) => void;
   toggleEncarteAccess: (cnpj: string) => void;
+  bulkUpdateStoreLayouts: (groupId: string, bandeira: string, allowedLayouts: number[]) => void;
 }
 
 let saveTimeout: NodeJS.Timeout | null = null;
@@ -394,11 +409,11 @@ export const THREE_PRODUCT_LAYOUTS = [
 
 export const isThreeProduct = (name: string, index?: number) => {
   const upperName = name.toUpperCase();
-  const isModelInRange = index !== undefined && index >= 51 && index <= 74;
+  const isModelInRange = index !== undefined && index >= 51 && index <= 99;
   
-  // Check if name is "MODELO X" where X is 52-75
+  // Check if name is "MODELO X" where X is 52-100
   const modelNumberMatch = upperName.match(/^MODELO (\d+)$/);
-  const isModelNameInRange = modelNumberMatch ? (parseInt(modelNumberMatch[1]) >= 52 && parseInt(modelNumberMatch[1]) <= 75) : false;
+  const isModelNameInRange = modelNumberMatch ? (parseInt(modelNumberMatch[1]) >= 52 && parseInt(modelNumberMatch[1]) <= 100) : false;
 
   return THREE_PRODUCT_LAYOUTS.includes(upperName) || 
          upperName.includes(' 3') || 
@@ -606,6 +621,31 @@ export const useStore = create<AppState>()(
         createDefaultLayout('Modelo 73', 72),
         createDefaultLayout('Modelo 74', 73),
         createDefaultLayout('Modelo 75', 74),
+        createDefaultLayout('Modelo 76', 75),
+        createDefaultLayout('Modelo 77', 76),
+        createDefaultLayout('Modelo 78', 77),
+        createDefaultLayout('Modelo 79', 78),
+        createDefaultLayout('Modelo 80', 79),
+        createDefaultLayout('Modelo 81', 80),
+        createDefaultLayout('Modelo 82', 81),
+        createDefaultLayout('Modelo 83', 82),
+        createDefaultLayout('Modelo 84', 83),
+        createDefaultLayout('Modelo 85', 84),
+        createDefaultLayout('Modelo 86', 85),
+        createDefaultLayout('Modelo 87', 86),
+        createDefaultLayout('Modelo 88', 87),
+        createDefaultLayout('Modelo 89', 88),
+        createDefaultLayout('Modelo 90', 89),
+        createDefaultLayout('Modelo 91', 90),
+        createDefaultLayout('Modelo 92', 91),
+        createDefaultLayout('Modelo 93', 92),
+        createDefaultLayout('Modelo 94', 93),
+        createDefaultLayout('Modelo 95', 94),
+        createDefaultLayout('Modelo 96', 95),
+        createDefaultLayout('Modelo 97', 96),
+        createDefaultLayout('Modelo 98', 97),
+        createDefaultLayout('Modelo 99', 98),
+        createDefaultLayout('Modelo 100', 99),
       ],
 
       background: {
@@ -1063,6 +1103,21 @@ export const useStore = create<AppState>()(
         }
       },
 
+      saveAll: async () => {
+        const state = get();
+        if (state.userRole !== 'admin') return;
+        
+        try {
+          await Promise.all([
+            state.saveLayout(),
+            state.saveUsersAndFlags()
+          ]);
+        } catch (error) {
+          console.error("Error in saveAll:", error);
+          throw error;
+        }
+      },
+
       loadLayout: async () => {
         if (!isSupabaseConfigured) return;
         try {
@@ -1089,12 +1144,19 @@ export const useStore = create<AppState>()(
             // Trust the layouts from the database, but ensure they have all properties
             let rawLayouts = layout.layouts || currentState.layouts;
             
-            // Ensure we have at least 75 layouts
-            if (rawLayouts.length < 75) {
-              const missingCount = 75 - rawLayouts.length;
+            // Ensure we have at least 100 layouts
+            if (rawLayouts.length < 100) {
+              // Replicate Modelo 75 (index 74) to others as requested
+              const model75 = rawLayouts[74] || createDefaultLayout('Modelo 75', 74);
+              const missingCount = 100 - rawLayouts.length;
               const missing = Array.from({ length: missingCount }, (_, i) => {
                 const idx = rawLayouts.length + i;
-                return createDefaultLayout(`Modelo ${idx + 1}`, idx);
+                return {
+                  ...model75,
+                  name: `Modelo ${idx + 1}`,
+                  sortOrder: idx,
+                  // Ensure ID/Index references are updated if any
+                };
               });
               rawLayouts = [...rawLayouts, ...missing];
             }
@@ -1302,6 +1364,16 @@ export const useStore = create<AppState>()(
         return { allowedStores: newAllowedStores };
       }),
 
+      bulkUpdateStoreLayouts: (groupId, bandeira, allowedLayouts) => set((state) => {
+        const newAllowedStores = state.allowedStores.map(s => 
+          s.groupId === groupId && s.bandeira === bandeira
+            ? { ...s, allowedLayouts }
+            : s
+        );
+        setTimeout(() => get().saveUsersAndFlags(), 0);
+        return { allowedStores: newAllowedStores };
+      }),
+
       saveUsersAndFlagsDebounced: () => {
         if (saveTimeout) clearTimeout(saveTimeout);
         saveTimeout = setTimeout(() => {
@@ -1326,8 +1398,10 @@ export const useStore = create<AppState>()(
                 encarteThemes: state.encarteThemes,
                 encarteLogos: state.encarteLogos,
                 encarteLayouts: state.encarteLayouts,
-                layouts: state.layouts,
-                announcements: state.announcements
+                announcements: state.announcements,
+                seenAnnouncements: state.seenAnnouncements,
+                theme: state.theme,
+                activeEncarteTab: state.activeEncarteTab
               } 
             });
           if (error) throw error;
@@ -1350,29 +1424,20 @@ export const useStore = create<AppState>()(
           
           if (data?.value) {
             const currentState = get();
-            let loadedLayouts = data.value.layouts || currentState.layouts;
             
-            // Ensure we have at least 75 layouts
-            if (loadedLayouts.length < 75) {
-              const missingCount = 75 - loadedLayouts.length;
-              const missing = Array.from({ length: missingCount }, (_, i) => {
-                const idx = loadedLayouts.length + i;
-                return createDefaultLayout(`Modelo ${idx + 1}`, idx);
-              });
-              loadedLayouts = [...loadedLayouts, ...missing];
-            }
-
             set({
               allowedStores: data.value.allowedStores || [],
-              flags: data.value.flags || get().flags,
+              flags: data.value.flags || currentState.flags,
               userGroups: data.value.userGroups || [],
-              encartes: data.value.encartes || get().encartes,
-              selectedEncarteModel: data.value.selectedEncarteModel || get().selectedEncarteModel,
+              encartes: data.value.encartes || currentState.encartes,
+              selectedEncarteModel: data.value.selectedEncarteModel || currentState.selectedEncarteModel,
               encarteThemes: data.value.encarteThemes || [],
               encarteLogos: data.value.encarteLogos || [],
               encarteLayouts: data.value.encarteLayouts || [],
-              layouts: loadedLayouts,
-              announcements: data.value.announcements || []
+              announcements: data.value.announcements || [],
+              seenAnnouncements: data.value.seenAnnouncements || currentState.seenAnnouncements,
+              theme: data.value.theme || currentState.theme,
+              activeEncarteTab: data.value.activeEncarteTab || currentState.activeEncarteTab
             });
           }
         } catch (error) {

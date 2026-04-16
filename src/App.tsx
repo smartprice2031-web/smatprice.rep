@@ -38,7 +38,7 @@ export default function App() {
     isSupportChatOpen, setSupportChatOpen, unreadSupportCount,
     activeLayoutIndex, layouts, setActiveLayout,
     currentUser, allowedStores, lastLoginTimestamp,
-    saveUsersAndFlags, saveLayout, loadUsersAndFlags,
+    saveUsersAndFlags, saveLayout, loadUsersAndFlags, saveAll,
     announcements, seenAnnouncements, setSeenAnnouncements,
     isAnnouncementModalOpen, setAnnouncementModalOpen,
     orientation
@@ -593,8 +593,7 @@ export default function App() {
                     onClick={async () => {
                       const toastId = toast.loading('Enviando modificações...');
                       try {
-                        await saveUsersAndFlags();
-                        await saveLayout();
+                        await saveAll();
                         toast.success('Modificações enviadas com sucesso!', { id: toastId });
                       } catch (error) {
                         toast.error('Erro ao enviar modificações.', { id: toastId });
