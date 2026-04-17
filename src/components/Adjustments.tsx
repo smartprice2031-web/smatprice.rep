@@ -4,160 +4,127 @@ import { Settings, Type, Image as ImageIcon, Layout, Eye, EyeOff, Lock, Unlock, 
 import { toast } from 'sonner';
 import { cn, isValidImageUrl } from '../lib/utils';
 
-const Adjustments = () => {
-  const { 
-    textElements1, textElements2, textElements3,
-    productImage1, productImage2, productImage3,
-    background, setElement, setProductImage, setBackground,
-    userRole, layouts, setLayoutName, setLayoutBandeira, setLayoutLocalidade, reorderLayouts, setLayoutHasThirdProduct, setLayoutOrientation, activeLayoutIndex,
-    setSlotVisibility,
-    isSingleProduct, setSingleProduct,
-    orientation,
-    optionalText1, optionalText2, optionalText3, setOptionalText,
-    showOptionalTextControl, setShowOptionalTextControl
-  } = useStore();
+// Component extracted to top level to prevent re-mounting when Adjustments re-renders. 
+// This fixes the issue where the native color picker would close automatically when selecting a color.
+const TextControl = ({ slot, label, elementKey, textElements }: { 
+  slot: 1 | 2 | 3, 
+  label: string, 
+  elementKey: 'name' | 'subtitle' | 'description' | 'price',
+  textElements: any
+}) => {
+  const { setElement, userRole } = useStore();
+  const el = textElements[elementKey];
+  
+  if (!el) return null;
 
-  const [showResetConfirm, setShowResetConfirm] = React.useState(false);
+  return (
+    <div className="p-3 bg-zinc-50 dark:bg-zinc-800/50 rounded-xl border border-zinc-200 dark:border-zinc-700 space-y-3">
+      <div className="flex justify-between items-center">
+        <h4 className="font-bold text-xs flex items-center gap-2">
+          <Type className="w-3.5 h-3.5 text-blue-500" />
+          {label}
+        </h4>
+        {userRole === 'admin' && (
+          <button 
+            onClick={() => setElement(slot, elementKey, { visible: !el.visible })}
+            className="p-1 hover:bg-zinc-200 dark:hover:bg-zinc-700 rounded"
+          >
+            {el.visible ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5 text-zinc-400" />}
+          </button>
+        )}
+      </div>
 
-  const currentLayout = layouts[activeLayoutIndex];
-  const currentLayoutName = currentLayout?.name || '';
-  const canHaveThirdProduct = currentLayout?.hasThirdProduct || isThreeProduct(currentLayoutName, activeLayoutIndex);
-  const showThirdProduct = productImage3.visible;
+      <div className="space-y-2">
+        {userRole === 'admin' && (
+          elementKey === 'description' ? (
+            <textarea 
+              rows={3}
+              value={el.text}
+              onChange={(e) => setElement(slot, elementKey, { text: e.target.value })}
+              className="w-full px-2 py-1 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded text-xs resize-none"
+            />
+          ) : (
+            <input 
+              type="text" 
+              value={el.text}
+              onChange={(e) => setElement(slot, elementKey, { text: e.target.value })}
+              className="w-full px-2 py-1 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded text-xs"
+            />
+          )
+        )}
 
-  const handleReset = () => {
-    useStore.setState((state) => ({
-      layouts: Array.from({ length: 100 }, (_, i) => {
-        const defaultNames: Record<number, string> = {
-          0: 'QUARTA FRALDA PL',
-          1: 'SABADÃO PL',
-          2: 'QUI KIDS PL',
-          3: 'DERMO PL',
-          4: 'MARONBA',
-          20: 'Padrão Ultra'
-        };
-        return createDefaultLayout(defaultNames[i] || `Modelo ${i + 1}`, i);
-      })
-    }));
-    useStore.getState().saveLayout();
-    toast.success('Modelos resetados com sucesso!');
-    setShowResetConfirm(false);
-  };
-
-  const handleBackgroundUrlChange = (url: string) => {
-    setBackground({ url });
-  };
-
-  const TextControl = ({ slot, label, elementKey, textElements }: { 
-    slot: 1 | 2 | 3, 
-    label: string, 
-    elementKey: keyof typeof textElements1,
-    textElements: typeof textElements1
-  }) => {
-    const el = textElements[elementKey];
-    return (
-      <div className="p-3 bg-zinc-50 dark:bg-zinc-800/50 rounded-xl border border-zinc-200 dark:border-zinc-700 space-y-3">
-        <div className="flex justify-between items-center">
-          <h4 className="font-bold text-xs flex items-center gap-2">
-            <Type className="w-3.5 h-3.5 text-blue-500" />
-            {label}
-          </h4>
-          {userRole === 'admin' && (
-            <button 
-              onClick={() => setElement(slot, elementKey, { visible: !el.visible })}
-              className="p-1 hover:bg-zinc-200 dark:hover:bg-zinc-700 rounded"
-            >
-              {el.visible ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5 text-zinc-400" />}
-            </button>
-          )}
+        <div className="grid grid-cols-2 gap-2">
+          <div>
+            <label className="text-[10px] text-black dark:text-white opacity-60 block mb-0.5">Tamanho: {el.fontSize}px</label>
+            <input 
+              type="range" min="10" max="300" 
+              value={el.fontSize}
+              onChange={(e) => setElement(slot, elementKey, { fontSize: parseInt(e.target.value) })}
+              className="w-full h-1.5"
+            />
+          </div>
+          <div>
+            <label className="text-[10px] text-black dark:text-white opacity-60 block mb-0.5">Cor</label>
+            <input 
+              type="color" 
+              value={el.color}
+              onChange={(e) => setElement(slot, elementKey, { color: e.target.value })}
+              className="w-full h-6 p-0 border-none bg-transparent cursor-pointer"
+            />
+          </div>
         </div>
 
-        <div className="space-y-2">
-          {userRole === 'admin' && (
-            elementKey === 'description' ? (
-              <textarea 
-                rows={3}
-                value={el.text}
-                onChange={(e) => setElement(slot, elementKey, { text: e.target.value })}
-                className="w-full px-2 py-1 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded text-xs resize-none"
-              />
-            ) : (
-              <input 
-                type="text" 
-                value={el.text}
-                onChange={(e) => setElement(slot, elementKey, { text: e.target.value })}
-                className="w-full px-2 py-1 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded text-xs"
-              />
-            )
-          )}
-
-          <div className="grid grid-cols-2 gap-2">
-            <div>
-              <label className="text-[10px] text-black dark:text-white opacity-60 block mb-0.5">Tamanho: {el.fontSize}px</label>
-              <input 
-                type="range" min="10" max="300" 
-                value={el.fontSize}
-                onChange={(e) => setElement(slot, elementKey, { fontSize: parseInt(e.target.value) })}
-                className="w-full h-1.5"
-              />
-            </div>
-            <div>
-              <label className="text-[10px] text-black dark:text-white opacity-60 block mb-0.5">Cor</label>
-              <input 
-                type="color" 
-                value={el.color}
-                onChange={(e) => setElement(slot, elementKey, { color: e.target.value })}
-                className="w-full h-6 p-0 border-none bg-transparent cursor-pointer"
-              />
-            </div>
-          </div>
-
-          <div className="flex gap-2">
-            <select
-              value={el.fontFamily || 'Inter'}
-              onChange={(e) => setElement(slot, elementKey, { fontFamily: e.target.value })}
-              className="px-2 py-1 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded text-[10px] flex-1 outline-none"
-            >
-              <option value="Inter">Inter</option>
-              <option value="Montserrat">Montserrat</option>
-            </select>
-            <button 
-              onClick={() => setElement(slot, elementKey, { isBold: !el.isBold })}
-              className={`p-1.5 rounded border transition-colors ${el.isBold ? 'bg-blue-100 border-blue-300 text-blue-600' : 'bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-700'}`}
-              title="Negrito"
-            >
-              <Bold className="w-3.5 h-3.5" />
-            </button>
-            <button 
-              onClick={() => setElement(slot, elementKey, { isItalic: !el.isItalic })}
-              className={`p-1.5 rounded border transition-colors ${el.isItalic ? 'bg-blue-100 border-blue-300 text-blue-600' : 'bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-700'}`}
-              title="Itálico"
-            >
-              <Italic className="w-3.5 h-3.5" />
-            </button>
-            <div className="flex border border-zinc-200 dark:border-zinc-700 rounded overflow-hidden">
-              {(['left', 'center', 'right'] as const).map((align) => (
-                <button
-                  key={align}
-                  onClick={() => setElement(slot, elementKey, { align })}
-                  className={`p-1.5 transition-colors ${el.align === align ? 'bg-blue-100 text-blue-600' : 'bg-white dark:bg-zinc-900'}`}
-                >
-                  {align === 'left' && <AlignLeft className="w-3.5 h-3.5" />}
-                  {align === 'center' && <AlignCenter className="w-3.5 h-3.5" />}
-                  {align === 'right' && <AlignRight className="w-3.5 h-3.5" />}
-                </button>
-              ))}
-            </div>
+        <div className="flex gap-2">
+          <select
+            value={el.fontFamily || 'Inter'}
+            onChange={(e) => setElement(slot, elementKey, { fontFamily: e.target.value })}
+            className="px-2 py-1 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded text-[10px] flex-1 outline-none"
+          >
+            <option value="Inter">Inter</option>
+            <option value="Montserrat">Montserrat</option>
+          </select>
+          <button 
+            onClick={() => setElement(slot, elementKey, { isBold: !el.isBold })}
+            className={`p-1.5 rounded border transition-colors ${el.isBold ? 'bg-blue-100 border-blue-300 text-blue-600' : 'bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-700'}`}
+            title="Negrito"
+          >
+            <Bold className="w-3.5 h-3.5" />
+          </button>
+          <button 
+            onClick={() => setElement(slot, elementKey, { isItalic: !el.isItalic })}
+            className={`p-1.5 rounded border transition-colors ${el.isItalic ? 'bg-blue-100 border-blue-300 text-blue-600' : 'bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-700'}`}
+            title="Itálico"
+          >
+            <Italic className="w-3.5 h-3.5" />
+          </button>
+          <div className="flex border border-zinc-200 dark:border-zinc-700 rounded overflow-hidden">
+            {(['left', 'center', 'right'] as const).map((align) => (
+              <button
+                key={align}
+                onClick={() => setElement(slot, elementKey, { align })}
+                className={`p-1.5 transition-colors ${el.align === align ? 'bg-blue-100 text-blue-600' : 'bg-white dark:bg-zinc-900'}`}
+              >
+                {align === 'left' && <AlignLeft className="w-3.5 h-3.5" />}
+                {align === 'center' && <AlignCenter className="w-3.5 h-3.5" />}
+                {align === 'right' && <AlignRight className="w-3.5 h-3.5" />}
+              </button>
+            ))}
           </div>
         </div>
       </div>
-    );
-  };
+    </div>
+  );
+};
 
+// Component extracted to top level to prevent re-mounting during parent state updates.
+const ProductImageControl = ({ slot, productImage }: { slot: 1 | 2 | 3, productImage: any }) => {
+  const { setProductImage } = useStore();
+  
   const handleProductImageUrlChange = (slot: 1 | 2 | 3, url: string) => {
     setProductImage(slot, { url });
   };
 
-  const ProductImageControl = ({ slot, productImage }: { slot: 1 | 2 | 3, productImage: typeof productImage1 }) => (
+  return (
     <div className="p-3 bg-zinc-50 dark:bg-zinc-800/50 rounded-xl border border-zinc-200 dark:border-zinc-700 space-y-3">
       <div className="flex justify-between items-center">
         <span className="text-xs font-bold flex items-center gap-2">
@@ -222,6 +189,50 @@ const Adjustments = () => {
       </div>
     </div>
   );
+};
+
+const Adjustments = () => {
+  const { 
+    textElements1, textElements2, textElements3,
+    productImage1, productImage2, productImage3,
+    background, setElement, setProductImage, setBackground,
+    userRole, layouts, setLayoutName, setLayoutBandeira, setLayoutLocalidade, reorderLayouts, setLayoutHasThirdProduct, setLayoutOrientation, activeLayoutIndex,
+    setSlotVisibility,
+    isSingleProduct, // setSingleProduct,
+    orientation,
+    // optionalText1, optionalText2, optionalText3, setOptionalText,
+    showOptionalTextControl, setShowOptionalTextControl
+  } = useStore();
+
+  const [showResetConfirm, setShowResetConfirm] = React.useState(false);
+
+  const currentLayout = layouts[activeLayoutIndex];
+  const currentLayoutName = currentLayout?.name || '';
+  const canHaveThirdProduct = currentLayout?.hasThirdProduct || isThreeProduct(currentLayoutName, activeLayoutIndex);
+  const showThirdProduct = productImage3.visible;
+
+  const handleReset = () => {
+    useStore.setState((state) => ({
+      layouts: Array.from({ length: 100 }, (_, i) => {
+        const defaultNames: Record<number, string> = {
+          0: 'QUARTA FRALDA PL',
+          1: 'SABADÃO PL',
+          2: 'QUI KIDS PL',
+          3: 'DERMO PL',
+          4: 'MARONBA',
+          20: 'Padrão Ultra'
+        };
+        return createDefaultLayout(defaultNames[i] || `Modelo ${i + 1}`, i);
+      })
+    }));
+    useStore.getState().saveLayout();
+    toast.success('Modelos resetados com sucesso!');
+    setShowResetConfirm(false);
+  };
+
+  const handleBackgroundUrlChange = (url: string) => {
+    setBackground({ url });
+  };
 
   return (
     <div className="p-6 space-y-8 pb-20">

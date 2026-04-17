@@ -100,9 +100,19 @@ const CanvasPreview = ({ id = "placa" }: { id?: string }) => {
     });
   };
 
+  const handleExportPNG = () => {
+    if (!stageRef.current) return '';
+    // High quality PNG export
+    return stageRef.current.toDataURL({ 
+      mimeType: 'image/png',
+      pixelRatio: 3 
+    });
+  };
+
   useEffect(() => {
     if (id === "placa") {
       (window as any).getCanvasData = handleExport;
+      (window as any).getCanvasPNGData = handleExportPNG;
     }
   }, [id]);
 

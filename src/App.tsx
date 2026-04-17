@@ -18,7 +18,7 @@ import {
   LayoutDashboard, Package, Settings as SettingsIcon,
   ShoppingBag, Search, Database, X, ListPlus, LayoutGrid,
   ArrowLeft, LogOut, Users, MessageCircle, AlertTriangle,
-  RefreshCw, Layout, Megaphone, Flag, MapPin, Moon, Sun
+  RefreshCw, Layout, Megaphone, Flag, MapPin, Moon, Sun, Image as ImageIcon
 } from 'lucide-react';
 import { jsPDF } from 'jspdf';
 import { Toaster } from 'sonner';
@@ -327,6 +327,25 @@ export default function App() {
     }
   };
 
+  const handleDownloadPNG = () => {
+    const canvasData = (window as any).getCanvasPNGData?.();
+    if (!canvasData) return;
+
+    const toastId = toast.loading('Baixando PNG...');
+
+    try {
+      const link = document.createElement('a');
+      const fileName = `smartprice_placa_${textElements1.name.text.toLowerCase().replace(/\s+/g, '-')}.png`;
+      link.download = fileName;
+      link.href = canvasData;
+      link.click();
+      toast.success('PNG baixado com sucesso!', { id: toastId });
+    } catch (error) {
+      console.error('Erro ao gerar PNG:', error);
+      toast.error('Erro ao gerar PNG. Tente novamente.', { id: toastId });
+    }
+  };
+
   const handleAddToQueue = () => {
     setSelectedId(null);
     const toastId = toast.loading('Adicionando à fila...');
@@ -463,6 +482,13 @@ export default function App() {
                 >
                   <FileDown className="w-4 h-4" />
                   PDF
+                </button>
+                <button 
+                  onClick={handleDownloadPNG}
+                  className="flex items-center gap-1 px-2 py-1 bg-emerald-600 text-white rounded-md shadow-md shadow-emerald-500/20 hover:bg-emerald-700 transition-all text-[10px] font-bold"
+                >
+                  <ImageIcon className="w-4 h-4" />
+                  PNG
                 </button>
                 <button 
                   onClick={handleAddToQueue}
