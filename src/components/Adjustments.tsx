@@ -1,6 +1,6 @@
 import React from 'react';
 import { useStore, TextSettings, createDefaultLayout, Layout as LayoutType, isThreeProduct } from '../store';
-import { Settings, Type, Image as ImageIcon, Layout, Eye, EyeOff, Lock, Unlock, AlignLeft, AlignCenter, AlignRight, Bold, AlertTriangle, ChevronUp, ChevronDown, Flag, MapPin, AlertCircle } from 'lucide-react';
+import { Settings, Type, Image as ImageIcon, Layout, Eye, EyeOff, Lock, Unlock, AlignLeft, AlignCenter, AlignRight, Bold, Italic, AlertTriangle, ChevronUp, ChevronDown, Flag, MapPin, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn, isValidImageUrl } from '../lib/utils';
 
@@ -112,18 +112,34 @@ const Adjustments = () => {
           </div>
 
           <div className="flex gap-2">
+            <select
+              value={el.fontFamily || 'Inter'}
+              onChange={(e) => setElement(slot, elementKey, { fontFamily: e.target.value })}
+              className="px-2 py-1 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded text-[10px] flex-1 outline-none"
+            >
+              <option value="Inter">Inter</option>
+              <option value="Montserrat">Montserrat</option>
+            </select>
             <button 
               onClick={() => setElement(slot, elementKey, { isBold: !el.isBold })}
-              className={`p-1.5 rounded border ${el.isBold ? 'bg-blue-100 border-blue-300 text-blue-600' : 'bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-700'}`}
+              className={`p-1.5 rounded border transition-colors ${el.isBold ? 'bg-blue-100 border-blue-300 text-blue-600' : 'bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-700'}`}
+              title="Negrito"
             >
               <Bold className="w-3.5 h-3.5" />
+            </button>
+            <button 
+              onClick={() => setElement(slot, elementKey, { isItalic: !el.isItalic })}
+              className={`p-1.5 rounded border transition-colors ${el.isItalic ? 'bg-blue-100 border-blue-300 text-blue-600' : 'bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-700'}`}
+              title="Itálico"
+            >
+              <Italic className="w-3.5 h-3.5" />
             </button>
             <div className="flex border border-zinc-200 dark:border-zinc-700 rounded overflow-hidden">
               {(['left', 'center', 'right'] as const).map((align) => (
                 <button
                   key={align}
                   onClick={() => setElement(slot, elementKey, { align })}
-                  className={`p-1.5 ${el.align === align ? 'bg-blue-100 text-blue-600' : 'bg-white dark:bg-zinc-900'}`}
+                  className={`p-1.5 transition-colors ${el.align === align ? 'bg-blue-100 text-blue-600' : 'bg-white dark:bg-zinc-900'}`}
                 >
                   {align === 'left' && <AlignLeft className="w-3.5 h-3.5" />}
                   {align === 'center' && <AlignCenter className="w-3.5 h-3.5" />}

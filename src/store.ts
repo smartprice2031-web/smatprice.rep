@@ -7,6 +7,8 @@ export interface TextSettings {
   fontSize: number;
   color: string;
   isBold: boolean;
+  isItalic?: boolean;
+  fontFamily?: string;
   x: number;
   y: number;
   width: number;
@@ -68,30 +70,23 @@ export interface Layout {
   };
   hasThirdProduct?: boolean;
   orientation?: 'portrait' | 'landscape';
-  optionalText1?: {
-    text: string;
-    active: boolean;
-    x: number;
-    y: number;
-    fontSize: number;
-    color: string;
-  };
-  optionalText2?: {
-    text: string;
-    active: boolean;
-    x: number;
-    y: number;
-    fontSize: number;
-    color: string;
-  };
-  optionalText3?: {
-    text: string;
-    active: boolean;
-    x: number;
-    y: number;
-    fontSize: number;
-    color: string;
-  };
+  isSingleProduct?: boolean;
+  showOptionalTextControl?: boolean;
+  optionalText1?: OptionalTextSettings;
+  optionalText2?: OptionalTextSettings;
+  optionalText3?: OptionalTextSettings;
+}
+
+export interface OptionalTextSettings {
+  text: string;
+  active: boolean;
+  x: number;
+  y: number;
+  fontSize: number;
+  color: string;
+  fontFamily?: string;
+  isItalic?: boolean;
+  isBold?: boolean;
 }
 
 export interface UserGroup {
@@ -217,30 +212,9 @@ interface AppState {
     price: TextSettings;
   };
   
-  optionalText1: {
-    text: string;
-    active: boolean;
-    x: number;
-    y: number;
-    fontSize: number;
-    color: string;
-  };
-  optionalText2: {
-    text: string;
-    active: boolean;
-    x: number;
-    y: number;
-    fontSize: number;
-    color: string;
-  };
-  optionalText3: {
-    text: string;
-    active: boolean;
-    x: number;
-    y: number;
-    fontSize: number;
-    color: string;
-  };
+  optionalText1: OptionalTextSettings;
+  optionalText2: OptionalTextSettings;
+  optionalText3: OptionalTextSettings;
 
   activeLayoutIndex: number;
   layouts: Layout[];
@@ -379,7 +353,9 @@ let saveTimeout: NodeJS.Timeout | null = null;
 const DEFAULT_TEXT = {
   fontSize: 40,
   color: '#000000',
+  fontFamily: 'Inter',
   isBold: true,
+  isItalic: false,
   x: 50,
   y: 50,
   width: 700,
@@ -492,7 +468,10 @@ export const createDefaultLayout = (name: string, index?: number): Layout => {
       x: 50,
       y: 50,
       fontSize: 30,
-      color: '#000000'
+      color: '#000000',
+      isBold: true,
+      isItalic: false,
+      fontFamily: 'Inter'
     },
     optionalText2: {
       text: '',
@@ -500,7 +479,10 @@ export const createDefaultLayout = (name: string, index?: number): Layout => {
       x: 50,
       y: 350,
       fontSize: 30,
-      color: '#000000'
+      color: '#000000',
+      isBold: true,
+      isItalic: false,
+      fontFamily: 'Inter'
     },
     optionalText3: {
       text: '',
@@ -508,7 +490,10 @@ export const createDefaultLayout = (name: string, index?: number): Layout => {
       x: 50,
       y: 650,
       fontSize: 30,
-      color: '#000000'
+      color: '#000000',
+      isBold: true,
+      isItalic: false,
+      fontFamily: 'Inter'
     }
   };
 };
@@ -527,7 +512,10 @@ export const useStore = create<AppState>()(
         x: 50,
         y: 50,
         fontSize: 30,
-        color: '#000000'
+        color: '#000000',
+        isBold: true,
+        isItalic: false,
+        fontFamily: 'Inter'
       },
       optionalText2: {
         text: '',
@@ -535,7 +523,10 @@ export const useStore = create<AppState>()(
         x: 50,
         y: 350,
         fontSize: 30,
-        color: '#000000'
+        color: '#000000',
+        isBold: true,
+        isItalic: false,
+        fontFamily: 'Inter'
       },
       optionalText3: {
         text: '',
@@ -543,7 +534,10 @@ export const useStore = create<AppState>()(
         x: 50,
         y: 650,
         fontSize: 30,
-        color: '#000000'
+        color: '#000000',
+        isBold: true,
+        isItalic: false,
+        fontFamily: 'Inter'
       },
       layouts: [
         createDefaultLayout('QUARTA FRALDA PL', 0),
@@ -726,6 +720,8 @@ export const useStore = create<AppState>()(
           optionalText1: state.optionalText1,
           optionalText2: state.optionalText2,
           optionalText3: state.optionalText3,
+          isSingleProduct: state.isSingleProduct,
+          showOptionalTextControl: state.showOptionalTextControl
         };
 
         const newLayouts = [...state.layouts];
@@ -740,6 +736,8 @@ export const useStore = create<AppState>()(
           activeLayoutIndex: index,
           layouts: newLayouts,
           orientation: nextLayout.orientation || 'portrait',
+          isSingleProduct: nextLayout.isSingleProduct !== undefined ? nextLayout.isSingleProduct : false,
+          showOptionalTextControl: nextLayout.showOptionalTextControl !== undefined ? nextLayout.showOptionalTextControl : true,
           background: nextLayout.background ? { ...defaultNext.background, ...nextLayout.background } : defaultNext.background,
           productImage1: nextLayout.productImage1 ? { ...defaultNext.productImage1, ...nextLayout.productImage1 } : defaultNext.productImage1,
           productImage2: nextLayout.productImage2 ? { ...defaultNext.productImage2, ...nextLayout.productImage2 } : defaultNext.productImage2,
@@ -760,7 +758,11 @@ export const useStore = create<AppState>()(
           optionalText2: nextLayout.optionalText2 ? { ...defaultNext.optionalText2, ...nextLayout.optionalText2 } : defaultNext.optionalText2,
           optionalText3: nextLayout.optionalText3 ? { ...defaultNext.optionalText3, ...nextLayout.optionalText3 } : defaultNext.optionalText3,
         });
-        get().saveLayout();
+
+        // REINFORCE: Only save globally if admin
+        if (get().userRole === 'admin') {
+          get().saveLayout();
+        }
       },
 
       setLayoutOrientation: (index, orientation) => {
@@ -1069,6 +1071,10 @@ export const useStore = create<AppState>()(
       saveLayout: async () => {
         if (!isSupabaseConfigured) return;
         const state = get();
+        
+        // REINFORCE: Only Admins can save global layout adjustments to the database
+        if (state.userRole !== 'admin') return;
+
         const timestamp = new Date().toISOString();
         const layout = {
           background: state.background,
@@ -1159,6 +1165,11 @@ export const useStore = create<AppState>()(
                 };
               });
               rawLayouts = [...rawLayouts, ...missing];
+              
+              // REINFORCE: If admin, save the fully expanded 100 layouts back to DB
+              if (currentState.userRole === 'admin') {
+                setTimeout(() => get().saveLayout(), 1000);
+              }
             }
 
             let loadedLayouts = rawLayouts.map((l: any, idx: number) => {
@@ -1384,6 +1395,10 @@ export const useStore = create<AppState>()(
       saveUsersAndFlags: async () => {
         if (!isSupabaseConfigured) return;
         const state = get();
+        
+        // REINFORCE: Only Admins can save global user, store, and flag configurations
+        if (state.userRole !== 'admin') return;
+
         try {
           const { error } = await supabase
             .from('settings')

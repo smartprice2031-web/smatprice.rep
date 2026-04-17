@@ -140,8 +140,8 @@ const CanvasPreview = ({ id = "placa" }: { id?: string }) => {
             text={priceStr}
             fontSize={el.fontSize}
             fill={el.color}
-            fontStyle="bold"
-            fontFamily="Inter"
+            fontStyle={`${el.isBold ? 'bold' : ''} ${el.isItalic ? 'italic' : ''}`.trim() || 'normal'}
+            fontFamily={el.fontFamily || 'Inter'}
             align="center"
             width={el.width || 200}
           />
@@ -198,8 +198,8 @@ const CanvasPreview = ({ id = "placa" }: { id?: string }) => {
           text="R$:"
           fontSize={el.fontSize * 0.25}
           fill={el.color}
-          fontStyle="bold"
-          fontFamily="Inter"
+          fontStyle={`${el.isBold ? 'bold' : ''} ${el.isItalic ? 'italic' : ''}`.trim() || 'normal'}
+          fontFamily={el.fontFamily || 'Inter'}
           y={el.fontSize * 0.5}
         />
         
@@ -209,8 +209,8 @@ const CanvasPreview = ({ id = "placa" }: { id?: string }) => {
           x={el.fontSize * 0.45}
           fontSize={el.fontSize}
           fill={el.color}
-          fontStyle="bold"
-          fontFamily="Inter"
+          fontStyle={`${el.isBold ? 'bold' : ''} ${el.isItalic ? 'italic' : ''}`.trim() || 'normal'}
+          fontFamily={el.fontFamily || 'Inter'}
           letterSpacing={-2}
         />
 
@@ -223,8 +223,8 @@ const CanvasPreview = ({ id = "placa" }: { id?: string }) => {
           align="right"
           fontSize={el.fontSize * 0.18}
           fill={el.color}
-          fontStyle="bold"
-          fontFamily="Inter"
+          fontStyle={`${el.isBold ? 'bold' : ''} ${el.isItalic ? 'italic' : ''}`.trim() || 'normal'}
+          fontFamily={el.fontFamily || 'Inter'}
         />
       </Group>
     );
@@ -344,8 +344,8 @@ const CanvasPreview = ({ id = "placa" }: { id?: string }) => {
                 y={el.y}
                 fontSize={el.fontSize}
                 fill={el.color}
-                fontStyle={el.isBold ? 'bold' : 'normal'}
-                fontFamily="Inter"
+                fontStyle={`${el.isBold ? 'bold' : ''} ${el.isItalic ? 'italic' : ''}`.trim() || 'normal'}
+                fontFamily={el.fontFamily || 'Inter'}
                 align={el.align}
                 width={el.width || 700}
                 lineHeight={1.2}
@@ -489,8 +489,8 @@ const CanvasPreview = ({ id = "placa" }: { id?: string }) => {
                       text={optionalText1.text || 'Texto Opcional 1'}
                       fontSize={optionalText1.fontSize}
                       fill={optionalText1.color}
-                      fontStyle="bold"
-                      fontFamily="Inter"
+                      fontStyle={`${optionalText1.isBold ? 'bold' : ''} ${optionalText1.isItalic ? 'italic' : ''}`.trim() || 'normal'}
+                      fontFamily={optionalText1.fontFamily || 'Inter'}
                       align="center"
                       width={300}
                     />
@@ -521,8 +521,8 @@ const CanvasPreview = ({ id = "placa" }: { id?: string }) => {
                       text={optionalText2.text || 'Texto Opcional 2'}
                       fontSize={optionalText2.fontSize}
                       fill={optionalText2.color}
-                      fontStyle="bold"
-                      fontFamily="Inter"
+                      fontStyle={`${optionalText2.isBold ? 'bold' : ''} ${optionalText2.isItalic ? 'italic' : ''}`.trim() || 'normal'}
+                      fontFamily={optionalText2.fontFamily || 'Inter'}
                       align="center"
                       width={300}
                     />
@@ -553,8 +553,8 @@ const CanvasPreview = ({ id = "placa" }: { id?: string }) => {
                       text={optionalText3.text || 'Texto Opcional 3'}
                       fontSize={optionalText3.fontSize}
                       fill={optionalText3.color}
-                      fontStyle="bold"
-                      fontFamily="Inter"
+                      fontStyle={`${optionalText3.isBold ? 'bold' : ''} ${optionalText3.isItalic ? 'italic' : ''}`.trim() || 'normal'}
+                      fontFamily={optionalText3.fontFamily || 'Inter'}
                       align="center"
                       width={300}
                     />
