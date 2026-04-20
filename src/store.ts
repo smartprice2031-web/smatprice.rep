@@ -742,16 +742,16 @@ export const useStore = create<AppState>()(
           productImage1: nextLayout.productImage1 ? { ...defaultNext.productImage1, ...nextLayout.productImage1 } : defaultNext.productImage1,
           productImage2: nextLayout.productImage2 ? { ...defaultNext.productImage2, ...nextLayout.productImage2 } : defaultNext.productImage2,
           productImage3: nextLayout.productImage3 
-            ? { ...defaultNext.productImage3, ...nextLayout.productImage3, visible: isThree ? true : nextLayout.productImage3.visible } 
+            ? { ...defaultNext.productImage3, ...nextLayout.productImage3 } 
             : defaultNext.productImage3,
           textElements1: nextLayout.textElements1 ? { ...defaultNext.textElements1, ...nextLayout.textElements1 } : defaultNext.textElements1,
           textElements2: nextLayout.textElements2 ? { ...defaultNext.textElements2, ...nextLayout.textElements2 } : defaultNext.textElements2,
           textElements3: nextLayout.textElements3 
             ? { 
-                name: { ...defaultNext.textElements3.name, ...nextLayout.textElements3.name, visible: isThree ? true : nextLayout.textElements3.name.visible },
-                description: { ...defaultNext.textElements3.description, ...nextLayout.textElements3.description, visible: isThree ? true : nextLayout.textElements3.description.visible },
-                subtitle: { ...defaultNext.textElements3.subtitle, ...nextLayout.textElements3.subtitle, visible: isThree ? true : nextLayout.textElements3.subtitle.visible },
-                price: { ...defaultNext.textElements3.price, ...nextLayout.textElements3.price, visible: isThree ? true : nextLayout.textElements3.price.visible },
+                name: { ...defaultNext.textElements3.name, ...nextLayout.textElements3.name },
+                description: { ...defaultNext.textElements3.description, ...nextLayout.textElements3.description },
+                subtitle: { ...defaultNext.textElements3.subtitle, ...nextLayout.textElements3.subtitle },
+                price: { ...defaultNext.textElements3.price, ...nextLayout.textElements3.price },
               } 
             : defaultNext.textElements3,
           optionalText1: nextLayout.optionalText1 ? { ...defaultNext.optionalText1, ...nextLayout.optionalText1 } : defaultNext.optionalText1,
