@@ -441,7 +441,7 @@ export const createDefaultLayout = (name: string, index?: number): Layout => {
       height: 200,
       rotation: 0,
       opacity: 1,
-      visible: showThird,
+      visible: false,
       locked: false,
     },
     textElements1: {
@@ -457,10 +457,10 @@ export const createDefaultLayout = (name: string, index?: number): Layout => {
       price: { ...DEFAULT_TEXT, text: 'R$ 0,00', y: showThird ? 960 : 900, fontSize: showThird ? 80 : 100, color: '#e11d48' },
     },
     textElements3: {
-      name: { ...DEFAULT_TEXT, text: 'PRODUTO CENTRAL', y: 380, fontSize: 40, visible: showThird },
-      description: { ...DEFAULT_TEXT, text: 'Descrição do produto.', y: 430, fontSize: 20, isBold: false, visible: showThird },
-      subtitle: { ...DEFAULT_TEXT, text: 'OFERTA', y: 410, fontSize: 15, visible: showThird },
-      price: { ...DEFAULT_TEXT, text: 'R$ 0,00', y: 630, fontSize: 80, color: '#e11d48', visible: showThird },
+      name: { ...DEFAULT_TEXT, text: 'PRODUTO CENTRAL', y: 380, fontSize: 40, visible: false },
+      description: { ...DEFAULT_TEXT, text: 'Descrição do produto.', y: 430, fontSize: 20, isBold: false, visible: false },
+      subtitle: { ...DEFAULT_TEXT, text: 'OFERTA', y: 410, fontSize: 15, visible: false },
+      price: { ...DEFAULT_TEXT, text: 'R$ 0,00', y: 630, fontSize: 80, color: '#e11d48', visible: false },
     },
     optionalText1: {
       text: '',
@@ -1161,7 +1161,13 @@ export const useStore = create<AppState>()(
                   ...model75,
                   name: `Modelo ${idx + 1}`,
                   sortOrder: idx,
-                  // Ensure ID/Index references are updated if any
+                  productImage3: { ...model75.productImage3, visible: false },
+                  textElements3: {
+                    name: { ...model75.textElements3.name, visible: false },
+                    description: { ...model75.textElements3.description, visible: false },
+                    subtitle: { ...model75.textElements3.subtitle, visible: false },
+                    price: { ...model75.textElements3.price, visible: false },
+                  }
                 };
               });
               rawLayouts = [...rawLayouts, ...missing];

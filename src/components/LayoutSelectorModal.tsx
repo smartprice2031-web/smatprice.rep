@@ -121,6 +121,12 @@ export default function LayoutSelectorModal({ isOpen, onClose, layouts, onSelect
                         key={layout.originalIndex}
                         whileHover={{ y: -8, scale: 1.02 }}
                         whileTap={{ scale: 0.98 }}
+                        onMouseEnter={() => {
+                          if (layout.background.url) {
+                            const img = new Image();
+                            img.src = getProxyUrl(layout.background.url);
+                          }
+                        }}
                         onClick={() => {
                           onSelect(layout.originalIndex);
                           onClose();

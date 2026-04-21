@@ -22,7 +22,7 @@ import {
 } from 'lucide-react';
 import { jsPDF } from 'jspdf';
 import { Toaster } from 'sonner';
-import { cn } from './lib/utils';
+import { cn, getProxyUrl } from './lib/utils';
 import { useSupportSocket } from './hooks/useSupportSocket';
 import { supabase, isSupabaseConfigured } from './lib/supabase';
 
@@ -90,14 +90,25 @@ export default function App() {
   // Initialize support socket globally for background notifications
   useSupportSocket();
 
-  // Pre-load active layout background
+  // Pre-load background images for all allowed layouts to speed up selection
   useEffect(() => {
-    const activeLayout = layouts[activeLayoutIndex];
-    if (activeLayout?.background?.url) {
-      const img = new Image();
-      img.src = activeLayout.background.url;
+    if (filteredLayouts.length > 0) {
+      // Preload current background immediately
+      const current = layouts[activeLayoutIndex];
+      if (current?.background?.url) {
+        const img = new Image();
+        img.src = getProxyUrl(current.background.url);
+      }
+
+      // Preload others in background
+      filteredLayouts.forEach(layout => {
+        if (layout.background?.url) {
+          const img = new Image();
+          img.src = getProxyUrl(layout.background.url);
+        }
+      });
     }
-  }, [activeLayoutIndex, layouts]);
+  }, [filteredLayouts]);
 
 
   useEffect(() => {
@@ -747,6 +758,12 @@ export default function App() {
                               {layouts.map((layout) => (
                                 <button
                                   key={`${layout.name}-${layout.originalIndex}`}
+                                  onMouseEnter={() => {
+                                    if (layout.background.url) {
+                                      const img = new Image();
+                                      img.src = getProxyUrl(layout.background.url);
+                                    }
+                                  }}
                                   onClick={() => handleLayoutSelect(layout.originalIndex)}
                                   className={cn(
                                     "py-2 px-0.5 text-[8px] font-black uppercase tracking-tighter rounded-lg border transition-all truncate",

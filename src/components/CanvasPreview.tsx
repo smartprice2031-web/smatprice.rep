@@ -29,11 +29,18 @@ const CanvasPreview = ({ id = "placa" }: { id?: string }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   
   const [bgImg] = useImage(getProxyUrl(background.url) || '', 'anonymous');
+  const [displayedBg, setDisplayedBg] = useState<any>(null);
   const [prodImg1] = useImage(getProxyUrl(productImage1.url) || '', 'anonymous');
   const [prodImg2] = useImage(getProxyUrl(productImage2.url) || '', 'anonymous');
   const [prodImg3] = useImage(getProxyUrl(productImage3.url) || '', 'anonymous');
   const [autoScale, setAutoScale] = useState(1);
   if (!activeLayout) return null;
+
+  useEffect(() => {
+    if (bgImg) {
+      setDisplayedBg(bgImg);
+    }
+  }, [bgImg]);
 
   // Force portrait for "Quart Suplem Maxi" as requested by user
   const isQuartSuplemMaxi = activeLayout.name === 'Quart Suplem Maxi';
@@ -448,18 +455,18 @@ const CanvasPreview = ({ id = "placa" }: { id?: string }) => {
         >
           <Layer>
             {/* Background */}
-            {bgImg && (
+            {displayedBg && (
               <KonvaImage
-                image={bgImg}
+                image={displayedBg}
                 width={currentWidth}
                 height={currentHeight}
                 crop={(() => {
-                  const scale = Math.max(currentWidth / bgImg.width, currentHeight / bgImg.height);
+                  const scale = Math.max(currentWidth / displayedBg.width, currentHeight / displayedBg.height);
                   const cropWidth = currentWidth / scale;
                   const cropHeight = currentHeight / scale;
                   return {
-                    x: (bgImg.width - cropWidth) / 2,
-                    y: (bgImg.height - cropHeight) / 2,
+                    x: (displayedBg.width - cropWidth) / 2,
+                    y: (displayedBg.height - cropHeight) / 2,
                     width: cropWidth,
                     height: cropHeight
                   };
