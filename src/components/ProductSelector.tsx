@@ -10,7 +10,7 @@ const ProductSelector: React.FC<{ onSelect?: (product: Product) => void }> = ({ 
     productImage3, setElement,
     layouts, activeLayoutIndex,
     optionalText1, optionalText2, optionalText3, setOptionalText,
-    isSingleProduct, showOptionalTextControl
+    isSingleProduct, showOptionalTextControl, showSingleProductControl
   } = useStore();
 
   const currentLayoutName = layouts[activeLayoutIndex]?.name || '';
@@ -125,6 +125,7 @@ const ProductSelector: React.FC<{ onSelect?: (product: Product) => void }> = ({ 
         layouts={layouts}
         activeLayoutIndex={activeLayoutIndex}
         showOptionalTextControl={showOptionalTextControl}
+        showSingleProductControl={showSingleProductControl}
       />
       
       {(!isSingleProduct || (isThreeProduct(currentLayoutName, activeLayoutIndex) && currentLayoutName.toUpperCase() !== 'PADRÃO ULTRA')) && (
@@ -149,6 +150,7 @@ const ProductSelector: React.FC<{ onSelect?: (product: Product) => void }> = ({ 
             layouts={layouts}
             activeLayoutIndex={activeLayoutIndex}
             showOptionalTextControl={showOptionalTextControl}
+            showSingleProductControl={showSingleProductControl}
           />
 
           {(showThirdProduct || (isThreeProduct(currentLayoutName, activeLayoutIndex) && currentLayoutName.toUpperCase() !== 'PADRÃO ULTRA')) && (
@@ -173,6 +175,7 @@ const ProductSelector: React.FC<{ onSelect?: (product: Product) => void }> = ({ 
                 layouts={layouts}
                 activeLayoutIndex={activeLayoutIndex}
                 showOptionalTextControl={showOptionalTextControl}
+                showSingleProductControl={showSingleProductControl}
               />
             </>
           )}
@@ -199,7 +202,8 @@ const ProductSlot = ({
   isIdosoLayout,
   layouts,
   activeLayoutIndex,
-  showOptionalTextControl
+  showOptionalTextControl,
+  showSingleProductControl
 }: { 
   slot: 1 | 2 | 3, 
   searchTerm: string, 
@@ -217,7 +221,8 @@ const ProductSlot = ({
   isIdosoLayout?: boolean,
   layouts?: any[],
   activeLayoutIndex?: number,
-  showOptionalTextControl?: boolean
+  showOptionalTextControl?: boolean,
+  showSingleProductControl?: boolean
 }) => {
   const { isSingleProduct, setSingleProduct } = useStore();
 
@@ -241,7 +246,7 @@ const ProductSlot = ({
       {/* Toggles Row */}
       <div className="grid grid-cols-2 gap-2">
         {/* Single Product Toggle */}
-        {(!isThreeProduct(layouts?.[activeLayoutIndex || 0]?.name || '', activeLayoutIndex || 0) || (layouts?.[activeLayoutIndex || 0]?.name || '').toUpperCase() === 'PADRÃO ULTRA') ? (
+        {showSingleProductControl && ((!isThreeProduct(layouts?.[activeLayoutIndex || 0]?.name || '', activeLayoutIndex || 0) || (layouts?.[activeLayoutIndex || 0]?.name || '').toUpperCase() === 'PADRÃO ULTRA')) ? (
           <div 
             className="flex items-center justify-between p-1.5 rounded-xl border border-white/5 shadow-lg bg-[#1a1614]"
           >

@@ -71,6 +71,7 @@ export interface Layout {
   hasThirdProduct?: boolean;
   orientation?: 'portrait' | 'landscape';
   isSingleProduct?: boolean;
+  showSingleProductControl?: boolean;
   showOptionalTextControl?: boolean;
   optionalText1?: OptionalTextSettings;
   optionalText2?: OptionalTextSettings;
@@ -256,6 +257,8 @@ interface AppState {
   setPrinting: (isPrinting: boolean) => void;
   isSingleProduct: boolean;
   setSingleProduct: (isSingleProduct: boolean) => void;
+  showSingleProductControl: boolean;
+  setShowSingleProductControl: (show: boolean) => void;
   showOptionalTextControl: boolean;
   setShowOptionalTextControl: (show: boolean) => void;
 
@@ -406,6 +409,8 @@ export const createDefaultLayout = (name: string, index?: number): Layout => {
     sortOrder: index ?? 0,
     hasThirdProduct: showThird,
     orientation: 'portrait',
+    showSingleProductControl: false,
+    showOptionalTextControl: false,
     background: {
       url: null,
       mode: 'cover',
@@ -721,6 +726,7 @@ export const useStore = create<AppState>()(
           optionalText2: state.optionalText2,
           optionalText3: state.optionalText3,
           isSingleProduct: state.isSingleProduct,
+          showSingleProductControl: state.showSingleProductControl,
           showOptionalTextControl: state.showOptionalTextControl
         };
 
@@ -737,6 +743,7 @@ export const useStore = create<AppState>()(
           layouts: newLayouts,
           orientation: nextLayout.orientation || 'portrait',
           isSingleProduct: nextLayout.isSingleProduct !== undefined ? nextLayout.isSingleProduct : false,
+          showSingleProductControl: nextLayout.showSingleProductControl !== undefined ? nextLayout.showSingleProductControl : false,
           showOptionalTextControl: nextLayout.showOptionalTextControl !== undefined ? nextLayout.showOptionalTextControl : true,
           background: nextLayout.background ? { ...defaultNext.background, ...nextLayout.background } : defaultNext.background,
           productImage1: nextLayout.productImage1 ? { ...defaultNext.productImage1, ...nextLayout.productImage1 } : defaultNext.productImage1,
@@ -1210,6 +1217,7 @@ export const useStore = create<AppState>()(
               layouts: loadedLayouts,
               orientation: layout.orientation || activeLayout.orientation || currentState.orientation,
               isSingleProduct: layout.isSingleProduct !== undefined ? layout.isSingleProduct : currentState.isSingleProduct,
+              showSingleProductControl: layout.showSingleProductControl !== undefined ? layout.showSingleProductControl : currentState.showSingleProductControl,
               showOptionalTextControl: layout.showOptionalTextControl !== undefined ? layout.showOptionalTextControl : currentState.showOptionalTextControl,
               lastUpdateTimestamp: layout.updated_at || null
             } as any);
@@ -1256,15 +1264,51 @@ export const useStore = create<AppState>()(
       setPrinting: (isPrinting) => set({ isPrinting }),
       isSingleProduct: false,
       setSingleProduct: (isSingleProduct) => {
-        set({ isSingleProduct });
+        set((state) => {
+          const newLayouts = [...state.layouts];
+          if (newLayouts[state.activeLayoutIndex]) {
+            newLayouts[state.activeLayoutIndex] = {
+              ...newLayouts[state.activeLayoutIndex],
+              isSingleProduct
+            };
+          }
+          return { isSingleProduct, layouts: newLayouts };
+        });
+        if (get().userRole === 'admin') {
+          get().saveLayoutDebounced();
+        }
+      },
+      showSingleProductControl: false,
+      setShowSingleProductControl: (show) => {
+        set((state) => {
+          const newLayouts = [...state.layouts];
+          if (newLayouts[state.activeLayoutIndex]) {
+            newLayouts[state.activeLayoutIndex] = {
+              ...newLayouts[state.activeLayoutIndex],
+              showSingleProductControl: show
+            };
+          }
+          return { showSingleProductControl: show, layouts: newLayouts };
+        });
         if (get().userRole === 'admin') {
           get().saveLayoutDebounced();
         }
       },
       showOptionalTextControl: true,
       setShowOptionalTextControl: (show) => {
-        set({ showOptionalTextControl: show });
-        get().saveLayoutDebounced();
+        set((state) => {
+          const newLayouts = [...state.layouts];
+          if (newLayouts[state.activeLayoutIndex]) {
+            newLayouts[state.activeLayoutIndex] = {
+              ...newLayouts[state.activeLayoutIndex],
+              showOptionalTextControl: show
+            };
+          }
+          return { showOptionalTextControl: show, layouts: newLayouts };
+        });
+        if (get().userRole === 'admin') {
+          get().saveLayoutDebounced();
+        }
       },
 
       printQueue: [],
@@ -1590,6 +1634,7 @@ export const useStore = create<AppState>()(
         announcements: state.announcements,
         seenAnnouncements: state.seenAnnouncements,
         isSingleProduct: state.isSingleProduct,
+        showSingleProductControl: state.showSingleProductControl,
         showOptionalTextControl: state.showOptionalTextControl,
         unreadSupportCount: state.unreadSupportCount,
         unreadPerUser: state.unreadPerUser,

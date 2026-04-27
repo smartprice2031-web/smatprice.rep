@@ -198,10 +198,11 @@ const Adjustments = () => {
     background, setElement, setProductImage, setBackground,
     userRole, layouts, setLayoutName, setLayoutBandeira, setLayoutLocalidade, reorderLayouts, setLayoutHasThirdProduct, setLayoutOrientation, activeLayoutIndex,
     setSlotVisibility,
-    isSingleProduct, // setSingleProduct,
+    isSingleProduct, setSingleProduct,
     orientation,
     // optionalText1, optionalText2, optionalText3, setOptionalText,
-    showOptionalTextControl, setShowOptionalTextControl
+    showOptionalTextControl, setShowOptionalTextControl,
+    showSingleProductControl, setShowSingleProductControl
   } = useStore();
 
   const [showResetConfirm, setShowResetConfirm] = React.useState(false);
@@ -243,22 +244,37 @@ const Adjustments = () => {
 
       {/* Editor Settings Section */}
       {userRole === 'admin' && (
-        <section className="space-y-4">
-          <h3 className="text-sm font-black uppercase tracking-widest text-black dark:text-white opacity-60 flex items-center gap-2">
-            <Settings className="w-4 h-4" />
+        <section className="space-y-3">
+          <h3 className="text-[10px] font-black uppercase tracking-widest text-black dark:text-white opacity-40 flex items-center gap-2">
+            <Settings className="w-3.5 h-3.5" />
             Configurações do Editor
           </h3>
-          <div className="p-4 bg-zinc-50 dark:bg-zinc-800/50 rounded-xl border border-zinc-200 dark:border-zinc-700 space-y-4">
+          <div className="p-3 bg-zinc-50 dark:bg-zinc-800/50 rounded-xl border border-zinc-200 dark:border-zinc-700 space-y-3">
+            {/* Toggle: Optional Text */}
             <div className="flex items-center justify-between">
-              <span className="text-xs font-bold uppercase tracking-tight opacity-80">Mostrar Texto Opcional no Editor</span>
-              <label className="relative inline-flex items-center cursor-pointer">
+              <span className="text-[10px] font-bold uppercase tracking-tight opacity-80">Opção Texto Opcional (Quartão)</span>
+              <label className="relative inline-flex items-center cursor-pointer scale-90">
                 <input 
                   type="checkbox" 
                   className="sr-only peer"
                   checked={showOptionalTextControl}
                   onChange={(e) => setShowOptionalTextControl(e.target.checked)}
                 />
-                <div className="w-11 h-6 bg-zinc-200 peer-focus:outline-none rounded-full peer dark:bg-zinc-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
+                <div className="w-9 h-5 bg-zinc-200 peer-focus:outline-none rounded-full peer dark:bg-zinc-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
+              </label>
+            </div>
+
+            {/* Toggle: Single Product */}
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-bold uppercase tracking-tight opacity-80">Opção Apenas 1 Produto (Quartão)</span>
+              <label className="relative inline-flex items-center cursor-pointer scale-90">
+                <input 
+                  type="checkbox" 
+                  className="sr-only peer"
+                  checked={showSingleProductControl}
+                  onChange={(e) => setShowSingleProductControl(e.target.checked)}
+                />
+                <div className="w-9 h-5 bg-zinc-200 peer-focus:outline-none rounded-full peer dark:bg-zinc-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
               </label>
             </div>
           </div>
