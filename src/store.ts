@@ -1097,6 +1097,7 @@ export const useStore = create<AppState>()(
           optionalText2: state.optionalText2,
           optionalText3: state.optionalText3,
           isSingleProduct: state.isSingleProduct,
+          showSingleProductControl: state.showSingleProductControl,
           showOptionalTextControl: state.showOptionalTextControl,
           orientation: state.orientation,
           updated_at: timestamp
