@@ -257,7 +257,7 @@ const CanvasPreview = ({ id = "placa" }: { id?: string }) => {
     const isThree = isThreeProduct(currentLayout?.name || '', activeLayoutIndex);
     const isUltra = currentLayout?.name?.toUpperCase() === 'PADRÃO ULTRA';
 
-    if (!productImage.visible || (slot > 1 && isSingleProduct && (!isThree || isUltra))) return null;
+    if (!productImage.visible || (slot > 1 && isSingleProduct)) return null;
 
     const hasThird = currentLayout?.hasThirdProduct || isThree;
     
@@ -581,7 +581,7 @@ const CanvasPreview = ({ id = "placa" }: { id?: string }) => {
             
 
             {/* Single Product Overlay - Blank lower half */}
-            {isSingleProduct && (!isThreeProduct(activeLayout.name, activeLayoutIndex) || activeLayout.name.toUpperCase() === 'PADRÃO ULTRA') && (
+            {isSingleProduct && (
               <Rect
                 x={0}
                 y={currentHeight / 2}

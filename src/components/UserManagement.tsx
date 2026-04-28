@@ -30,6 +30,26 @@ export default function UserManagement() {
     }
   }, [flags, newBandeira]);
 
+  // Pre-select layouts when group and flag are selected to facilitate adding new stores
+  React.useEffect(() => {
+    // Only pre-select when we are in the "New Store" context or when no bulk apply is active
+    const targetGroup = bulkApplySource === 'new' ? bulkGroupId : (bulkApplySource === null ? newStoreGroupId : null);
+    const targetFlag = bulkApplySource === 'new' ? bulkFlag : (bulkApplySource === null ? newBandeira : null);
+
+    if (targetGroup && targetFlag) {
+      const templateStore = allowedStores.find(s => s.groupId === targetGroup && s.bandeira === targetFlag);
+      if (templateStore) {
+        const layoutsToSet = templateStore.allowedLayouts !== undefined 
+          ? templateStore.allowedLayouts 
+          : layouts.map((_, i) => i);
+        
+        if (layoutsToSet.length > 0) {
+          setSelectedLayouts(layoutsToSet);
+        }
+      }
+    }
+  }, [bulkGroupId, bulkFlag, newStoreGroupId, newBandeira, bulkApplySource, allowedStores, layouts]);
+
   const handleAdd = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newCnpj.trim()) return;

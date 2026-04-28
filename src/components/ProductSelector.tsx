@@ -128,7 +128,7 @@ const ProductSelector: React.FC<{ onSelect?: (product: Product) => void }> = ({ 
         showSingleProductControl={showSingleProductControl}
       />
       
-      {(!isSingleProduct || (isThreeProduct(currentLayoutName, activeLayoutIndex) && currentLayoutName.toUpperCase() !== 'PADRÃO ULTRA')) && (
+      {!isSingleProduct && (
         <>
           <div className="h-px bg-zinc-200 dark:bg-zinc-800" />
 
@@ -153,7 +153,7 @@ const ProductSelector: React.FC<{ onSelect?: (product: Product) => void }> = ({ 
             showSingleProductControl={showSingleProductControl}
           />
 
-          {(showThirdProduct || (isThreeProduct(currentLayoutName, activeLayoutIndex) && currentLayoutName.toUpperCase() !== 'PADRÃO ULTRA')) && (
+          {showThirdProduct && (
             <>
               <div className="h-px bg-zinc-200 dark:bg-zinc-800" />
 
@@ -246,30 +246,30 @@ const ProductSlot = ({
       {/* Toggles Row */}
       <div className="grid grid-cols-2 gap-2">
         {/* Single Product Toggle */}
-        {showSingleProductControl && ((!isThreeProduct(layouts?.[activeLayoutIndex || 0]?.name || '', activeLayoutIndex || 0) || (layouts?.[activeLayoutIndex || 0]?.name || '').toUpperCase() === 'PADRÃO ULTRA')) ? (
-          <div 
-            className="flex items-center justify-between p-1.5 rounded-xl border border-white/5 shadow-lg bg-[#1a1614]"
-          >
-            <div className="flex items-center gap-1.5">
-              <div 
-                className="w-1 h-1 rounded-full bg-[#2563eb]" 
-                style={{ boxShadow: `0 0 4px #2563eb99` }} 
-              />
-              <span className="text-[8px] font-black uppercase tracking-tight text-[#2563eb] leading-tight">
-                (Apenas Um produto)
-              </span>
-            </div>
-            <label className="relative inline-flex items-center cursor-pointer scale-[0.65] origin-right">
-              <input 
-                type="checkbox" 
-                className="sr-only peer"
-                checked={isSingleProduct}
-                onChange={(e) => setSingleProduct(e.target.checked)}
-              />
-              <div className="w-9 h-5 bg-zinc-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-[#2563eb]"></div>
-            </label>
+      {showSingleProductControl && (
+        <div 
+          className="flex items-center justify-between p-1.5 rounded-xl border border-white/5 shadow-lg bg-[#1a1614]"
+        >
+          <div className="flex items-center gap-1.5">
+            <div 
+              className="w-1 h-1 rounded-full bg-[#2563eb]" 
+              style={{ boxShadow: `0 0 4px #2563eb99` }} 
+            />
+            <span className="text-[8px] font-black uppercase tracking-tight text-[#2563eb] leading-tight">
+              (Apenas Um produto)
+            </span>
           </div>
-        ) : <div />}
+          <label className="relative inline-flex items-center cursor-pointer scale-[0.65] origin-right">
+            <input 
+              type="checkbox" 
+              className="sr-only peer"
+              checked={isSingleProduct}
+              onChange={(e) => setSingleProduct(e.target.checked)}
+            />
+            <div className="w-9 h-5 bg-zinc-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-[#2563eb]"></div>
+          </label>
+        </div>
+      )}
 
         {/* Optional Text Toggle */}
         {showOptionalTextControl && (
