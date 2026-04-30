@@ -9,7 +9,7 @@ export default function SupportChat() {
   const { 
     currentUser, userRole, isSupportChatOpen, setSupportChatOpen,
     setUnreadSupportCount, selectedUserCnpj, setSelectedUserCnpj,
-    unreadPerUser, setUnreadPerUser, messages, allowedStores
+    unreadPerUser, setUnreadPerUser, messages, allowedStores, userGroups
   } = useStore();
   const { sendMessage, clearMessages, markMessagesAsRead, isConnected, isLoading, activeConversationId, conversations } = useSupportSocket();
   const [inputText, setInputText] = useState('');
@@ -87,9 +87,12 @@ export default function SupportChat() {
     conversations.forEach(conv => {
       if (!uniqueUsers[conv.user_id] || new Date(conv.updated_at) > new Date(uniqueUsers[conv.user_id].timestamp)) {
         const store = allowedStores.find(s => s.cnpj?.replace(/[^\d]/g, '') === conv.user_id);
+        const group = store?.groupId ? userGroups.find(g => g.id === store.groupId) : null;
+        
         uniqueUsers[conv.user_id] = {
           cnpj: conv.user_id,
           name: store?.bandeira || conv.user_name || 'Usuário',
+          groupName: group?.name,
           lastMessage: 'Conversa ativa',
           timestamp: conv.updated_at,
           unread: unreadPerUser[conv.user_id] || 0
@@ -198,7 +201,10 @@ export default function SupportChat() {
                           </span>
                         )}
                       </div>
-                      <p className="text-[9px] text-black dark:text-white truncate">{user.cnpj}</p>
+                      <p className="text-[9px] text-black dark:text-white truncate opacity-60">{user.cnpj}</p>
+                      {user.groupName && (
+                        <p className="text-[8px] font-black uppercase tracking-widest text-blue-600 truncate mt-0.5">{user.groupName}</p>
+                      )}
                     </div>
                     {unreadPerUser[user.cnpj?.replace(/[^\d]/g, '') || ''] > 0 && (
                       <div className="bg-red-600 text-white text-[10px] font-black px-1.5 min-w-[20px] h-[20px] rounded-full flex items-center justify-center flex-shrink-0 shadow-md ring-2 ring-red-600/20">

@@ -37,18 +37,21 @@ export default function UserManagement() {
     const targetFlag = bulkApplySource === 'new' ? bulkFlag : (bulkApplySource === null ? newBandeira : null);
 
     if (targetGroup && targetFlag) {
-      const templateStore = allowedStores.find(s => s.groupId === targetGroup && s.bandeira === targetFlag);
-      if (templateStore) {
-        const layoutsToSet = templateStore.allowedLayouts !== undefined 
-          ? templateStore.allowedLayouts 
-          : layouts.map((_, i) => i);
-        
-        if (layoutsToSet.length > 0) {
-          setSelectedLayouts(layoutsToSet);
-        }
+      // Find the most recent store with this group and flag to use as a template
+      const templateStore = [...allowedStores].reverse().find(s => 
+        s.groupId === targetGroup && 
+        s.bandeira === targetFlag && 
+        s.allowedLayouts !== undefined && 
+        s.allowedLayouts.length > 0
+      );
+
+      if (templateStore && templateStore.allowedLayouts) {
+        // Only update if current selection is empty to avoid overwriting user edits
+        // or if we explicitly want to follow the template
+        setSelectedLayouts(templateStore.allowedLayouts);
       }
     }
-  }, [bulkGroupId, bulkFlag, newStoreGroupId, newBandeira, bulkApplySource, allowedStores, layouts]);
+  }, [bulkGroupId, bulkFlag, newStoreGroupId, newBandeira, bulkApplySource, allowedStores]);
 
   const handleAdd = (e: React.FormEvent) => {
     e.preventDefault();
@@ -495,13 +498,13 @@ export default function UserManagement() {
                           </div>
                           <div>
                             <p className="font-mono font-bold text-zinc-900 dark:text-zinc-100">{store.cnpj}</p>
+                            {store.groupId && (
+                              <p className="text-[8px] font-black uppercase tracking-widest text-zinc-400 -mt-1 mb-0.5">
+                                {userGroups.find(g => g.id === store.groupId)?.name || 'Grupo Removido'}
+                              </p>
+                            )}
                             <div className="flex items-center gap-2">
                               <p className="text-xs font-black uppercase tracking-tighter text-blue-600">{store.bandeira}</p>
-                              {store.groupId && (
-                                <span className="text-[9px] font-black uppercase tracking-widest bg-zinc-100 dark:bg-zinc-800 text-black dark:text-white opacity-60 px-1.5 py-0.5 rounded">
-                                  {userGroups.find(g => g.id === store.groupId)?.name || 'Grupo Removido'}
-                                </span>
-                              )}
                             </div>
                           </div>
                         </div>

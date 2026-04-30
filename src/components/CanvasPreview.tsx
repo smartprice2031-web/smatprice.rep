@@ -28,19 +28,25 @@ const CanvasPreview = ({ id = "placa" }: { id?: string }) => {
   const trRef = useRef<any>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   
-  const [bgImg] = useImage(getProxyUrl(background.url) || '', 'anonymous');
-  const [displayedBg, setDisplayedBg] = useState<any>(null);
+  const [bgImg, bgStatus] = useImage(getProxyUrl(background.url) || '', 'anonymous');
+  const [displayedBg, setDisplayedBg] = useState<{url: string, img: HTMLImageElement} | null>(null);
   const [prodImg1] = useImage(getProxyUrl(productImage1.url) || '', 'anonymous');
   const [prodImg2] = useImage(getProxyUrl(productImage2.url) || '', 'anonymous');
   const [prodImg3] = useImage(getProxyUrl(productImage3.url) || '', 'anonymous');
   const [autoScale, setAutoScale] = useState(1);
   if (!activeLayout) return null;
 
+  // Faster background switching: only update display when we have the correct image
   useEffect(() => {
-    if (bgImg) {
-      setDisplayedBg(bgImg);
+    if (bgImg && background.url) {
+      setDisplayedBg({ url: background.url, img: bgImg });
+    } else if (!background.url) {
+      setDisplayedBg(null);
     }
-  }, [bgImg]);
+  }, [bgImg, background.url]);
+
+  // If the URL changed but we are still showing the old one, we might want to show a loader
+  const isBgLoading = background.url && (!displayedBg || displayedBg.url !== background.url);
 
   // Force portrait for "Quart Suplem Maxi" as requested by user
   const isQuartSuplemMaxi = activeLayout.name === 'Quart Suplem Maxi';
@@ -455,23 +461,44 @@ const CanvasPreview = ({ id = "placa" }: { id?: string }) => {
         >
           <Layer>
             {/* Background */}
-            {displayedBg && (
+            {displayedBg?.img && (
               <KonvaImage
-                image={displayedBg}
+                image={displayedBg.img}
                 width={currentWidth}
                 height={currentHeight}
                 crop={(() => {
-                  const scale = Math.max(currentWidth / displayedBg.width, currentHeight / displayedBg.height);
+                  const img = displayedBg.img;
+                  const scale = Math.max(currentWidth / img.width, currentHeight / img.height);
                   const cropWidth = currentWidth / scale;
                   const cropHeight = currentHeight / scale;
                   return {
-                    x: (displayedBg.width - cropWidth) / 2,
-                    y: (displayedBg.height - cropHeight) / 2,
+                    x: (img.width - cropWidth) / 2,
+                    y: (img.height - cropHeight) / 2,
                     width: cropWidth,
                     height: cropHeight
                   };
                 })()}
                 onMouseDown={() => setSelectedId(null)}
+              />
+            )}
+
+            {isBgLoading && (
+              <Rect 
+                width={currentWidth}
+                height={currentHeight}
+                fill="rgba(255,255,255,0.5)"
+              />
+            )}
+
+            {/* Single Product Overlay - Blank lower half (Move it here so it's behind products) */}
+            {isSingleProduct && (
+              <Rect
+                x={0}
+                y={currentHeight / 2}
+                width={currentWidth}
+                height={currentHeight / 2}
+                fill="white"
+                listening={false}
               />
             )}
 
@@ -579,18 +606,6 @@ const CanvasPreview = ({ id = "placa" }: { id?: string }) => {
                 )}
               </>
             
-
-            {/* Single Product Overlay - Blank lower half */}
-            {isSingleProduct && (
-              <Rect
-                x={0}
-                y={currentHeight / 2}
-                width={currentWidth}
-                height={currentHeight / 2}
-                fill="white"
-                listening={false}
-              />
-            )}
 
             {selectedId && !isPrinting && (
               <Transformer

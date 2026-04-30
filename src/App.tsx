@@ -108,7 +108,7 @@ export default function App() {
         }
       });
     }
-  }, [filteredLayouts]);
+  }, [filteredLayouts, activeLayoutIndex, layouts]);
 
 
   useEffect(() => {
@@ -148,6 +148,12 @@ export default function App() {
   };
 
   useEffect(() => {
+    // Only apply session controls to non-admin users
+    if (userRole === 'admin') {
+      sessionStorage.setItem('smartprice_session_active', 'true');
+      return;
+    }
+
     // Force logout on fresh access (new tab/window)
     const sessionActive = sessionStorage.getItem('smartprice_session_active');
     if (!sessionActive) {
@@ -172,7 +178,7 @@ export default function App() {
       const interval = setInterval(checkSession, 60000);
       return () => clearInterval(interval);
     }
-  }, [isAuthenticated, lastLoginTimestamp, logout]);
+  }, [isAuthenticated, lastLoginTimestamp, logout, userRole]);
 
   useEffect(() => {
     loadLayout();

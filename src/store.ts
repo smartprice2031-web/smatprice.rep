@@ -261,6 +261,7 @@ interface AppState {
   setShowSingleProductControl: (show: boolean) => void;
   showOptionalTextControl: boolean;
   setShowOptionalTextControl: (show: boolean) => void;
+  toggleHasThirdProduct: () => void;
 
   printQueue: { imageData: string; isLandscape: boolean }[];
   addToQueue: (imageData: string, isLandscape: boolean) => void;
@@ -388,11 +389,11 @@ export const THREE_PRODUCT_LAYOUTS = [
 
 export const isThreeProduct = (name: string, index?: number) => {
   const upperName = name.toUpperCase();
-  const isModelInRange = index !== undefined && index >= 51 && index <= 99;
+  const isModelInRange = index !== undefined && index >= 51 && index <= 149;
   
-  // Check if name is "MODELO X" where X is 52-100
+  // Check if name is "MODELO X" where X is 52-150
   const modelNumberMatch = upperName.match(/^MODELO (\d+)$/);
-  const isModelNameInRange = modelNumberMatch ? (parseInt(modelNumberMatch[1]) >= 52 && parseInt(modelNumberMatch[1]) <= 100) : false;
+  const isModelNameInRange = modelNumberMatch ? (parseInt(modelNumberMatch[1]) >= 52 && parseInt(modelNumberMatch[1]) <= 150) : false;
 
   return THREE_PRODUCT_LAYOUTS.includes(upperName) || 
          upperName.includes(' 3') || 
@@ -645,6 +646,56 @@ export const useStore = create<AppState>()(
         createDefaultLayout('Modelo 98', 97),
         createDefaultLayout('Modelo 99', 98),
         createDefaultLayout('Modelo 100', 99),
+        createDefaultLayout('Modelo 101', 100),
+        createDefaultLayout('Modelo 102', 101),
+        createDefaultLayout('Modelo 103', 102),
+        createDefaultLayout('Modelo 104', 103),
+        createDefaultLayout('Modelo 105', 104),
+        createDefaultLayout('Modelo 106', 105),
+        createDefaultLayout('Modelo 107', 106),
+        createDefaultLayout('Modelo 108', 107),
+        createDefaultLayout('Modelo 109', 108),
+        createDefaultLayout('Modelo 110', 109),
+        createDefaultLayout('Modelo 111', 110),
+        createDefaultLayout('Modelo 112', 111),
+        createDefaultLayout('Modelo 113', 112),
+        createDefaultLayout('Modelo 114', 113),
+        createDefaultLayout('Modelo 115', 114),
+        createDefaultLayout('Modelo 116', 115),
+        createDefaultLayout('Modelo 117', 116),
+        createDefaultLayout('Modelo 118', 117),
+        createDefaultLayout('Modelo 119', 118),
+        createDefaultLayout('Modelo 120', 119),
+        createDefaultLayout('Modelo 121', 120),
+        createDefaultLayout('Modelo 122', 121),
+        createDefaultLayout('Modelo 123', 122),
+        createDefaultLayout('Modelo 124', 123),
+        createDefaultLayout('Modelo 125', 124),
+        createDefaultLayout('Modelo 126', 125),
+        createDefaultLayout('Modelo 127', 126),
+        createDefaultLayout('Modelo 128', 127),
+        createDefaultLayout('Modelo 129', 128),
+        createDefaultLayout('Modelo 130', 129),
+        createDefaultLayout('Modelo 131', 130),
+        createDefaultLayout('Modelo 132', 131),
+        createDefaultLayout('Modelo 133', 132),
+        createDefaultLayout('Modelo 134', 133),
+        createDefaultLayout('Modelo 135', 134),
+        createDefaultLayout('Modelo 136', 135),
+        createDefaultLayout('Modelo 137', 136),
+        createDefaultLayout('Modelo 138', 137),
+        createDefaultLayout('Modelo 139', 138),
+        createDefaultLayout('Modelo 140', 139),
+        createDefaultLayout('Modelo 141', 140),
+        createDefaultLayout('Modelo 142', 141),
+        createDefaultLayout('Modelo 143', 142),
+        createDefaultLayout('Modelo 144', 143),
+        createDefaultLayout('Modelo 145', 144),
+        createDefaultLayout('Modelo 146', 145),
+        createDefaultLayout('Modelo 147', 146),
+        createDefaultLayout('Modelo 148', 147),
+        createDefaultLayout('Modelo 149', 148),
+        createDefaultLayout('Modelo 150', 149),
       ],
 
       background: {
@@ -1158,11 +1209,11 @@ export const useStore = create<AppState>()(
             // Trust the layouts from the database, but ensure they have all properties
             let rawLayouts = layout.layouts || currentState.layouts;
             
-            // Ensure we have at least 100 layouts
-            if (rawLayouts.length < 100) {
+            // Ensure we have at least 150 layouts
+            if (rawLayouts.length < 150) {
               // Replicate Modelo 75 (index 74) to others as requested
               const model75 = rawLayouts[74] || createDefaultLayout('Modelo 75', 74);
-              const missingCount = 100 - rawLayouts.length;
+              const missingCount = 150 - rawLayouts.length;
               const missing = Array.from({ length: missingCount }, (_, i) => {
                 const idx = rawLayouts.length + i;
                 return {
@@ -1180,7 +1231,7 @@ export const useStore = create<AppState>()(
               });
               rawLayouts = [...rawLayouts, ...missing];
               
-              // REINFORCE: If admin, save the fully expanded 100 layouts back to DB
+              // REINFORCE: If admin, save the fully expanded 150 layouts back to DB
               if (currentState.userRole === 'admin') {
                 setTimeout(() => get().saveLayout(), 1000);
               }
@@ -1201,25 +1252,26 @@ export const useStore = create<AppState>()(
               return merged;
             }).sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
 
-            const activeLayout = loadedLayouts[layout.activeLayoutIndex || 0] || loadedLayouts[0];
+            const activeLayoutIndex = layout.activeLayoutIndex !== undefined ? layout.activeLayoutIndex : currentState.activeLayoutIndex;
+            const activeLayout = loadedLayouts[activeLayoutIndex] || loadedLayouts[0];
 
             set({
               background: layout.background || currentState.background,
               productImage1: layout.productImage1 || currentState.productImage1,
               productImage2: layout.productImage2 || currentState.productImage2,
-              productImage3: layout.productImage3 || currentState.productImage3 || activeLayout.productImage3,
+              productImage3: layout.productImage3 || currentState.productImage3 || activeLayout?.productImage3,
               textElements1: layout.textElements1 || currentState.textElements1,
               textElements2: layout.textElements2 || currentState.textElements2,
-              textElements3: layout.textElements3 || currentState.textElements3 || activeLayout.textElements3,
-              optionalText1: layout.optionalText1 || currentState.optionalText1 || activeLayout.optionalText1,
-              optionalText2: layout.optionalText2 || currentState.optionalText2 || activeLayout.optionalText2,
-              optionalText3: layout.optionalText3 || currentState.optionalText3 || activeLayout.optionalText3,
-              activeLayoutIndex: layout.activeLayoutIndex !== undefined ? layout.activeLayoutIndex : currentState.activeLayoutIndex,
+              textElements3: layout.textElements3 || currentState.textElements3 || activeLayout?.textElements3,
+              optionalText1: layout.optionalText1 || currentState.optionalText1 || activeLayout?.optionalText1,
+              optionalText2: layout.optionalText2 || currentState.optionalText2 || activeLayout?.optionalText2,
+              optionalText3: layout.optionalText3 || currentState.optionalText3 || activeLayout?.optionalText3,
+              activeLayoutIndex,
               layouts: loadedLayouts,
-              orientation: layout.orientation || activeLayout.orientation || currentState.orientation,
-              isSingleProduct: layout.isSingleProduct !== undefined ? layout.isSingleProduct : currentState.isSingleProduct,
-              showSingleProductControl: layout.showSingleProductControl !== undefined ? layout.showSingleProductControl : currentState.showSingleProductControl,
-              showOptionalTextControl: layout.showOptionalTextControl !== undefined ? layout.showOptionalTextControl : currentState.showOptionalTextControl,
+              orientation: layout.orientation || activeLayout?.orientation || currentState.orientation,
+              isSingleProduct: activeLayout?.isSingleProduct !== undefined ? activeLayout.isSingleProduct : (layout.isSingleProduct !== undefined ? layout.isSingleProduct : currentState.isSingleProduct),
+              showSingleProductControl: activeLayout?.showSingleProductControl !== undefined ? activeLayout.showSingleProductControl : (layout.showSingleProductControl !== undefined ? layout.showSingleProductControl : currentState.showSingleProductControl),
+              showOptionalTextControl: activeLayout?.showOptionalTextControl !== undefined ? activeLayout.showOptionalTextControl : (layout.showOptionalTextControl !== undefined ? layout.showOptionalTextControl : currentState.showOptionalTextControl),
               lastUpdateTimestamp: layout.updated_at || null
             } as any);
           }
@@ -1306,6 +1358,33 @@ export const useStore = create<AppState>()(
             };
           }
           return { showOptionalTextControl: show, layouts: newLayouts };
+        });
+        if (get().userRole === 'admin') {
+          get().saveLayoutDebounced();
+        }
+      },
+
+      toggleHasThirdProduct: () => {
+        set((state) => {
+          const newLayouts = [...state.layouts];
+          const currentLayout = newLayouts[state.activeLayoutIndex];
+          if (currentLayout) {
+            const newValue = !currentLayout.hasThirdProduct;
+            newLayouts[state.activeLayoutIndex] = {
+              ...currentLayout,
+              hasThirdProduct: newValue,
+              // If enabling 3rd product, make sure the elements are visible
+              productImage3: { ...currentLayout.productImage3, visible: newValue },
+              textElements3: {
+                name: { ...currentLayout.textElements3.name, visible: newValue },
+                description: { ...currentLayout.textElements3.description, visible: newValue },
+                subtitle: { ...currentLayout.textElements3.subtitle, visible: newValue },
+                price: { ...currentLayout.textElements3.price, visible: newValue },
+              }
+            };
+            return { layouts: newLayouts };
+          }
+          return state;
         });
         if (get().userRole === 'admin') {
           get().saveLayoutDebounced();

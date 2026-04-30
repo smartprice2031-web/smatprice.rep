@@ -202,7 +202,9 @@ const Adjustments = () => {
     orientation,
     // optionalText1, optionalText2, optionalText3, setOptionalText,
     showOptionalTextControl, setShowOptionalTextControl,
-    showSingleProductControl, setShowSingleProductControl
+    showSingleProductControl, setShowSingleProductControl,
+    optionalText1, setOptionalText,
+    toggleHasThirdProduct
   } = useStore();
 
   const [showResetConfirm, setShowResetConfirm] = React.useState(false);
@@ -214,7 +216,7 @@ const Adjustments = () => {
 
   const handleReset = () => {
     useStore.setState((state) => ({
-      layouts: Array.from({ length: 100 }, (_, i) => {
+      layouts: Array.from({ length: 150 }, (_, i) => {
         const defaultNames: Record<number, string> = {
           0: 'QUARTA FRALDA PL',
           1: 'SABADÃO PL',
@@ -235,6 +237,21 @@ const Adjustments = () => {
     setBackground({ url });
   };
 
+  const applyToAllModels = (type: 'single' | 'optional') => {
+    const { layouts, activeLayoutIndex } = useStore.getState();
+    const currentVal = type === 'single' ? showSingleProductControl : showOptionalTextControl;
+    
+    useStore.setState((state) => ({
+      layouts: state.layouts.map(l => ({
+        ...l,
+        [type === 'single' ? 'showSingleProductControl' : 'showOptionalTextControl']: currentVal
+      }))
+    }));
+    
+    useStore.getState().saveLayoutDebounced();
+    toast.success(`Configuração aplicada a todos os ${layouts.length} modelos!`);
+  };
+
   return (
     <div className="p-6 space-y-8 pb-20">
       <h2 className="text-2xl font-bold flex items-center gap-2">
@@ -249,37 +266,112 @@ const Adjustments = () => {
             <Settings className="w-3.5 h-3.5" />
             Configurações do Editor
           </h3>
-          <div className="p-3 bg-zinc-50 dark:bg-zinc-800/50 rounded-xl border border-zinc-200 dark:border-zinc-700 space-y-3">
-            {/* Toggle: Optional Text */}
-            <div className="flex items-center justify-between">
-              <span className="text-[10px] font-bold uppercase tracking-tight opacity-80">Opção Texto Opcional (Quartão)</span>
-              <label className="relative inline-flex items-center cursor-pointer scale-90">
-                <input 
-                  type="checkbox" 
-                  className="sr-only peer"
-                  checked={showOptionalTextControl}
-                  onChange={(e) => setShowOptionalTextControl(e.target.checked)}
-                />
-                <div className="w-9 h-5 bg-zinc-200 peer-focus:outline-none rounded-full peer dark:bg-zinc-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
-              </label>
+          <div className="p-4 bg-zinc-50 dark:bg-zinc-800/50 rounded-xl border border-zinc-200 dark:border-zinc-700 space-y-6">
+            {/* Optional Text Controls */}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="flex flex-col">
+                  <span className="text-[10px] font-bold uppercase tracking-tight opacity-80">Opção Texto Opcional</span>
+                  <span className="text-[8px] text-zinc-500 font-medium">Habilita o controle para o usuário</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button 
+                    onClick={() => applyToAllModels('optional')}
+                    className="text-[8px] font-black uppercase tracking-widest text-blue-600 hover:underline"
+                  >
+                    Aplicar a Todos
+                  </button>
+                  <label className="relative inline-flex items-center cursor-pointer scale-90">
+                    <input 
+                      type="checkbox" 
+                      className="sr-only peer"
+                      checked={showOptionalTextControl}
+                      onChange={(e) => setShowOptionalTextControl(e.target.checked)}
+                    />
+                    <div className="w-9 h-5 bg-zinc-200 peer-focus:outline-none rounded-full peer dark:bg-zinc-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
+                  </label>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between p-2 bg-zinc-100 dark:bg-zinc-900 rounded-lg border border-zinc-200 dark:border-zinc-800">
+                <span className="text-[9px] font-black uppercase tracking-tight text-blue-600">Ativar Texto Opcional agora</span>
+                <label className="relative inline-flex items-center cursor-pointer scale-75">
+                  <input 
+                    type="checkbox" 
+                    className="sr-only peer"
+                    checked={optionalText1.active}
+                    onChange={(e) => setOptionalText(1, { active: e.target.checked })}
+                  />
+                  <div className="w-9 h-5 bg-zinc-300 peer-focus:outline-none rounded-full peer dark:bg-zinc-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
+                </label>
+              </div>
             </div>
 
-            {/* Toggle: Single Product */}
-            <div className="flex items-center justify-between">
-              <span className="text-[10px] font-bold uppercase tracking-tight opacity-80">Opção Apenas 1 Produto (Quartão)</span>
-              <label className="relative inline-flex items-center cursor-pointer scale-90">
-                <input 
-                  type="checkbox" 
-                  className="sr-only peer"
-                  checked={showSingleProductControl}
-                  onChange={(e) => setShowSingleProductControl(e.target.checked)}
-                />
-                <div className="w-9 h-5 bg-zinc-200 peer-focus:outline-none rounded-full peer dark:bg-zinc-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
-              </label>
+            <div className="h-px bg-zinc-200 dark:bg-zinc-700 mx-4" />
+
+            {/* Single Product Controls */}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="flex flex-col">
+                  <span className="text-[10px] font-bold uppercase tracking-tight opacity-80">Opção Apenas 1 Produto</span>
+                  <span className="text-[8px] text-zinc-500 font-medium">Habilita o controle para o usuário</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button 
+                    onClick={() => applyToAllModels('single')}
+                    className="text-[8px] font-black uppercase tracking-widest text-blue-600 hover:underline"
+                  >
+                    Aplicar a Todos
+                  </button>
+                  <label className="relative inline-flex items-center cursor-pointer scale-90">
+                    <input 
+                      type="checkbox" 
+                      className="sr-only peer"
+                      checked={showSingleProductControl}
+                      onChange={(e) => setShowSingleProductControl(e.target.checked)}
+                    />
+                    <div className="w-9 h-5 bg-zinc-200 peer-focus:outline-none rounded-full peer dark:bg-zinc-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
+                  </label>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between p-2 bg-zinc-100 dark:bg-zinc-900 rounded-lg border border-zinc-200 dark:border-zinc-800">
+                <span className="text-[9px] font-black uppercase tracking-tight text-blue-600">Ativar Apenas 1 Produto agora</span>
+                <label className="relative inline-flex items-center cursor-pointer scale-75">
+                  <input 
+                    type="checkbox" 
+                    className="sr-only peer"
+                    checked={isSingleProduct}
+                    onChange={(e) => setSingleProduct(e.target.checked)}
+                  />
+                  <div className="w-9 h-5 bg-zinc-300 peer-focus:outline-none rounded-full peer dark:bg-zinc-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
+                </label>
+              </div>
+            </div>
+
+            <div className="h-px bg-zinc-200 dark:bg-zinc-700 mx-4" />
+
+            {/* 3rd Product Controls */}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="flex flex-col">
+                  <span className="text-[10px] font-bold uppercase tracking-tight opacity-80">Habilitar 3º Produto</span>
+                  <span className="text-[8px] text-zinc-500 font-medium">Força este modelo a aceitar 3 produtos</span>
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer scale-90">
+                  <input 
+                    type="checkbox" 
+                    className="sr-only peer"
+                    checked={canHaveThirdProduct}
+                    onChange={() => toggleHasThirdProduct()}
+                  />
+                  <div className="w-9 h-5 bg-zinc-200 peer-focus:outline-none rounded-full peer dark:bg-zinc-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
+                </label>
+              </div>
             </div>
           </div>
         </section>
-      )}
+      ) as any}
 
       {/* Admin: Rename Layouts */}
       {userRole === 'admin' && (
