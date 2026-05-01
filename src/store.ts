@@ -1261,21 +1261,25 @@ export const useStore = create<AppState>()(
 
             const activeLayout = loadedLayouts[activeLayoutIndex] || loadedLayouts[0];
 
+            // If user is not admin, we prioritize their local session state for the active layout
+            // but we still want to benefit from the loaded layouts array which contains the templates.
+            const isUser = currentState.userRole !== 'admin';
+
             set({
-              background: layout.background || currentState.background,
-              productImage1: layout.productImage1 || currentState.productImage1,
-              productImage2: layout.productImage2 || currentState.productImage2,
-              productImage3: layout.productImage3 || currentState.productImage3 || activeLayout?.productImage3,
-              textElements1: layout.textElements1 || currentState.textElements1,
-              textElements2: layout.textElements2 || currentState.textElements2,
-              textElements3: layout.textElements3 || currentState.textElements3 || activeLayout?.textElements3,
-              optionalText1: layout.optionalText1 || currentState.optionalText1 || activeLayout?.optionalText1,
-              optionalText2: layout.optionalText2 || currentState.optionalText2 || activeLayout?.optionalText2,
-              optionalText3: layout.optionalText3 || currentState.optionalText3 || activeLayout?.optionalText3,
               activeLayoutIndex,
               layouts: loadedLayouts,
-              orientation: layout.orientation || activeLayout?.orientation || currentState.orientation,
-              isSingleProduct: activeLayout?.isSingleProduct !== undefined ? activeLayout.isSingleProduct : (layout.isSingleProduct !== undefined ? layout.isSingleProduct : currentState.isSingleProduct),
+              background: isUser ? (currentState.background || activeLayout?.background) : (layout.background || activeLayout?.background),
+              productImage1: isUser ? (currentState.productImage1 || activeLayout?.productImage1) : (layout.productImage1 || activeLayout?.productImage1),
+              productImage2: isUser ? (currentState.productImage2 || activeLayout?.productImage2) : (layout.productImage2 || activeLayout?.productImage2),
+              productImage3: isUser ? (currentState.productImage3 || activeLayout?.productImage3) : (layout.productImage3 || activeLayout?.productImage3),
+              textElements1: isUser ? (currentState.textElements1 || activeLayout?.textElements1) : (layout.textElements1 || activeLayout?.textElements1),
+              textElements2: isUser ? (currentState.textElements2 || activeLayout?.textElements2) : (layout.textElements2 || activeLayout?.textElements2),
+              textElements3: isUser ? (currentState.textElements3 || activeLayout?.textElements3) : (layout.textElements3 || activeLayout?.textElements3),
+              optionalText1: isUser ? (currentState.optionalText1 || activeLayout?.optionalText1) : (layout.optionalText1 || activeLayout?.optionalText1),
+              optionalText2: isUser ? (currentState.optionalText2 || activeLayout?.optionalText2) : (layout.optionalText2 || activeLayout?.optionalText2),
+              optionalText3: isUser ? (currentState.optionalText3 || activeLayout?.optionalText3) : (layout.optionalText3 || activeLayout?.optionalText3),
+              orientation: isUser ? (currentState.orientation || activeLayout?.orientation) : (layout.orientation || activeLayout?.orientation),
+              isSingleProduct: isUser ? (currentState.isSingleProduct ?? activeLayout?.isSingleProduct ?? false) : (activeLayout?.isSingleProduct ?? layout.isSingleProduct ?? false),
               showSingleProductControl: activeLayout?.showSingleProductControl !== undefined ? activeLayout.showSingleProductControl : (layout.showSingleProductControl !== undefined ? layout.showSingleProductControl : currentState.showSingleProductControl),
               showOptionalTextControl: activeLayout?.showOptionalTextControl !== undefined ? activeLayout.showOptionalTextControl : (layout.showOptionalTextControl !== undefined ? layout.showOptionalTextControl : currentState.showOptionalTextControl),
               lastUpdateTimestamp: layout.updated_at || null

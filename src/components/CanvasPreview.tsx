@@ -31,23 +31,36 @@ const CanvasPreview = ({ id = "placa" }: { id?: string }) => {
   
   const [bgImg, bgStatus] = useImage(getProxyUrl(background.url) || '', 'anonymous');
   const [displayedBg, setDisplayedBg] = useState<{url: string, img: HTMLImageElement} | null>(null);
+  const [nextBg, setNextBg] = useState<{url: string, img: HTMLImageElement} | null>(null);
+  
   const [prodImg1] = useImage(getProxyUrl(productImage1.url) || '', 'anonymous');
   const [prodImg2] = useImage(getProxyUrl(productImage2.url) || '', 'anonymous');
   const [prodImg3] = useImage(getProxyUrl(productImage3.url) || '', 'anonymous');
   const [autoScale, setAutoScale] = useState(1);
   if (!activeLayout) return null;
 
-  // Faster background switching: only update display when we have the correct image
+  // Faster background switching with double buffering
   useEffect(() => {
     if (bgImg && background.url) {
-      setDisplayedBg({ url: background.url, img: bgImg });
+      if (!displayedBg) {
+        setDisplayedBg({ url: background.url, img: bgImg });
+      } else if (displayedBg.url !== background.url) {
+        setNextBg({ url: background.url, img: bgImg });
+        // After a very short delay, swap them to ensure smoothness
+        const timer = setTimeout(() => {
+          setDisplayedBg({ url: background.url, img: bgImg });
+          setNextBg(null);
+        }, 50);
+        return () => clearTimeout(timer);
+      }
     } else if (!background.url) {
       setDisplayedBg(null);
+      setNextBg(null);
     }
   }, [bgImg, background.url]);
 
   // If the URL changed but we are still showing the old one, we might want to show a loader
-  const isBgLoading = background.url && (!displayedBg || displayedBg.url !== background.url);
+  const isBgLoading = background.url && (!displayedBg || (displayedBg.url !== background.url && !nextBg));
 
   // Force portrait for "Quart Suplem Maxi" as requested by user
   const isQuartSuplemMaxi = activeLayout.name === 'Quart Suplem Maxi';
@@ -445,11 +458,11 @@ const CanvasPreview = ({ id = "placa" }: { id?: string }) => {
             initial={isPrinting ? { opacity: 1 } : { opacity: 0.8, scale: 0.98 }}
             animate={isPrinting ? { opacity: 1 } : { opacity: 1, scale: 1 }}
             transition={{ duration: 0.15, ease: "easeOut" }}
-            className={`bg-white ${isPrinting ? 'shadow-none' : 'shadow-2xl'}`}
+            className={`bg-white ${isPrinting ? 'shadow-none' : 'shadow-2xl transition-shadow duration-300 ease-out'}`}
             style={{ 
               width: isPrinting ? currentWidth : currentWidth * autoScale * zoom, 
               height: isPrinting ? currentHeight : currentHeight * autoScale * zoom,
-              transformOrigin: 'center center'
+              transformOrigin: 'top left'
             }}
           >
         <Stage

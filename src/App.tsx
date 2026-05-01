@@ -78,14 +78,16 @@ export default function App() {
 
   // Ensure activeLayoutIndex points to an allowed layout
   React.useEffect(() => {
-    if (filteredLayouts.length > 0) {
+    // Only perform the strict boundary check if we are authenticated and the user role is confirmed
+    // This prevents accidental reset to first layout while the state is still syncing from Supabase
+    if (isAuthenticated && userRole && filteredLayouts.length > 0) {
       const isAllowed = filteredLayouts.some(l => l.originalIndex === activeLayoutIndex);
       
       if (!isAllowed) {
         handleLayoutSelect(filteredLayouts[0].originalIndex);
       }
     }
-  }, [filteredLayouts, activeLayoutIndex]);
+  }, [filteredLayouts, activeLayoutIndex, isAuthenticated, userRole]);
 
   // Initialize support socket globally for background notifications
   useSupportSocket();
@@ -93,19 +95,37 @@ export default function App() {
   // Pre-load background images for all allowed layouts to speed up selection
   useEffect(() => {
     if (filteredLayouts.length > 0) {
-      // Preload current background immediately
+      // 1. Prioritize current and immediately adjacent layouts
       const current = layouts[activeLayoutIndex];
-      if (current?.background?.url) {
-        const img = new Image();
-        img.src = getProxyUrl(current.background.url);
+      const priorityIndices = [activeLayoutIndex];
+      
+      // Look for neighboring allowed indices
+      const currentIdxInFiltered = filteredLayouts.findIndex(l => l.originalIndex === activeLayoutIndex);
+      if (currentIdxInFiltered !== -1) {
+        if (currentIdxInFiltered > 0) priorityIndices.push(filteredLayouts[currentIdxInFiltered - 1].originalIndex);
+        if (currentIdxInFiltered < filteredLayouts.length - 1) priorityIndices.push(filteredLayouts[currentIdxInFiltered + 1].originalIndex);
       }
 
-      // Preload others in background
-      filteredLayouts.forEach(layout => {
-        if (layout.background?.url) {
-          const img = new Image();
-          img.src = getProxyUrl(layout.background.url);
-        }
+      const preloadImage = (url: string | null) => {
+        if (!url) return;
+        const img = new Image();
+        img.src = getProxyUrl(url);
+      };
+
+      // Preload priority images immediately
+      priorityIndices.forEach(idx => {
+        if (layouts[idx]?.background?.url) preloadImage(layouts[idx].background.url);
+      });
+
+      // 2. Preload the rest after a short delay or sequentially
+      const idleCallback = (window as any).requestIdleCallback || ((cb: any) => setTimeout(cb, 1000));
+      
+      idleCallback(() => {
+        filteredLayouts.forEach(layout => {
+          if (!priorityIndices.includes(layout.originalIndex) && layout.background?.url) {
+            preloadImage(layout.background.url);
+          }
+        });
       });
     }
   }, [filteredLayouts, activeLayoutIndex, layouts]);

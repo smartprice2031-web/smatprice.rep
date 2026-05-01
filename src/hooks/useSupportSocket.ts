@@ -28,6 +28,7 @@ export function useSupportSocket() {
   } = useStore();
 
   const activeConversationIdRef = useRef<string | null>(null);
+  const isMountedRef = useRef<boolean>(true);
   const processedMessageIds = useRef<Set<string>>(new Set());
   const lastPollTimeRef = useRef<string>(new Date().toISOString());
 
@@ -248,6 +249,13 @@ export function useSupportSocket() {
 
   const { isSupportChatOpen } = useStore();
 
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
+
   // Polling mechanism for "always online" feel
   useEffect(() => {
     if (!isSupabaseConfigured || !currentUser) return;
@@ -256,50 +264,56 @@ export function useSupportSocket() {
     const pollInterval = isSupportChatOpen ? 500 : 3000;
     
     const interval = setInterval(async () => {
-      // Refresh conversations for admin
-      if (userRole === 'admin') {
-        await fetchConversations();
-        
-        // Admin: Poll for ANY new messages from users across all conversations
-        try {
-          const { data: newMsgs } = await supabase
-            .from('support_messages')
-            .select('*')
-            .eq('sender_type', 'user')
-            .gt('created_at', lastPollTimeRef.current)
-            .order('created_at', { ascending: true });
+      try {
+        if (!isMountedRef.current) return;
+
+        // Refresh conversations for admin
+        if (userRole === 'admin') {
+          await fetchConversations().catch(() => {});
           
-          if (newMsgs && newMsgs.length > 0) {
-            newMsgs.forEach(msg => handleNewMessageNotification(msg));
-            lastPollTimeRef.current = newMsgs[newMsgs.length - 1].created_at;
+          // Admin: Poll for ANY new messages from users across all conversations
+          try {
+            const { data: newMsgs } = await supabase
+              .from('support_messages')
+              .select('*')
+              .eq('sender_type', 'user')
+              .gt('created_at', lastPollTimeRef.current)
+              .order('created_at', { ascending: true });
+            
+            if (newMsgs && newMsgs.length > 0) {
+              newMsgs.forEach(msg => handleNewMessageNotification(msg));
+              lastPollTimeRef.current = newMsgs[newMsgs.length - 1].created_at;
+            }
+          } catch (err) {
+            // Silent fail for polling
           }
-        } catch (err) {
-          // Silent fail for polling
-        }
-      } else {
-        // User: Poll for ANY new messages from admin for this user
-        try {
-          const userCnpj = currentUser?.cnpj?.replace(/[^\d]/g, '');
-          const { data: newMsgs } = await supabase
-            .from('support_messages')
-            .select('*, support_conversations!inner(user_id)')
-            .eq('sender_type', 'admin')
-            .eq('support_conversations.user_id', userCnpj)
-            .gt('created_at', lastPollTimeRef.current)
-            .order('created_at', { ascending: true });
+        } else {
+          // User: Poll for ANY new messages from admin for this user
+          try {
+            const userCnpj = currentUser?.cnpj?.replace(/[^\d]/g, '');
+            const { data: newMsgs } = await supabase
+              .from('support_messages')
+              .select('*, support_conversations!inner(user_id)')
+              .eq('sender_type', 'admin')
+              .eq('support_conversations.user_id', userCnpj)
+              .gt('created_at', lastPollTimeRef.current)
+              .order('created_at', { ascending: true });
 
-          if (newMsgs && newMsgs.length > 0) {
-            newMsgs.forEach(msg => handleNewMessageNotification(msg));
-            lastPollTimeRef.current = newMsgs[newMsgs.length - 1].created_at;
+            if (newMsgs && newMsgs.length > 0) {
+              newMsgs.forEach(msg => handleNewMessageNotification(msg));
+              lastPollTimeRef.current = newMsgs[newMsgs.length - 1].created_at;
+            }
+          } catch (err) {
+            // Silent fail for polling
           }
-        } catch (err) {
-          // Silent fail for polling
         }
-      }
 
-      // Refresh messages for active conversation
-      if (activeConversationIdRef.current) {
-        await fetchMessages(activeConversationIdRef.current, true);
+        // Refresh messages for active conversation
+        if (activeConversationIdRef.current) {
+          await fetchMessages(activeConversationIdRef.current, true).catch(() => {});
+        }
+      } catch (err) {
+        // Global interval error catch
       }
     }, pollInterval);
 
@@ -309,23 +323,21 @@ export function useSupportSocket() {
   useEffect(() => {
     if (!currentUser || !isSupabaseConfigured) return;
 
-    let isMounted = true;
-
     const initChat = async () => {
       setIsLoading(true);
       
       try {
         if (userRole === 'admin') {
-          await fetchConversations();
+          await fetchConversations().catch(() => {});
           if (selectedUserCnpj) {
             const convId = await getOrCreateConversation(selectedUserCnpj, selectedUserCnpj);
-            if (convId && isMounted) {
+            if (convId && isMountedRef.current) {
               setActiveConversationId(convId);
               activeConversationIdRef.current = convId;
-              await fetchMessages(convId);
+              await fetchMessages(convId).catch(() => {});
             }
           } else {
-            if (isMounted) {
+            if (isMountedRef.current) {
               setActiveConversationId(null);
               activeConversationIdRef.current = null;
               setMessages([]);
@@ -333,16 +345,16 @@ export function useSupportSocket() {
           }
         } else {
           const convId = await getOrCreateConversation(currentUser.cnpj, currentUser.username);
-          if (convId && isMounted) {
+          if (convId && isMountedRef.current) {
             setActiveConversationId(convId);
             activeConversationIdRef.current = convId;
-            await fetchMessages(convId);
+            await fetchMessages(convId).catch(() => {});
           }
         }
       } catch (err) {
         console.error('Error in initChat:', err);
       } finally {
-        if (isMounted) {
+        if (isMountedRef.current) {
           setIsLoading(false);
           setIsChatConnected(true);
         }
@@ -455,13 +467,17 @@ export function useSupportSocket() {
           }
         }
       )
-      .subscribe((status) => {
-        if (status === 'SUBSCRIBED' && isMounted) setIsChatConnected(true);
+      .subscribe((status, err) => {
+        if (err) console.warn('Supabase subscription error:', err.message);
+        if (status === 'SUBSCRIBED' && isMountedRef.current) setIsChatConnected(true);
       });
 
     return () => {
-      isMounted = false;
-      supabase.removeChannel(channel);
+      try {
+        supabase.removeChannel(channel).catch(() => {});
+      } catch (e) {
+        // Ignore removal errors
+      }
     };
   }, [currentUser?.cnpj, userRole, selectedUserCnpj]); // Re-init when user or selection changes
 
