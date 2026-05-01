@@ -41,6 +41,14 @@ const CanvasPreview = ({ id = "placa" }: { id?: string }) => {
 
   // Faster background switching with double buffering
   useEffect(() => {
+    // Reset displayedBg if activeLayoutIndex changes to prevent showing old background on new layout
+    if (displayedBg && displayedBg.url !== background.url) {
+      setDisplayedBg(null);
+      setNextBg(null);
+    }
+  }, [activeLayoutIndex]);
+
+  useEffect(() => {
     if (bgImg && background.url) {
       if (!displayedBg) {
         setDisplayedBg({ url: background.url, img: bgImg });
@@ -50,14 +58,14 @@ const CanvasPreview = ({ id = "placa" }: { id?: string }) => {
         const timer = setTimeout(() => {
           setDisplayedBg({ url: background.url, img: bgImg });
           setNextBg(null);
-        }, 50);
+        }, 30); // Even shorter delay for faster response
         return () => clearTimeout(timer);
       }
     } else if (!background.url) {
       setDisplayedBg(null);
       setNextBg(null);
     }
-  }, [bgImg, background.url]);
+  }, [bgImg, background.url, activeLayoutIndex]);
 
   // If the URL changed but we are still showing the old one, we might want to show a loader
   const isBgLoading = background.url && (!displayedBg || (displayedBg.url !== background.url && !nextBg));

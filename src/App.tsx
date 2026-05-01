@@ -95,38 +95,44 @@ export default function App() {
   // Pre-load background images for all allowed layouts to speed up selection
   useEffect(() => {
     if (filteredLayouts.length > 0) {
-      // 1. Prioritize current and immediately adjacent layouts
+      const preloadSet = new Set<string>();
+
+      const preloadImage = (url: string | null) => {
+        if (!url || preloadSet.has(url)) return;
+        preloadSet.add(url);
+        const img = new Image();
+        img.src = getProxyUrl(url);
+      };
+
+      // 1. Prioritize current layout background
       const current = layouts[activeLayoutIndex];
+      if (current?.background?.url) {
+        preloadImage(current.background.url);
+      }
+
+      // 2. Preload ALL other allowed layouts immediately for maximum speed
+      // Use a small delay for sub-priority ones to not block the main thread too much
       const priorityIndices = [activeLayoutIndex];
       
-      // Look for neighboring allowed indices
+      // Immediately adjacent allowed indices get priority
       const currentIdxInFiltered = filteredLayouts.findIndex(l => l.originalIndex === activeLayoutIndex);
       if (currentIdxInFiltered !== -1) {
         if (currentIdxInFiltered > 0) priorityIndices.push(filteredLayouts[currentIdxInFiltered - 1].originalIndex);
         if (currentIdxInFiltered < filteredLayouts.length - 1) priorityIndices.push(filteredLayouts[currentIdxInFiltered + 1].originalIndex);
       }
 
-      const preloadImage = (url: string | null) => {
-        if (!url) return;
-        const img = new Image();
-        img.src = getProxyUrl(url);
-      };
-
-      // Preload priority images immediately
       priorityIndices.forEach(idx => {
         if (layouts[idx]?.background?.url) preloadImage(layouts[idx].background.url);
       });
 
-      // 2. Preload the rest after a short delay or sequentially
-      const idleCallback = (window as any).requestIdleCallback || ((cb: any) => setTimeout(cb, 1000));
-      
-      idleCallback(() => {
+      // Then preload everything else in background
+      setTimeout(() => {
         filteredLayouts.forEach(layout => {
           if (!priorityIndices.includes(layout.originalIndex) && layout.background?.url) {
             preloadImage(layout.background.url);
           }
         });
-      });
+      }, 500);
     }
   }, [filteredLayouts, activeLayoutIndex, layouts]);
 
