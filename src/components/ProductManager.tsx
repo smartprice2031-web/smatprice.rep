@@ -21,7 +21,18 @@ const ProductManager = () => {
   });
 
   const [isBulkModalOpen, setIsBulkModalOpen] = useState(false);
+  const [isMultiRegisterModalOpen, setIsMultiRegisterModalOpen] = useState(false);
   const [bulkData, setBulkData] = useState('');
+  
+  const initialMultiFormData = Array(20).fill(null).map(() => ({
+    name: '',
+    description: '',
+    price: '',
+    image: '',
+    category: '',
+  }));
+  
+  const [multiFormData, setMultiFormData] = useState(initialMultiFormData);
 
   const [isLoading, setIsLoading] = useState(true);
   const [isSyncing, setIsSyncing] = useState(false);
@@ -239,7 +250,17 @@ const ProductManager = () => {
             onClick={() => setIsBulkModalOpen(true)}
             className="bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300 px-4 py-2 rounded-lg flex items-center gap-2 transition-colors text-sm font-bold"
           >
-            Adicionar em Massa
+            Importar JSON
+          </button>
+          <button 
+            onClick={() => {
+              setMultiFormData(initialMultiFormData);
+              setIsMultiRegisterModalOpen(true);
+            }}
+            className="bg-emerald-600 hover:bg-emerald-700 text-white p-2 rounded-lg flex items-center justify-center transition-colors shadow-sm"
+            title="Cadastrar Vários Produtos"
+          >
+            <Plus className="w-5 h-5" />
           </button>
           <button 
             onClick={() => {
@@ -278,6 +299,9 @@ const ProductManager = () => {
               key={product.id || `product-${index}`}
               className="bg-white dark:bg-zinc-800 p-4 rounded-xl border border-zinc-200 dark:border-zinc-700 flex items-center gap-4 hover:shadow-md transition-shadow group"
             >
+              <span className="text-zinc-400 dark:text-zinc-500 font-mono text-sm font-bold min-w-[28px] shrink-0">
+                {index + 1}.
+              </span>
               <div className="w-16 h-16 bg-zinc-100 dark:bg-zinc-700 rounded-lg overflow-hidden flex-shrink-0">
                 {product.image ? (
                   <img 
@@ -348,7 +372,7 @@ const ProductManager = () => {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white dark:bg-zinc-900 w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden">
             <div className="p-6 border-b border-zinc-200 dark:border-zinc-800 flex justify-between items-center">
-              <h3 className="text-xl font-bold text-black dark:text-white">Adicionar em Massa</h3>
+              <h3 className="text-xl font-bold text-black dark:text-white">Importar JSON</h3>
               <button onClick={() => setIsBulkModalOpen(false)} className="text-black dark:text-white opacity-60 hover:opacity-100">&times;</button>
             </div>
             
@@ -380,6 +404,146 @@ const ProductManager = () => {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {isMultiRegisterModalOpen && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100] p-4">
+          <div className="bg-white dark:bg-zinc-900 w-full max-w-7xl h-[90vh] rounded-2xl shadow-2xl overflow-hidden flex flex-col">
+            <div className="p-6 border-b border-zinc-200 dark:border-zinc-800 flex justify-between items-center bg-emerald-600 text-white">
+              <div>
+                <h3 className="text-xl font-bold">Cadastrar Vários Produtos</h3>
+                <p className="text-xs opacity-90">Preencha os campos abaixo para cadastrar múltiplos produtos de uma vez.</p>
+              </div>
+              <button 
+                onClick={() => setIsMultiRegisterModalOpen(false)} 
+                className="hover:bg-white/20 p-2 rounded-full transition-colors"
+              >
+                <Plus className="w-6 h-6 rotate-45" />
+              </button>
+            </div>
+            
+            <div className="flex-1 overflow-auto p-6 bg-zinc-50 dark:bg-zinc-950">
+              <div className="grid grid-cols-[40px_1fr_120px_150px_1fr_1fr] gap-3 mb-4 text-xs font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-300 px-2">
+                <span>#</span>
+                <span>Nome do Produto</span>
+                <span>Preço</span>
+                <span>Categoria</span>
+                <span>Descrição</span>
+                <span>URL da Imagem</span>
+              </div>
+
+              <div className="space-y-2">
+                {multiFormData.map((item, index) => (
+                  <div key={index} className="grid grid-cols-[40px_1fr_120px_150px_1fr_1fr] gap-3 items-center bg-white dark:bg-zinc-900 p-2 rounded-lg border border-zinc-200 dark:border-zinc-700 shadow-sm">
+                    <span className="text-xs font-bold text-center text-zinc-400 dark:text-zinc-400">{index + 1}</span>
+                    <input
+                      type="text"
+                      className="w-full px-3 py-1.5 bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-md text-sm text-black dark:text-white"
+                      placeholder="Nome"
+                      value={item.name}
+                      onChange={e => {
+                        const newData = [...multiFormData];
+                        newData[index].name = e.target.value;
+                        setMultiFormData(newData);
+                      }}
+                    />
+                    <input
+                      type="text"
+                      className="w-full px-3 py-1.5 bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-md text-sm text-black dark:text-white"
+                      placeholder="R$ 0,00"
+                      value={item.price}
+                      onChange={e => {
+                        const newData = [...multiFormData];
+                        newData[index].price = e.target.value;
+                        setMultiFormData(newData);
+                      }}
+                    />
+                    <input
+                      type="text"
+                      className="w-full px-3 py-1.5 bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-md text-sm text-black dark:text-white"
+                      placeholder="Categoria"
+                      value={item.category}
+                      onChange={e => {
+                        const newData = [...multiFormData];
+                        newData[index].category = e.target.value;
+                        setMultiFormData(newData);
+                      }}
+                    />
+                    <input
+                      type="text"
+                      className="w-full px-3 py-1.5 bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-md text-sm text-black dark:text-white"
+                      placeholder="Descrição curta"
+                      value={item.description}
+                      onChange={e => {
+                        const newData = [...multiFormData];
+                        newData[index].description = e.target.value;
+                        setMultiFormData(newData);
+                      }}
+                    />
+                    <input
+                      type="text"
+                      className="w-full px-3 py-1.5 bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-md text-sm text-black dark:text-white"
+                      placeholder="https://..."
+                      value={item.image}
+                      onChange={e => {
+                        const newData = [...multiFormData];
+                        newData[index].image = e.target.value;
+                        setMultiFormData(newData);
+                      }}
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+            
+            <div className="p-6 border-t border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 flex justify-end gap-3 shadow-top">
+              <button 
+                onClick={() => setIsMultiRegisterModalOpen(false)}
+                className="px-6 py-2.5 border border-zinc-200 dark:border-zinc-700 rounded-xl hover:bg-zinc-50 dark:hover:bg-zinc-800 font-bold transition-all"
+              >
+                Cancelar
+              </button>
+              <button 
+                onClick={async () => {
+                  const validProducts = multiFormData.filter(p => p.name.trim() !== '');
+                  if (validProducts.length === 0) {
+                    toast.error('Preencha ao menos o nome de um produto.');
+                    return;
+                  }
+                  
+                  setIsLoading(true);
+                  try {
+                    const { error } = await supabase
+                      .from('products')
+                      .insert(validProducts.map(p => ({
+                        name: p.name,
+                        description: p.description,
+                        price: p.price || 'R$ 0,00',
+                        image: p.image || null,
+                        category: p.category
+                      })));
+
+                    if (error) throw error;
+                    
+                    setIsMultiRegisterModalOpen(false);
+                    await fetchProducts();
+                    await fetchProductCount();
+                    toast.success(`${validProducts.length} produtos cadastrados com sucesso!`);
+                  } catch (err) {
+                    console.error("Error bulk inserting:", err);
+                    toast.error("Erro ao cadastrar produtos em massa.");
+                  } finally {
+                    setIsLoading(false);
+                  }
+                }}
+                disabled={isLoading}
+                className="px-8 py-2.5 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 font-bold shadow-lg shadow-emerald-500/20 transition-all disabled:opacity-50"
+              >
+                {isLoading ? 'Cadastrando...' : `Cadastrar ${multiFormData.filter(p => p.name.trim() !== '').length} Produtos`}
+              </button>
+            </div>
           </div>
         </div>
       )}

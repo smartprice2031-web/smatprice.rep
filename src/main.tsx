@@ -10,7 +10,8 @@ if (typeof window !== 'undefined') {
     const msg = args[0]?.toString() || '';
     if (msg.includes('[vite] failed to connect to websocket') || 
         msg.includes('WebSocket connection to') || 
-        msg.includes('WebSocket closed without opened')) {
+        msg.includes('WebSocket closed without opened') ||
+        msg.includes('mismatch between server and client bindings')) {
       return;
     }
     originalError(...args);
@@ -19,7 +20,8 @@ if (typeof window !== 'undefined') {
   window.addEventListener('unhandledrejection', (event) => {
     const reason = event.reason?.toString() || '';
     if (reason.includes('WebSocket closed without opened') || 
-        reason.includes('[vite]')) {
+        reason.includes('[vite]') ||
+        reason.includes('mismatch between server and client bindings')) {
       event.preventDefault();
     }
   });

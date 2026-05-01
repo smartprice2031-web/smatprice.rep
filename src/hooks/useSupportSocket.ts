@@ -468,13 +468,17 @@ export function useSupportSocket() {
         }
       )
       .subscribe((status, err) => {
-        if (err) console.warn('Supabase subscription error:', err.message);
+        if (err && !err.message.includes('mismatch')) {
+          console.warn('Supabase subscription error:', err.message);
+        }
         if (status === 'SUBSCRIBED' && isMountedRef.current) setIsChatConnected(true);
       });
 
     return () => {
       try {
-        supabase.removeChannel(channel).catch(() => {});
+        if (channel) {
+          supabase.removeChannel(channel).catch(() => {});
+        }
       } catch (e) {
         // Ignore removal errors
       }
