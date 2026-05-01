@@ -787,7 +787,6 @@ export const useStore = create<AppState>()(
         // 2. Prepare the next layout
         const nextLayout = newLayouts[index];
         const defaultNext = createDefaultLayout(nextLayout.name, index);
-        const isThree = isThreeProduct(nextLayout.name, index);
         
         set({
           activeLayoutIndex: index,
@@ -819,7 +818,7 @@ export const useStore = create<AppState>()(
 
         // REINFORCE: Only save globally if admin
         if (get().userRole === 'admin') {
-          get().saveLayout();
+          get().saveLayoutDebounced();
         }
       },
 
@@ -1252,7 +1251,14 @@ export const useStore = create<AppState>()(
               return merged;
             }).sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
 
-            const activeLayoutIndex = layout.activeLayoutIndex !== undefined ? layout.activeLayoutIndex : currentState.activeLayoutIndex;
+            const activeLayoutIndexFromDB = layout.activeLayoutIndex !== undefined ? layout.activeLayoutIndex : currentState.activeLayoutIndex;
+            
+            // USER REQUEST: Keep user's local layout selection on refresh
+            // Only overwrite activeLayoutIndex from DB if the user is an admin OR if local activeLayoutIndex is default (0)
+            const activeLayoutIndex = (currentState.userRole === 'admin' || currentState.activeLayoutIndex === 0) 
+              ? activeLayoutIndexFromDB 
+              : currentState.activeLayoutIndex;
+
             const activeLayout = loadedLayouts[activeLayoutIndex] || loadedLayouts[0];
 
             set({

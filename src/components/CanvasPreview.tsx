@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Stage, Layer, Image as KonvaImage, Text, Transformer, Rect, Group } from 'react-konva';
+import { motion, AnimatePresence } from 'motion/react';
 import { useStore, isThreeProduct } from '../store';
 import useImage from 'use-image';
 import { getProxyUrl } from '../lib/utils';
@@ -437,16 +438,21 @@ const CanvasPreview = ({ id = "placa" }: { id?: string }) => {
       )}
 
       <div className={`flex-1 w-full overflow-auto flex items-center justify-center ${isPrinting ? 'p-0 m-0 bg-white' : 'p-8'}`}>
-        <div 
-          id={id}
-          className={`bg-white ${isPrinting ? 'shadow-none' : 'shadow-2xl transition-transform duration-300 ease-out'}`}
-          style={{ 
-            width: currentWidth, 
-            height: currentHeight,
-            transform: isPrinting ? 'none' : `scale(${autoScale * zoom})`,
-            transformOrigin: 'center center'
-          }}
-        >
+        <AnimatePresence mode="wait">
+          <motion.div 
+            key={activeLayoutIndex}
+            id={id}
+            initial={isPrinting ? { opacity: 1 } : { opacity: 0.8, scale: 0.98 }}
+            animate={isPrinting ? { opacity: 1 } : { opacity: 1, scale: 1 }}
+            transition={{ duration: 0.15, ease: "easeOut" }}
+            className={`bg-white ${isPrinting ? 'shadow-none' : 'shadow-2xl transition-shadow duration-300 ease-out'}`}
+            style={{ 
+              width: currentWidth, 
+              height: currentHeight,
+              transform: isPrinting ? 'none' : `scale(${autoScale * zoom})`,
+              transformOrigin: 'center center'
+            }}
+          >
         <Stage
           width={currentWidth}
           height={currentHeight}
@@ -626,9 +632,10 @@ const CanvasPreview = ({ id = "placa" }: { id?: string }) => {
             )}
           </Layer>
         </Stage>
+          </motion.div>
+        </AnimatePresence>
       </div>
     </div>
-  </div>
   );
 };
 
