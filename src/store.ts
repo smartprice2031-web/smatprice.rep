@@ -1254,8 +1254,8 @@ export const useStore = create<AppState>()(
             const activeLayoutIndexFromDB = layout.activeLayoutIndex !== undefined ? layout.activeLayoutIndex : currentState.activeLayoutIndex;
             
             // USER REQUEST: Keep user's local layout selection on refresh
-            // Only overwrite activeLayoutIndex from DB if the user is an admin OR if local activeLayoutIndex is default (0)
-            const activeLayoutIndex = (currentState.userRole === 'admin' || currentState.activeLayoutIndex === 0) 
+            // Only overwrite activeLayoutIndex from DB if the user is an admin
+            const activeLayoutIndex = (currentState.userRole === 'admin') 
               ? activeLayoutIndexFromDB 
               : currentState.activeLayoutIndex;
 

@@ -445,17 +445,18 @@ const CanvasPreview = ({ id = "placa" }: { id?: string }) => {
             initial={isPrinting ? { opacity: 1 } : { opacity: 0.8, scale: 0.98 }}
             animate={isPrinting ? { opacity: 1 } : { opacity: 1, scale: 1 }}
             transition={{ duration: 0.15, ease: "easeOut" }}
-            className={`bg-white ${isPrinting ? 'shadow-none' : 'shadow-2xl transition-shadow duration-300 ease-out'}`}
+            className={`bg-white ${isPrinting ? 'shadow-none' : 'shadow-2xl'}`}
             style={{ 
-              width: currentWidth, 
-              height: currentHeight,
-              transform: isPrinting ? 'none' : `scale(${autoScale * zoom})`,
+              width: isPrinting ? currentWidth : currentWidth * autoScale * zoom, 
+              height: isPrinting ? currentHeight : currentHeight * autoScale * zoom,
               transformOrigin: 'center center'
             }}
           >
         <Stage
-          width={currentWidth}
-          height={currentHeight}
+          width={isPrinting ? currentWidth : currentWidth * autoScale * zoom}
+          height={isPrinting ? currentHeight : currentHeight * autoScale * zoom}
+          scaleX={isPrinting ? 1 : autoScale * zoom}
+          scaleY={isPrinting ? 1 : autoScale * zoom}
           ref={stageRef}
           pixelRatio={2}
           onMouseDown={(e) => {
