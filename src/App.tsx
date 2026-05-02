@@ -225,55 +225,6 @@ export default function App() {
     loadLayout();
     loadUsersAndFlags();
 
-    // Subscribe to settings changes for real-time announcements
-    let settingsChannel: any;
-    if (isSupabaseConfigured) {
-      settingsChannel = supabase
-        .channel('settings_changes')
-        .on(
-          'postgres_changes',
-          { 
-            event: 'UPDATE', 
-            schema: 'public', 
-            table: 'settings',
-            filter: "id=eq.users_and_flags"
-          },
-          (payload) => {
-            if (payload.new && payload.new.value) {
-              // Update store with new settings
-              const newValue = payload.new.value;
-              const currentState = useStore.getState();
-              const newLayouts = newValue.layouts || currentState.layouts;
-              const activeLayout = newLayouts[currentState.activeLayoutIndex];
-
-              useStore.setState({
-                allowedStores: newValue.allowedStores || [],
-                flags: newValue.flags || currentState.flags,
-                userGroups: newValue.userGroups || [],
-                encartes: newValue.encartes || currentState.encartes,
-                selectedEncarteModel: newValue.selectedEncarteModel || currentState.selectedEncarteModel,
-                layouts: newLayouts,
-                announcements: newValue.announcements || [],
-                // Update current elements if they are in the new layouts to ensure real-time sync
-                ...(activeLayout ? {
-                  background: activeLayout.background || currentState.background,
-                  productImage1: activeLayout.productImage1 || currentState.productImage1,
-                  productImage2: activeLayout.productImage2 || currentState.productImage2,
-                  productImage3: activeLayout.productImage3 || currentState.productImage3,
-                  textElements1: activeLayout.textElements1 || currentState.textElements1,
-                  textElements2: activeLayout.textElements2 || currentState.textElements2,
-                  textElements3: activeLayout.textElements3 || currentState.textElements3,
-                  optionalText1: activeLayout.optionalText1 || currentState.optionalText1,
-                  optionalText2: activeLayout.optionalText2 || currentState.optionalText2,
-                  optionalText3: activeLayout.optionalText3 || currentState.optionalText3,
-                } : {})
-              });
-            }
-          }
-        )
-        .subscribe();
-    }
-
     const handleBeforePrint = () => setPrinting(true);
     const handleAfterPrint = () => setPrinting(false);
 
@@ -283,9 +234,6 @@ export default function App() {
     return () => {
       window.removeEventListener('beforeprint', handleBeforePrint);
       window.removeEventListener('afterprint', handleAfterPrint);
-      if (settingsChannel) {
-        supabase.removeChannel(settingsChannel);
-      }
     };
   }, []);
 

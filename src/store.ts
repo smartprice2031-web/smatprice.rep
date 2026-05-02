@@ -1619,17 +1619,19 @@ export const useStore = create<AppState>()(
         if (state.userRole !== 'admin') return;
 
         try {
-          // Prepare clean allowedStores (don't force online status changes here)
+          // Prepare clean allowedStores for permanent storage
+          // We strip dynamic session data to ensure the backup is purely configuration
+          const cleanAllowedStores = state.allowedStores.map(s => {
+            const { isOnline, lastAccess, lastUsername, ...cleanStore } = s;
+            return cleanStore;
+          });
+
           const { error } = await supabase
             .from('settings')
             .upsert({ 
               id: 'users_and_flags', 
               value: { 
-                allowedStores: state.allowedStores.map(s => ({
-                  ...s,
-                  // Keep the permissions, but dynamic status is managed elsewhere
-                  // We save them as a snapshot, but activity_status row is the truth
-                })), 
+                allowedStores: cleanAllowedStores,
                 flags: state.flags,
                 userGroups: state.userGroups,
                 encartes: state.encartes,
@@ -1793,6 +1795,8 @@ export const useStore = create<AppState>()(
         // Update online status for the store
         if (role === 'user' && user.cnpj) {
           const normalizedCnpj = user.cnpj.replace(/[^\d]/g, '');
+          
+          // First update local state
           set((state) => {
             const newAllowedStores = state.allowedStores.map(s => 
               s.cnpj.replace(/[^\d]/g, '') === normalizedCnpj 
@@ -1801,8 +1805,35 @@ export const useStore = create<AppState>()(
             );
             return { allowedStores: newAllowedStores };
           });
-          // Save immediately to reflect online status
-          await get().saveUsersAndFlags();
+
+          // Then update the DEDICATED activity row, bypassing global saveUsersAndFlags
+          // to prevent race conditions or permission issues
+          try {
+            const { data: activityData } = await supabase
+              .from('settings')
+              .select('value')
+              .eq('id', 'activity_status')
+              .single();
+            
+            const currentActivity = activityData?.value || {};
+            const updatedActivity = {
+              ...currentActivity,
+              [normalizedCnpj]: {
+                isOnline: true,
+                lastAccess: new Date().toISOString(),
+                lastUsername: user.username
+              }
+            };
+
+            await supabase
+              .from('settings')
+              .upsert({ 
+                id: 'activity_status', 
+                value: updatedActivity 
+              });
+          } catch (err) {
+            console.error("Error setting activity on login:", err);
+          }
         }
 
         await get().loadLayout();
