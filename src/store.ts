@@ -1551,18 +1551,46 @@ export const useStore = create<AppState>()(
       updateOnlineStatus: async () => {
         const state = get();
         if (state.isAuthenticated && state.userRole === 'user' && state.currentUser?.cnpj) {
-          // Fetch latest data first to avoid overwriting other users' online status
-          await get().loadUsersAndFlags();
-          
-          const normalizedCnpj = state.currentUser.cnpj.replace(/[^\d]/g, '');
-          set((state) => ({
-            allowedStores: state.allowedStores.map(s => 
-              s.cnpj?.replace(/[^\d]/g, '') === normalizedCnpj 
-                ? { ...s, isOnline: true, lastAccess: new Date().toISOString(), lastUsername: state.currentUser?.username }
-                : s
-            )
-          }));
-          await get().saveUsersAndFlags();
+          try {
+            const normalizedCnpj = state.currentUser.cnpj.replace(/[^\d]/g, '');
+            
+            // 1. Update local state
+            set((state) => ({
+              allowedStores: state.allowedStores.map(s => 
+                s.cnpj?.replace(/[^\d]/g, '') === normalizedCnpj 
+                  ? { ...s, isOnline: true, lastAccess: new Date().toISOString(), lastUsername: state.currentUser?.username }
+                  : s
+              )
+            }));
+
+            // 2. Instead of saving the WHOLE config, save ONLY to a dedicated activity row
+            // First fetch latest activity
+            const { data: activityData } = await supabase
+              .from('settings')
+              .select('value')
+              .eq('id', 'activity_status')
+              .single();
+            
+            const currentActivity = activityData?.value || {};
+            const updatedActivity = {
+              ...currentActivity,
+              [normalizedCnpj]: {
+                isOnline: true,
+                lastAccess: new Date().toISOString(),
+                lastUsername: state.currentUser?.username
+              }
+            };
+
+            await supabase
+              .from('settings')
+              .upsert({ 
+                id: 'activity_status', 
+                value: updatedActivity 
+              });
+              
+          } catch (error) {
+            console.error("Error updating online status:", error);
+          }
         }
       },
 
@@ -1588,16 +1616,20 @@ export const useStore = create<AppState>()(
         const state = get();
         
         // REINFORCE: Only Admins can save global user, store, and flag configurations
-        // Exception: allow non-admin users to save their own online status
-        if (state.userRole !== 'admin' && state.userRole !== 'user') return;
+        if (state.userRole !== 'admin') return;
 
         try {
+          // Prepare clean allowedStores (don't force online status changes here)
           const { error } = await supabase
             .from('settings')
             .upsert({ 
               id: 'users_and_flags', 
               value: { 
-                allowedStores: state.allowedStores, 
+                allowedStores: state.allowedStores.map(s => ({
+                  ...s,
+                  // Keep the permissions, but dynamic status is managed elsewhere
+                  // We save them as a snapshot, but activity_status row is the truth
+                })), 
                 flags: state.flags,
                 userGroups: state.userGroups,
                 encartes: state.encartes,
@@ -1621,32 +1653,52 @@ export const useStore = create<AppState>()(
       loadUsersAndFlags: async () => {
         if (!isSupabaseConfigured) return;
         try {
-          const { data, error } = await supabase
-            .from('settings')
-            .select('value')
-            .eq('id', 'users_and_flags')
-            .single();
+          // Fetch permissions and activity in parallel
+          const [settingsRes, activityRes] = await Promise.all([
+            supabase.from('settings').select('value').eq('id', 'users_and_flags').single(),
+            supabase.from('settings').select('value').eq('id', 'activity_status').single()
+          ]);
           
-          if (error && error.code !== 'PGRST116') throw error;
+          if (settingsRes.error && settingsRes.error.code !== 'PGRST116') throw settingsRes.error;
           
-          if (data?.value) {
-            const currentState = get();
-            
-            set({
-              allowedStores: data.value.allowedStores || [],
-              flags: data.value.flags || currentState.flags,
-              userGroups: data.value.userGroups || [],
-              encartes: data.value.encartes || currentState.encartes,
-              selectedEncarteModel: data.value.selectedEncarteModel || currentState.selectedEncarteModel,
-              encarteThemes: data.value.encarteThemes || [],
-              encarteLogos: data.value.encarteLogos || [],
-              encarteLayouts: data.value.encarteLayouts || [],
-              announcements: data.value.announcements || [],
-              seenAnnouncements: data.value.seenAnnouncements || currentState.seenAnnouncements,
-              theme: data.value.theme || currentState.theme,
-              activeEncarteTab: data.value.activeEncarteTab || currentState.activeEncarteTab
+          const settingsData = settingsRes.data?.value || {};
+          const activityData = activityRes.data?.value || {};
+          
+          const currentState = get();
+          
+          let mergedStores = settingsData.allowedStores || [];
+          
+          // Merge activity data into allowedStores permissions
+          if (mergedStores.length > 0) {
+            mergedStores = mergedStores.map((store: any) => {
+              const normalizedCnpj = store.cnpj?.replace(/[^\d]/g, '') || '';
+              const activity = activityData[normalizedCnpj];
+              if (activity) {
+                return {
+                  ...store,
+                  isOnline: activity.isOnline,
+                  lastAccess: activity.lastAccess,
+                  lastUsername: activity.lastUsername
+                };
+              }
+              return store;
             });
           }
+          
+          set({
+            allowedStores: mergedStores,
+            flags: settingsData.flags || currentState.flags,
+            userGroups: settingsData.userGroups || [],
+            encartes: settingsData.encartes || currentState.encartes,
+            selectedEncarteModel: settingsData.selectedEncarteModel || currentState.selectedEncarteModel,
+            encarteThemes: settingsData.encarteThemes || [],
+            encarteLogos: settingsData.encarteLogos || [],
+            encarteLayouts: settingsData.encarteLayouts || [],
+            announcements: settingsData.announcements || [],
+            seenAnnouncements: settingsData.seenAnnouncements || currentState.seenAnnouncements,
+            theme: settingsData.theme || currentState.theme,
+            activeEncarteTab: settingsData.activeEncarteTab || currentState.activeEncarteTab
+          });
         } catch (error) {
           console.error("Error loading users and flags from Supabase:", error);
         }
@@ -1756,20 +1808,37 @@ export const useStore = create<AppState>()(
         await get().loadLayout();
         await get().fetchProducts();
       },
-      logout: () => {
+      logout: async () => {
         const state = get();
         if (state.userRole === 'user' && state.currentUser?.cnpj) {
-          const normalizedCnpj = state.currentUser.cnpj.replace(/[^\d]/g, '');
-          set((state) => {
-            const newAllowedStores = state.allowedStores.map(s => 
-              s.cnpj.replace(/[^\d]/g, '') === normalizedCnpj 
-                ? { ...s, isOnline: false }
-                : s
-            );
-            return { allowedStores: newAllowedStores };
-          });
-          // No await here to not delay logout UX, but we want it saved
-          get().saveUsersAndFlags();
+          try {
+            const normalizedCnpj = state.currentUser.cnpj.replace(/[^\d]/g, '');
+            
+            // Fetch latest activity
+            const { data: activityData } = await supabase
+              .from('settings')
+              .select('value')
+              .eq('id', 'activity_status')
+              .single();
+            
+            const currentActivity = activityData?.value || {};
+            const updatedActivity = {
+              ...currentActivity,
+              [normalizedCnpj]: {
+                ...currentActivity[normalizedCnpj],
+                isOnline: false
+              }
+            };
+
+            await supabase
+              .from('settings')
+              .upsert({ 
+                id: 'activity_status', 
+                value: updatedActivity 
+              });
+          } catch (error) {
+            console.error("Error during logout activity update:", error);
+          }
         }
 
         set({ 
