@@ -425,18 +425,19 @@ const ProductManager = () => {
             </div>
             
             <div className="flex-1 overflow-auto p-6 bg-zinc-50 dark:bg-zinc-950">
-              <div className="grid grid-cols-[40px_1fr_120px_150px_1fr_1fr] gap-3 mb-4 text-xs font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-300 px-2">
+              <div className="grid grid-cols-[40px_1fr_100px_130px_1fr_1fr_60px] gap-3 mb-4 text-xs font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-300 px-2">
                 <span>#</span>
                 <span>Nome do Produto</span>
                 <span>Preço</span>
                 <span>Categoria</span>
                 <span>Descrição</span>
                 <span>URL da Imagem</span>
+                <span className="text-center">Preview</span>
               </div>
 
               <div className="space-y-2">
                 {multiFormData.map((item, index) => (
-                  <div key={index} className="grid grid-cols-[40px_1fr_120px_150px_1fr_1fr] gap-3 items-center bg-white dark:bg-zinc-900 p-2 rounded-lg border border-zinc-200 dark:border-zinc-700 shadow-sm">
+                  <div key={index} className="grid grid-cols-[40px_1fr_100px_130px_1fr_1fr_60px] gap-3 items-center bg-white dark:bg-zinc-900 p-2 rounded-lg border border-zinc-200 dark:border-zinc-700 shadow-sm">
                     <span className="text-xs font-bold text-center text-zinc-400 dark:text-zinc-400">{index + 1}</span>
                     <input
                       type="text"
@@ -482,17 +483,37 @@ const ProductManager = () => {
                         setMultiFormData(newData);
                       }}
                     />
-                    <input
-                      type="text"
-                      className="w-full px-3 py-1.5 bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-md text-sm text-black dark:text-white"
-                      placeholder="https://..."
-                      value={item.image}
-                      onChange={e => {
-                        const newData = [...multiFormData];
-                        newData[index].image = e.target.value;
-                        setMultiFormData(newData);
-                      }}
-                    />
+                    <div className="relative group/url">
+                      <input
+                        type="text"
+                        className="w-full px-3 py-1.5 bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-md text-sm text-black dark:text-white"
+                        placeholder="https://..."
+                        value={item.image}
+                        onChange={e => {
+                          const newData = [...multiFormData];
+                          newData[index].image = e.target.value;
+                          setMultiFormData(newData);
+                        }}
+                      />
+                    </div>
+                    <div className="flex justify-center">
+                      <div className="w-10 h-10 bg-zinc-100 dark:bg-zinc-800 rounded border border-zinc-200 dark:border-zinc-700 overflow-hidden flex items-center justify-center">
+                        {item.image ? (
+                          <img 
+                            src={getProxyUrl(item.image)} 
+                            alt="Preview" 
+                            className="w-full h-full object-cover"
+                            referrerPolicy="no-referrer"
+                            crossOrigin="anonymous"
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).src = 'https://placehold.co/40x40?text=Err';
+                            }}
+                          />
+                        ) : (
+                          <Package className="w-4 h-4 text-zinc-300 dark:text-zinc-600" />
+                        )}
+                      </div>
+                    </div>
                   </div>
                 ))}
               </div>

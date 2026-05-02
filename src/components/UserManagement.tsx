@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
 import { useStore } from '../store';
-import { Plus, Trash2, Shield, Store, Search, X, User, Flag, Pencil, Save, Loader2, Settings as SettingsIcon, Layout as LayoutGrid, Layout, Users } from 'lucide-react';
+import { Plus, Trash2, Shield, Store, Search, X, User, Flag, Pencil, Save, Loader2, Settings as SettingsIcon, Layout as LayoutGrid, Layout, Users, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '../lib/utils';
 
 export default function UserManagement() {
-  const { allowedStores, addAllowedStore, removeAllowedStore, flags, addFlag, removeFlag, updateFlag, saveUsersAndFlags, layouts, toggleEncarteAccess, userGroups, addUserGroup, removeUserGroup, updateUserGroup, setUserGroup } = useStore();
-  const [activeTab, setActiveTab] = useState<'stores' | 'flags' | 'groups'>('stores');
+  const { allowedStores, addAllowedStore, removeAllowedStore, flags, addFlag, removeFlag, updateFlag, saveUsersAndFlags, layouts, toggleEncarteAccess, toggleSuspension, userGroups, addUserGroup, removeUserGroup, updateUserGroup, setUserGroup } = useStore();
+  const [activeTab, setActiveTab] = useState<'stores' | 'flags' | 'groups' | 'access'>('stores');
   const [newCnpj, setNewCnpj] = useState('');
   const [newBandeira, setNewBandeira] = useState('');
   const [newGroupName, setNewGroupName] = useState('');
@@ -244,6 +244,18 @@ export default function UserManagement() {
           >
             <Users className="w-4 h-4" />
             Grupos
+          </button>
+          <button 
+            onClick={() => setActiveTab('access')}
+            className={cn(
+              "py-4 px-6 text-xs font-black uppercase tracking-widest flex items-center gap-2 border-b-2 transition-all whitespace-nowrap",
+              activeTab === 'access' 
+                ? "border-blue-600 text-blue-600" 
+                : "border-transparent text-black dark:text-white opacity-60 hover:opacity-100"
+            )}
+          >
+            <User className="w-4 h-4" />
+            Acesso
           </button>
         </div>
 
@@ -505,6 +517,12 @@ export default function UserManagement() {
                             )}
                             <div className="flex items-center gap-2">
                               <p className="text-xs font-black uppercase tracking-tighter text-blue-600">{store.bandeira}</p>
+                              {store.isSuspended && (
+                                <span className="flex items-center gap-1 px-1.5 py-0.5 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 text-[8px] font-black uppercase tracking-widest rounded-md border border-red-200 dark:border-red-800 animate-pulse">
+                                  <AlertTriangle className="w-2.5 h-2.5" />
+                                  Suspenso
+                                </span>
+                              )}
                             </div>
                           </div>
                         </div>
@@ -683,7 +701,7 @@ export default function UserManagement() {
                       </div>
 
                       {/* Encarte Online Access Toggle */}
-                      <div className="mt-4 pt-4 border-t border-zinc-100 dark:border-zinc-800">
+                      <div className="mt-4 pt-4 border-t border-zinc-100 dark:border-zinc-800 space-y-4">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-2">
                             <Layout className="w-4 h-4 text-emerald-600" />
@@ -699,6 +717,24 @@ export default function UserManagement() {
                             )}
                           >
                             {store.hasEncarteAccess ? 'Ativado' : 'Desativado'}
+                          </button>
+                        </div>
+
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <AlertTriangle className="w-4 h-4 text-red-600" />
+                            <h4 className="text-[10px] font-black uppercase tracking-widest text-black dark:text-white opacity-60">Status do CNPJ (Suspensão)</h4>
+                          </div>
+                          <button
+                            onClick={() => toggleSuspension(store.cnpj)}
+                            className={cn(
+                              "px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all border shadow-sm",
+                              store.isSuspended
+                                ? "bg-red-600 border-red-600 text-white"
+                                : "bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-700 text-zinc-400"
+                            )}
+                          >
+                            {store.isSuspended ? 'Suspenso' : 'Ativo'}
                           </button>
                         </div>
                       </div>
@@ -978,6 +1014,105 @@ export default function UserManagement() {
                   ))
                 )}
               </div>
+            </div>
+          </div>
+        ) : activeTab === 'access' ? (
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <User className="w-5 h-5 text-zinc-400" />
+                <h3 className="font-bold text-lg text-black dark:text-white">Status de Acesso</h3>
+                <span className="bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 text-[10px] px-2 py-0.5 rounded-full font-black uppercase tracking-widest">
+                  {allowedStores.filter(s => s.isOnline).length} Online
+                </span>
+              </div>
+              
+              <div className="relative w-64">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
+                <input
+                  type="text"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  placeholder="Buscar usuário ou CNPJ..."
+                  className="w-full pl-10 pr-4 py-2 bg-zinc-100 dark:bg-zinc-800 border-transparent rounded-xl text-sm focus:bg-white dark:focus:bg-zinc-900 focus:ring-2 focus:ring-blue-500 outline-none transition-all text-black dark:text-white"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 gap-3">
+              {allowedStores
+                .filter(store => {
+                  const search = searchTerm.toLowerCase();
+                  return store.cnpj.includes(search) || 
+                         store.bandeira.toLowerCase().includes(search) ||
+                         (store.lastUsername?.toLowerCase() || '').includes(search);
+                })
+                .sort((a, b) => {
+                  // Online users first, then by last access
+                  if (a.isOnline && !b.isOnline) return -1;
+                  if (!a.isOnline && b.isOnline) return 1;
+                  const dateA = a.lastAccess ? new Date(a.lastAccess).getTime() : 0;
+                  const dateB = b.lastAccess ? new Date(b.lastAccess).getTime() : 0;
+                  return dateB - dateA;
+                })
+                .map((store) => (
+                <div 
+                  key={store.cnpj}
+                  className="flex items-center justify-between p-4 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl shadow-sm"
+                >
+                  <div className="flex items-center gap-4">
+                    <div className="relative">
+                      <div className="w-12 h-12 bg-zinc-100 dark:bg-zinc-800 rounded-xl flex items-center justify-center text-zinc-400">
+                        <User className="w-6 h-6" />
+                      </div>
+                      <div className={cn(
+                        "absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2 border-white dark:border-zinc-900 shadow-sm",
+                        store.isOnline ? "bg-emerald-500 animate-pulse" : "bg-zinc-400"
+                      )} />
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <p className="font-bold text-zinc-900 dark:text-zinc-100">
+                          {store.lastUsername || 'Usuário'}
+                        </p>
+                        <span className={cn(
+                          "text-[8px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded",
+                          store.isOnline 
+                            ? "bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400" 
+                            : "bg-zinc-100 text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400"
+                        )}>
+                          {store.isOnline ? 'Online' : 'Offline'}
+                        </span>
+                      </div>
+                      <p className="text-[10px] font-mono font-bold text-zinc-400">CNPJ: {store.cnpj}</p>
+                      <p className="text-[9px] font-black uppercase tracking-widest text-blue-600/60">{store.bandeira}</p>
+                    </div>
+                  </div>
+
+                  <div className="text-right">
+                    <p className="text-[10px] font-black uppercase tracking-widest text-zinc-400 mb-1">Último Acesso</p>
+                    <p className="text-xs font-bold text-zinc-900 dark:text-zinc-100">
+                      {store.lastAccess ? (
+                        new Date(store.lastAccess).toLocaleString('pt-BR', {
+                          day: '2-digit',
+                          month: '2-digit',
+                          year: '2-digit',
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        })
+                      ) : (
+                        'Nenhum registro'
+                      )}
+                    </p>
+                  </div>
+                </div>
+              ))}
+
+              {allowedStores.length === 0 && (
+                <div className="text-center py-12 bg-zinc-50 dark:bg-zinc-800/30 rounded-3xl border-2 border-dashed border-zinc-200 dark:border-zinc-800">
+                  <p className="text-black dark:text-white opacity-40 font-bold uppercase tracking-widest text-xs">Nenhum acesso registrado</p>
+                </div>
+              )}
             </div>
           </div>
         ) : null}

@@ -64,9 +64,15 @@ export default function Login() {
           const normalizedInputCnpj = formData.cnpj.replace(/[^\d]/g, '');
           
           // Check if CNPJ is allowed
-          const isAllowed = allowedStores.some(store => store.cnpj?.replace(/[^\d]/g, '') === normalizedInputCnpj);
+          const store = allowedStores.find(store => store.cnpj?.replace(/[^\d]/g, '') === normalizedInputCnpj);
           
-          if (isAllowed) {
+          if (store) {
+            if (store.isSuspended) {
+              setError('Este CNPJ está suspenso e não pode acessar o sistema.');
+              setIsLoading(false);
+              return;
+            }
+
             // Save last used CNPJ
             localStorage.setItem('smartprice_last_cnpj', formData.cnpj);
             

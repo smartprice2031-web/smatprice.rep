@@ -39,6 +39,7 @@ export default function App() {
     activeLayoutIndex, layouts, setActiveLayout,
     currentUser, allowedStores, lastLoginTimestamp,
     saveUsersAndFlags, saveLayout, loadUsersAndFlags, saveAll,
+    updateOnlineStatus,
     announcements, seenAnnouncements, setSeenAnnouncements,
     isAnnouncementModalOpen, setAnnouncementModalOpen,
     orientation
@@ -91,6 +92,13 @@ export default function App() {
 
   // Initialize support socket globally for background notifications
   useSupportSocket();
+
+  // Update online status on load
+  useEffect(() => {
+    if (isAuthenticated) {
+      updateOnlineStatus();
+    }
+  }, [isAuthenticated, updateOnlineStatus]);
 
   // Pre-load background images for all allowed layouts to speed up selection
   useEffect(() => {
@@ -417,6 +425,44 @@ export default function App() {
   const renderContent = () => {
     if (!isAuthenticated) {
       return <Login />;
+    }
+
+    // Check for suspension
+    if (userRole !== 'admin') {
+      const normalizedUserCnpj = currentUser?.cnpj?.replace(/[^\d]/g, '') || '';
+      const store = allowedStores.find(s => s.cnpj?.replace(/[^\d]/g, '') === normalizedUserCnpj);
+      if (store?.isSuspended) {
+        return (
+          <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 flex items-center justify-center p-8 text-center">
+            <div className="max-w-md space-y-6 animate-in fade-in zoom-in duration-500">
+              <div className="w-20 h-20 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center mx-auto">
+                <AlertTriangle className="w-10 h-10 text-red-500" />
+              </div>
+              <div className="space-y-2">
+                <h3 className="text-2xl font-black tracking-tighter uppercase text-black dark:text-white">Acesso Suspenso</h3>
+                <p className="text-black dark:text-white opacity-60 text-sm font-medium leading-relaxed">
+                  Este CNPJ (<span className="font-mono font-bold text-red-600">{currentUser?.cnpj}</span>) foi suspenso pelo administrador. 
+                  Entre em contato com o suporte para regularizar sua situação.
+                </p>
+              </div>
+              <div className="pt-4 flex flex-col gap-3">
+                <button 
+                  onClick={() => window.open('https://wa.me/5599984701752', '_blank')}
+                  className="w-full py-3 bg-red-600 text-white rounded-2xl font-black uppercase tracking-tighter shadow-xl shadow-red-500/20 hover:bg-red-700 transition-all active:scale-95"
+                >
+                  Contatar Suporte
+                </button>
+                <button 
+                  onClick={logout}
+                  className="w-full py-3 bg-zinc-200 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 rounded-2xl font-black uppercase tracking-tighter hover:bg-zinc-300 dark:hover:bg-zinc-700 transition-all"
+                >
+                  Sair do Sistema
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      }
     }
 
     if (currentView === 'queue') {

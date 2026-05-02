@@ -286,9 +286,31 @@ interface AppState {
   updateUserGroup: (id: string, name: string) => void;
   setUserGroup: (cnpj: string, groupId: string | undefined) => void;
 
-  allowedStores: { cnpj: string; bandeira: string; allowedLayouts?: number[]; hasEncarteAccess?: boolean; groupId?: string }[];
-  addAllowedStore: (store: { cnpj: string; bandeira: string; allowedLayouts?: number[]; hasEncarteAccess?: boolean; groupId?: string }) => void;
+  allowedStores: { 
+    cnpj: string; 
+    bandeira: string; 
+    allowedLayouts?: number[]; 
+    hasEncarteAccess?: boolean; 
+    groupId?: string; 
+    isSuspended?: boolean;
+    isOnline?: boolean;
+    lastAccess?: string;
+    lastUsername?: string;
+  }[];
+  addAllowedStore: (store: { 
+    cnpj: string; 
+    bandeira: string; 
+    allowedLayouts?: number[]; 
+    hasEncarteAccess?: boolean; 
+    groupId?: string; 
+    isSuspended?: boolean;
+    isOnline?: boolean;
+    lastAccess?: string;
+    lastUsername?: string;
+  }) => void;
   removeAllowedStore: (cnpj: string) => void;
+  toggleSuspension: (cnpj: string) => void;
+  updateOnlineStatus: () => Promise<void>;
   saveUsersAndFlags: () => Promise<void>;
   saveUsersAndFlagsDebounced: () => void;
   loadUsersAndFlags: () => Promise<void>;
@@ -1515,6 +1537,36 @@ export const useStore = create<AppState>()(
         return { allowedStores: newAllowedStores };
       }),
 
+      toggleSuspension: (cnpj) => set((state) => {
+        const normalizedCnpj = cnpj?.replace(/[^\d]/g, '') || '';
+        const newAllowedStores = state.allowedStores.map(s => 
+          s.cnpj?.replace(/[^\d]/g, '') === normalizedCnpj 
+            ? { ...s, isSuspended: !s.isSuspended }
+            : s
+        );
+        setTimeout(() => get().saveUsersAndFlags(), 0);
+        return { allowedStores: newAllowedStores };
+      }),
+
+      updateOnlineStatus: async () => {
+        const state = get();
+        if (state.isAuthenticated && state.userRole === 'user' && state.currentUser?.cnpj) {
+          const normalizedCnpj = state.currentUser.cnpj.replace(/[^\d]/g, '');
+          const store = state.allowedStores.find(s => s.cnpj?.replace(/[^\d]/g, '') === normalizedCnpj);
+          
+          if (!store?.isOnline || !store?.lastAccess) {
+            set((state) => ({
+              allowedStores: state.allowedStores.map(s => 
+                s.cnpj?.replace(/[^\d]/g, '') === normalizedCnpj 
+                  ? { ...s, isOnline: true, lastAccess: new Date().toISOString(), lastUsername: state.currentUser?.username }
+                  : s
+              )
+            }));
+            await get().saveUsersAndFlags();
+          }
+        }
+      },
+
       bulkUpdateStoreLayouts: (groupId, bandeira, allowedLayouts) => set((state) => {
         const newAllowedStores = state.allowedStores.map(s => 
           s.groupId === groupId && s.bandeira === bandeira
@@ -1682,17 +1734,50 @@ export const useStore = create<AppState>()(
           currentUser: user,
           lastLoginTimestamp: Date.now() 
         });
+        
+        // Update online status for the store
+        if (role === 'user' && user.cnpj) {
+          const normalizedCnpj = user.cnpj.replace(/[^\d]/g, '');
+          set((state) => {
+            const newAllowedStores = state.allowedStores.map(s => 
+              s.cnpj.replace(/[^\d]/g, '') === normalizedCnpj 
+                ? { ...s, isOnline: true, lastAccess: new Date().toISOString(), lastUsername: user.username }
+                : s
+            );
+            return { allowedStores: newAllowedStores };
+          });
+          // Save immediately to reflect online status
+          await get().saveUsersAndFlags();
+        }
+
         // Automatically load latest data on login
         await get().loadUsersAndFlags();
         await get().loadLayout();
         await get().fetchProducts();
       },
-      logout: () => set({ 
-        isAuthenticated: false, 
-        userRole: null, 
-        currentUser: null,
-        lastLoginTimestamp: null 
-      }),
+      logout: () => {
+        const state = get();
+        if (state.userRole === 'user' && state.currentUser?.cnpj) {
+          const normalizedCnpj = state.currentUser.cnpj.replace(/[^\d]/g, '');
+          set((state) => {
+            const newAllowedStores = state.allowedStores.map(s => 
+              s.cnpj.replace(/[^\d]/g, '') === normalizedCnpj 
+                ? { ...s, isOnline: false }
+                : s
+            );
+            return { allowedStores: newAllowedStores };
+          });
+          // No await here to not delay logout UX, but we want it saved
+          get().saveUsersAndFlags();
+        }
+
+        set({ 
+          isAuthenticated: false, 
+          userRole: null, 
+          currentUser: null,
+          lastLoginTimestamp: null 
+        });
+      },
     }),
     {
       name: 'smartprice-storage',
