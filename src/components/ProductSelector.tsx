@@ -40,12 +40,11 @@ const ProductSelector: React.FC<{ onSelect?: (product: Product) => void }> = ({ 
   const filterProducts = (term: string) => {
     if (!term.trim()) return products; // Show all products by default when not searching
     const lowerTerm = term.toLowerCase().trim();
+    const tokens = lowerTerm.split(/\s+/).filter(t => t.length > 0);
+    
     return products.filter(p => {
-      const nameMatch = (p.name || '').toLowerCase().includes(lowerTerm);
-      const categoryMatch = (p.category || '').toLowerCase().includes(lowerTerm);
-      const descriptionMatch = (p.description || '').toLowerCase().includes(lowerTerm);
-      
-      return nameMatch || categoryMatch || descriptionMatch;
+      const searchContent = `${p.name || ''} ${p.category || ''} ${p.description || ''}`.toLowerCase();
+      return tokens.every(token => searchContent.includes(token));
     });
   };
 
@@ -91,7 +90,14 @@ const ProductSelector: React.FC<{ onSelect?: (product: Product) => void }> = ({ 
               </div>
               <div className="flex-grow min-w-0">
                 <h4 className="font-bold text-sm truncate uppercase text-black dark:text-white">{product.name}</h4>
-                <p className="text-xs text-emerald-600 font-black">{product.price}</p>
+                <div className="flex items-center gap-2">
+                  <p className="text-xs text-emerald-600 font-black">{product.price}</p>
+                  {product.description && (
+                    <p className="text-[10px] text-zinc-500 dark:text-zinc-400 truncate italic">
+                      {product.description}
+                    </p>
+                  )}
+                </div>
               </div>
             </button>
           ))}
@@ -456,7 +462,14 @@ const ProductSlot = ({
               </div>
               <div className="flex-grow min-w-0">
                 <h4 className="font-bold text-xs truncate uppercase text-black dark:text-white">{product.name}</h4>
-                <p className="text-[10px] text-blue-600 font-black">{product.price}</p>
+                <div className="flex items-center gap-2">
+                  <p className="text-[10px] text-blue-600 font-black">{product.price}</p>
+                  {product.description && (
+                    <p className="text-[9px] text-zinc-500 dark:text-zinc-400 truncate italic">
+                      {product.description}
+                    </p>
+                  )}
+                </div>
               </div>
               {isSelected && <Check className="w-3 h-3 text-blue-500 flex-shrink-0" />}
             </button>
