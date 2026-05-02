@@ -1551,19 +1551,18 @@ export const useStore = create<AppState>()(
       updateOnlineStatus: async () => {
         const state = get();
         if (state.isAuthenticated && state.userRole === 'user' && state.currentUser?.cnpj) {
-          const normalizedCnpj = state.currentUser.cnpj.replace(/[^\d]/g, '');
-          const store = state.allowedStores.find(s => s.cnpj?.replace(/[^\d]/g, '') === normalizedCnpj);
+          // Fetch latest data first to avoid overwriting other users' online status
+          await get().loadUsersAndFlags();
           
-          if (!store?.isOnline || !store?.lastAccess) {
-            set((state) => ({
-              allowedStores: state.allowedStores.map(s => 
-                s.cnpj?.replace(/[^\d]/g, '') === normalizedCnpj 
-                  ? { ...s, isOnline: true, lastAccess: new Date().toISOString(), lastUsername: state.currentUser?.username }
-                  : s
-              )
-            }));
-            await get().saveUsersAndFlags();
-          }
+          const normalizedCnpj = state.currentUser.cnpj.replace(/[^\d]/g, '');
+          set((state) => ({
+            allowedStores: state.allowedStores.map(s => 
+              s.cnpj?.replace(/[^\d]/g, '') === normalizedCnpj 
+                ? { ...s, isOnline: true, lastAccess: new Date().toISOString(), lastUsername: state.currentUser?.username }
+                : s
+            )
+          }));
+          await get().saveUsersAndFlags();
         }
       },
 
@@ -1589,7 +1588,8 @@ export const useStore = create<AppState>()(
         const state = get();
         
         // REINFORCE: Only Admins can save global user, store, and flag configurations
-        if (state.userRole !== 'admin') return;
+        // Exception: allow non-admin users to save their own online status
+        if (state.userRole !== 'admin' && state.userRole !== 'user') return;
 
         try {
           const { error } = await supabase
@@ -1728,6 +1728,9 @@ export const useStore = create<AppState>()(
       setActiveEncarteLayout: (layout) => set({ activeEncarteLayout: layout }),
 
       login: async (role, user) => {
+        // Automatically load latest data on login BEFORE updating status
+        await get().loadUsersAndFlags();
+
         set({ 
           isAuthenticated: true, 
           userRole: role, 
@@ -1750,8 +1753,6 @@ export const useStore = create<AppState>()(
           await get().saveUsersAndFlags();
         }
 
-        // Automatically load latest data on login
-        await get().loadUsersAndFlags();
         await get().loadLayout();
         await get().fetchProducts();
       },

@@ -5,8 +5,19 @@ import { toast } from 'sonner';
 import { cn } from '../lib/utils';
 
 export default function UserManagement() {
-  const { allowedStores, addAllowedStore, removeAllowedStore, flags, addFlag, removeFlag, updateFlag, saveUsersAndFlags, layouts, toggleEncarteAccess, toggleSuspension, userGroups, addUserGroup, removeUserGroup, updateUserGroup, setUserGroup } = useStore();
+  const { allowedStores, addAllowedStore, removeAllowedStore, flags, addFlag, removeFlag, updateFlag, saveUsersAndFlags, loadUsersAndFlags, layouts, toggleEncarteAccess, toggleSuspension, userGroups, addUserGroup, removeUserGroup, updateUserGroup, setUserGroup } = useStore();
   const [activeTab, setActiveTab] = useState<'stores' | 'flags' | 'groups' | 'access'>('stores');
+
+  // Auto-refresh access status when tab is active
+  React.useEffect(() => {
+    if (activeTab === 'access') {
+      const interval = setInterval(() => {
+        loadUsersAndFlags();
+      }, 10000); // Every 10 seconds while tab is open
+      
+      return () => clearInterval(interval);
+    }
+  }, [activeTab, loadUsersAndFlags]);
   const [newCnpj, setNewCnpj] = useState('');
   const [newBandeira, setNewBandeira] = useState('');
   const [newGroupName, setNewGroupName] = useState('');

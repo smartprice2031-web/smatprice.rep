@@ -93,12 +93,19 @@ export default function App() {
   // Initialize support socket globally for background notifications
   useSupportSocket();
 
-  // Update online status on load
+  // Update online status on load and periodically
   useEffect(() => {
-    if (isAuthenticated) {
+    if (isAuthenticated && userRole === 'user') {
       updateOnlineStatus();
+      
+      // Heartbeat every 5 minutes to keep "Online" status fresh and update last access
+      const interval = setInterval(() => {
+        updateOnlineStatus();
+      }, 5 * 60 * 1000);
+      
+      return () => clearInterval(interval);
     }
-  }, [isAuthenticated, updateOnlineStatus]);
+  }, [isAuthenticated, userRole, updateOnlineStatus]);
 
   // Pre-load background images for all allowed layouts to speed up selection
   useEffect(() => {
