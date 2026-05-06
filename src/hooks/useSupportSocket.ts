@@ -24,7 +24,8 @@ export function useSupportSocket() {
     selectedUserCnpj,
     activeConversationId, setActiveConversationId,
     conversations, setConversations,
-    isChatLoading: isLoading, setIsChatLoading: setIsLoading
+    isChatLoading: isLoading, setIsChatLoading: setIsLoading,
+    isChatEnabled
   } = useStore();
 
   const activeConversationIdRef = useRef<string | null>(null);
@@ -258,7 +259,7 @@ export function useSupportSocket() {
 
   // Polling mechanism for "always online" feel
   useEffect(() => {
-    if (!isSupabaseConfigured || !currentUser) return;
+    if (!isSupabaseConfigured || !currentUser || (!isChatEnabled && userRole !== 'admin')) return;
 
     // Faster polling: 500ms when open, 3s when closed
     const pollInterval = isSupportChatOpen ? 500 : 3000;
@@ -318,10 +319,10 @@ export function useSupportSocket() {
     }, pollInterval);
 
     return () => clearInterval(interval);
-  }, [isSupportChatOpen, userRole, currentUser, isSupabaseConfigured]);
+  }, [isSupportChatOpen, userRole, currentUser, isSupabaseConfigured, isChatEnabled]);
 
   useEffect(() => {
-    if (!currentUser || !isSupabaseConfigured) return;
+    if (!currentUser || !isSupabaseConfigured || (!isChatEnabled && userRole !== 'admin')) return;
 
     const initChat = async () => {
       setIsLoading(true);
@@ -483,7 +484,7 @@ export function useSupportSocket() {
         // Ignore removal errors
       }
     };
-  }, [currentUser?.cnpj, userRole, selectedUserCnpj]); // Re-init when user or selection changes
+  }, [currentUser?.cnpj, userRole, selectedUserCnpj, isChatEnabled]); // Re-init when user, selection or chat status changes
 
   const markMessagesAsRead = async (conversationId: string) => {
     if (!isSupabaseConfigured || !conversationId) return;

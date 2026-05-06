@@ -39,7 +39,7 @@ export default function App() {
     activeLayoutIndex, layouts, setActiveLayout,
     currentUser, allowedStores, lastLoginTimestamp,
     saveUsersAndFlags, saveLayout, loadUsersAndFlags, saveAll,
-    updateOnlineStatus,
+    updateOnlineStatus, isChatEnabled,
     announcements, seenAnnouncements, setSeenAnnouncements,
     isAnnouncementModalOpen, setAnnouncementModalOpen,
     orientation
@@ -50,12 +50,14 @@ export default function App() {
 
   // Filter layouts based on user permissions
   const filteredLayouts = React.useMemo(() => {
+    if (!Array.isArray(layouts)) return [];
+    
     let baseLayouts = layouts.map((l, i) => ({ ...l, originalIndex: i }));
 
     if (userRole !== 'admin') {
       // Normalize CNPJ for comparison
       const normalizedUserCnpj = currentUser?.cnpj?.replace(/[^\d]/g, '') || '';
-      const store = allowedStores.find(s => s.cnpj?.replace(/[^\d]/g, '') === normalizedUserCnpj);
+      const store = allowedStores.find(s => s?.cnpj?.replace(/[^\d]/g, '') === normalizedUserCnpj);
       
       // If no store found or allowedLayouts is undefined/empty, show NOTHING (Total Control)
       if (!store || !store.allowedLayouts || store.allowedLayouts.length === 0) {
@@ -63,7 +65,8 @@ export default function App() {
       }
       
       // Filter by index
-      baseLayouts = baseLayouts.filter((_, index) => store.allowedLayouts?.includes(index));
+      const allowedIndices = store.allowedLayouts || [];
+      baseLayouts = baseLayouts.filter((_, index) => allowedIndices.includes(index));
     }
 
     // Sort by sortOrder
@@ -604,29 +607,31 @@ export default function App() {
                 </button>
               )}
 
-              <button 
-                onClick={() => {
-                  setSupportChatOpen(true);
-                  if ("Notification" in window && Notification.permission === "default") {
-                    Notification.requestPermission();
-                  }
-                }}
-                className={cn(
-                  "relative flex items-center gap-1 px-2 py-1.5 rounded-xl transition-all text-[10px] font-black uppercase tracking-tighter shadow-lg hover:scale-105 active:scale-95",
-                  userRole === 'admin' 
-                    ? "bg-zinc-800 dark:bg-zinc-100 text-white dark:text-zinc-900" 
-                    : "bg-blue-600 text-white"
-                )}
-                title={userRole === 'admin' ? "Central de Suporte" : "Enviar mensagem para o suporte (adicionar produto que está faltando)"}
-              >
-                <MessageCircle className="w-4 h-4" />
-                {userRole === 'admin' ? "Central de Suporte" : "Suporte"}
-                {unreadSupportCount > 0 && (
-                  <span className="absolute -top-2 -right-2 bg-red-600 text-white text-[10px] font-black px-1.5 min-w-[22px] h-[22px] rounded-full flex items-center justify-center animate-bounce shadow-lg border-2 border-white dark:border-zinc-900 ring-4 ring-red-600/20">
-                    {unreadSupportCount}
-                  </span>
-                )}
-              </button>
+              {(userRole === 'admin' || isChatEnabled) && (
+                <button 
+                  onClick={() => {
+                    setSupportChatOpen(true);
+                    if ("Notification" in window && Notification.permission === "default") {
+                      Notification.requestPermission();
+                    }
+                  }}
+                  className={cn(
+                    "relative flex items-center gap-1 px-2 py-1.5 rounded-xl transition-all text-[10px] font-black uppercase tracking-tighter shadow-lg hover:scale-105 active:scale-95",
+                    userRole === 'admin' 
+                      ? "bg-zinc-800 dark:bg-zinc-100 text-white dark:text-zinc-900" 
+                      : "bg-blue-600 text-white"
+                  )}
+                  title={userRole === 'admin' ? "Central de Suporte" : "Enviar mensagem para o suporte (adicionar produto que está faltando)"}
+                >
+                  <MessageCircle className="w-4 h-4" />
+                  {userRole === 'admin' ? "Central de Suporte" : "Suporte"}
+                  {unreadSupportCount > 0 && (
+                    <span className="absolute -top-2 -right-2 bg-red-600 text-white text-[10px] font-black px-1.5 min-w-[22px] h-[22px] rounded-full flex items-center justify-center animate-bounce shadow-lg border-2 border-white dark:border-zinc-900 ring-4 ring-red-600/20">
+                      {unreadSupportCount}
+                    </span>
+                  )}
+                </button>
+              )}
 
               <button 
                 onClick={toggleTheme}
@@ -715,13 +720,15 @@ export default function App() {
                       <p className="text-xs font-bold text-blue-600">(99) 9 8470-1752 • (99) 9 8199-0035</p>
                     </div>
                   </div>
-                  <div className="pt-4">
-                    <button 
-                      onClick={() => setSupportChatOpen(true)}
-                      className="px-8 py-3 bg-blue-600 text-white rounded-2xl font-black uppercase tracking-tighter shadow-xl shadow-blue-500/20 hover:bg-blue-700 transition-all active:scale-95"
-                    >
-                      Contatar Suporte
-                    </button>
+                  <div className="pt-4 flex flex-col gap-3">
+                    {isChatEnabled && (
+                      <button 
+                        onClick={() => setSupportChatOpen(true)}
+                        className="px-8 py-3 bg-blue-600 text-white rounded-2xl font-black uppercase tracking-tighter shadow-xl shadow-blue-500/20 hover:bg-blue-700 transition-all active:scale-95"
+                      >
+                        Contatar Suporte
+                      </button>
+                    )}
                   </div>
                 </div>
               </div>

@@ -319,7 +319,9 @@ interface AppState {
   userRole: 'user' | 'admin' | null;
   currentUser: { username: string; cnpj: string; bandeira: string } | null;
   isSupportChatOpen: boolean;
+  isChatEnabled: boolean;
   setSupportChatOpen: (open: boolean) => void;
+  setIsChatEnabled: (isEnabled: boolean) => void;
   isChatConnected: boolean;
   setIsChatConnected: (connected: boolean) => void;
   unreadSupportCount: number;
@@ -1642,7 +1644,8 @@ export const useStore = create<AppState>()(
                 announcements: state.announcements,
                 seenAnnouncements: state.seenAnnouncements,
                 theme: state.theme,
-                activeEncarteTab: state.activeEncarteTab
+                activeEncarteTab: state.activeEncarteTab,
+                isChatEnabled: state.isChatEnabled
               } 
             });
           if (error) throw error;
@@ -1699,7 +1702,8 @@ export const useStore = create<AppState>()(
             announcements: settingsData.announcements || [],
             seenAnnouncements: settingsData.seenAnnouncements || currentState.seenAnnouncements,
             theme: settingsData.theme || currentState.theme,
-            activeEncarteTab: settingsData.activeEncarteTab || currentState.activeEncarteTab
+            activeEncarteTab: settingsData.activeEncarteTab || currentState.activeEncarteTab,
+            isChatEnabled: settingsData.isChatEnabled !== undefined ? settingsData.isChatEnabled : true
           });
         } catch (error) {
           console.error("Error loading users and flags from Supabase:", error);
@@ -1711,7 +1715,12 @@ export const useStore = create<AppState>()(
       userRole: null,
       currentUser: null,
       isSupportChatOpen: false,
+      isChatEnabled: true,
       setSupportChatOpen: (open) => set({ isSupportChatOpen: open }),
+      setIsChatEnabled: (isEnabled) => {
+        set({ isChatEnabled: isEnabled });
+        get().saveUsersAndFlagsDebounced();
+      },
       isChatConnected: false,
       setIsChatConnected: (connected) => set({ isChatConnected: connected }),
       unreadSupportCount: 0,
@@ -1914,6 +1923,7 @@ export const useStore = create<AppState>()(
         showOptionalTextControl: state.showOptionalTextControl,
         unreadSupportCount: state.unreadSupportCount,
         unreadPerUser: state.unreadPerUser,
+        isChatEnabled: state.isChatEnabled,
       }),
     }
   )

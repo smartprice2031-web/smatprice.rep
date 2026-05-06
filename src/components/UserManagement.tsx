@@ -5,7 +5,14 @@ import { toast } from 'sonner';
 import { cn } from '../lib/utils';
 
 export default function UserManagement() {
-  const { allowedStores, addAllowedStore, removeAllowedStore, flags, addFlag, removeFlag, updateFlag, saveUsersAndFlags, loadUsersAndFlags, layouts, toggleEncarteAccess, toggleSuspension, userGroups, addUserGroup, removeUserGroup, updateUserGroup, setUserGroup } = useStore();
+  const { 
+    allowedStores, addAllowedStore, removeAllowedStore, 
+    flags, addFlag, removeFlag, updateFlag, 
+    saveUsersAndFlags, loadUsersAndFlags, layouts, 
+    toggleEncarteAccess, toggleSuspension, 
+    userGroups, addUserGroup, removeUserGroup, updateUserGroup, setUserGroup,
+    isChatEnabled, setIsChatEnabled
+  } = useStore();
   const [activeTab, setActiveTab] = useState<'stores' | 'flags' | 'groups' | 'access'>('stores');
 
   // Auto-refresh access status when tab is active
@@ -189,18 +196,18 @@ export default function UserManagement() {
 
   const filteredStores = allowedStores.filter(store => {
     const normalizedSearch = searchTerm?.replace(/[^\d]/g, '') || '';
-    const normalizedCnpj = store.cnpj?.replace(/[^\d]/g, '') || '';
+    const normalizedCnpj = store?.cnpj?.replace(/[^\d]/g, '') || '';
     return normalizedCnpj.includes(normalizedSearch) || 
-           store.cnpj.includes(searchTerm) ||
-           store.bandeira.toLowerCase().includes(searchTerm.toLowerCase());
+           (store?.cnpj || '').includes(searchTerm) ||
+           (store?.bandeira || '').toLowerCase().includes(searchTerm.toLowerCase());
   });
 
   const filteredFlags = flags.filter(flag => 
-    flag.toLowerCase().includes(searchTerm.toLowerCase())
+    (flag || '').toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const filteredGroups = userGroups.filter(group =>
-    group.name.toLowerCase().includes(searchTerm.toLowerCase())
+    (group.name || '').toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   // Group layouts by bandeira and localidade
@@ -1037,6 +1044,31 @@ export default function UserManagement() {
                   {allowedStores.filter(s => s.isOnline).length} Online
                 </span>
               </div>
+
+              {/* Support Chat Global Toggle */}
+              <div className="flex items-center gap-3 px-4 py-2 bg-zinc-100 dark:bg-zinc-800 rounded-2xl border border-zinc-200 dark:border-zinc-700">
+                <div className="flex flex-col text-right">
+                  <span className="text-[9px] font-black uppercase tracking-widest text-black dark:text-white opacity-40 leading-none mb-1">Chat de Suporte</span>
+                  <span className={cn(
+                    "text-[10px] font-bold uppercase tracking-tighter",
+                    isChatEnabled ? "text-emerald-600" : "text-amber-600"
+                  )}>
+                    {isChatEnabled ? 'Ativado' : 'Desativado'}
+                  </span>
+                </div>
+                <button
+                  onClick={() => setIsChatEnabled(!isChatEnabled)}
+                  className={cn(
+                    "relative w-12 h-6 rounded-full transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-blue-500",
+                    isChatEnabled ? "bg-emerald-500" : "bg-zinc-400 shadow-inner"
+                  )}
+                >
+                  <div className={cn(
+                    "absolute top-1 w-4 h-4 rounded-full bg-white shadow-md transition-all duration-300",
+                    isChatEnabled ? "left-7" : "left-1"
+                  )} />
+                </button>
+              </div>
               
               <div className="relative w-64">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
@@ -1053,12 +1085,18 @@ export default function UserManagement() {
             <div className="grid grid-cols-1 gap-3">
               {allowedStores
                 .filter(store => {
-                  const search = searchTerm.toLowerCase();
-                  return store.cnpj.includes(search) || 
-                         store.bandeira.toLowerCase().includes(search) ||
-                         (store.lastUsername?.toLowerCase() || '').includes(search);
+                  if (!store) return false;
+                  const search = (searchTerm || '').toLowerCase();
+                  const cnpj = (store.cnpj || '').toLowerCase();
+                  const bandeira = (store.bandeira || '').toLowerCase();
+                  const lastUsername = (store.lastUsername || '').toLowerCase();
+                  
+                  return cnpj.includes(search) || 
+                         bandeira.includes(search) ||
+                         lastUsername.includes(search);
                 })
                 .sort((a, b) => {
+                  if (!a || !b) return 0;
                   // Online users first, then by last access
                   if (a.isOnline && !b.isOnline) return -1;
                   if (!a.isOnline && b.isOnline) return 1;
