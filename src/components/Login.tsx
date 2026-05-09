@@ -91,7 +91,7 @@ export default function Login() {
         }
       }
     } catch (err) {
-      setError('Erro ao acessar o sistema. Tente novamente.');
+      setError(err instanceof Error ? err.message : 'Erro ao acessar o sistema. Tente novamente.');
       setIsLoading(false);
     }
   };

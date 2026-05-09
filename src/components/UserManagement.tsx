@@ -11,7 +11,9 @@ export default function UserManagement() {
     saveUsersAndFlags, loadUsersAndFlags, layouts, 
     toggleEncarteAccess, toggleSuspension, 
     userGroups, addUserGroup, removeUserGroup, updateUserGroup, setUserGroup,
-    isChatEnabled, setIsChatEnabled
+    isChatEnabled, setIsChatEnabled,
+    setMaxSessions, setGroupMaxSessions, setBandeiraMaxSessions,
+    defaultMaxSessions, groupMaxSessions, bandeiraMaxSessions
   } = useStore();
   const [activeTab, setActiveTab] = useState<'stores' | 'flags' | 'groups' | 'access'>('stores');
 
@@ -587,7 +589,36 @@ export default function UserManagement() {
                           <div className="flex items-center justify-between mb-3">
                             <div className="flex items-center gap-2">
                               <LayoutGrid className="w-4 h-4 text-blue-600" />
-                              <h4 className="text-[10px] font-black uppercase tracking-widest text-black dark:text-white opacity-60">Modelos Permitidos para este CNPJ</h4>
+                              <h4 className="text-[10px] font-black uppercase tracking-widest text-black dark:text-white opacity-60">Modelos Permitidos</h4>
+                            </div>
+                            <div className="flex items-center gap-4 py-3 mb-4 border-b border-zinc-100 dark:border-zinc-800">
+                              <div className="flex items-center gap-2">
+                                <Users className="w-3.5 h-3.5 text-blue-600" />
+                                <span className="text-[9px] font-black uppercase tracking-widest text-zinc-400">Limite de Acesso:</span>
+                              </div>
+                              <div className="flex items-center gap-2 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-lg p-0.5">
+                                <button 
+                                  onClick={() => setMaxSessions(store.cnpj, Math.max(1, (store.maxSessions || 1) - 1))}
+                                  className="w-6 h-6 flex items-center justify-center bg-zinc-100 dark:bg-zinc-800 rounded text-xs font-black"
+                                >
+                                  -
+                                </button>
+                                <span className="w-6 text-center text-[11px] font-black">{store.maxSessions || (store.groupId ? (groupMaxSessions[store.groupId] || bandeiraMaxSessions[store.bandeira] || defaultMaxSessions) : (bandeiraMaxSessions[store.bandeira] || defaultMaxSessions))}</span>
+                                <button 
+                                  onClick={() => setMaxSessions(store.cnpj, (store.maxSessions || 1) + 1)}
+                                  className="w-6 h-6 flex items-center justify-center bg-zinc-100 dark:bg-zinc-800 rounded text-xs font-black"
+                                >
+                                  +
+                                </button>
+                              </div>
+                              {store.maxSessions && (
+                                <button 
+                                  onClick={() => setMaxSessions(store.cnpj, 0)} // Using 0 as flag to reset or just handle it in store
+                                  className="text-[8px] font-black text-red-500 uppercase tracking-tighter"
+                                >
+                                  Resetar
+                                </button>
+                              )}
                             </div>
                             <div className="flex gap-2">
                               <button 
@@ -883,7 +914,31 @@ export default function UserManagement() {
                             </button>
                           </form>
                         ) : (
-                          <p className="font-bold text-zinc-900 dark:text-zinc-100">{flag}</p>
+                          <div className="flex-1 flex items-center justify-between">
+                            <p className="font-bold text-zinc-900 dark:text-zinc-100">{flag}</p>
+                            
+                            {/* Flag Session Limit */}
+                            <div className="flex items-center gap-3 pr-4">
+                              <div className="flex flex-col items-end">
+                                <span className="text-[8px] font-black uppercase tracking-widest text-zinc-400 leading-none mb-1">Limite do Grupo</span>
+                                <div className="flex items-center gap-2 bg-zinc-50 dark:bg-zinc-800 p-0.5 rounded-lg border border-zinc-200 dark:border-zinc-700">
+                                  <button 
+                                    onClick={() => setBandeiraMaxSessions(flag, Math.max(1, (bandeiraMaxSessions[flag] || defaultMaxSessions) - 1))}
+                                    className="w-5 h-5 flex items-center justify-center hover:bg-zinc-200 dark:hover:bg-zinc-700 rounded text-xs font-black"
+                                  >
+                                    -
+                                  </button>
+                                  <span className="w-4 text-center text-[10px] font-black">{bandeiraMaxSessions[flag] || defaultMaxSessions}</span>
+                                  <button 
+                                    onClick={() => setBandeiraMaxSessions(flag, (bandeiraMaxSessions[flag] || defaultMaxSessions) + 1)}
+                                    className="w-5 h-5 flex items-center justify-center hover:bg-zinc-200 dark:hover:bg-zinc-700 rounded text-xs font-black"
+                                  >
+                                    +
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
                         )}
                       </div>
                       
@@ -1001,11 +1056,35 @@ export default function UserManagement() {
                             </button>
                           </form>
                         ) : (
-                          <div>
-                            <p className="font-bold text-black dark:text-white">{group.name}</p>
-                            <p className="text-[10px] font-black text-black dark:text-white opacity-40 uppercase tracking-widest">
-                              {allowedStores.filter(s => s.groupId === group.id).length} Lojas vinculadas
-                            </p>
+                          <div className="flex-1 flex items-center justify-between">
+                            <div>
+                              <p className="font-bold text-black dark:text-white">{group.name}</p>
+                              <p className="text-[10px] font-black text-black dark:text-white opacity-40 uppercase tracking-widest">
+                                {allowedStores.filter(s => s.groupId === group.id).length} Lojas vinculadas
+                              </p>
+                            </div>
+                            
+                            {/* Group Session Limit */}
+                            <div className="flex items-center gap-3 pr-4">
+                              <div className="flex flex-col items-end">
+                                <span className="text-[8px] font-black uppercase tracking-widest text-zinc-400 leading-none mb-1">Limite Grupo</span>
+                                <div className="flex items-center gap-2 bg-zinc-50 dark:bg-zinc-800 p-0.5 rounded-lg border border-zinc-200 dark:border-zinc-700">
+                                  <button 
+                                    onClick={() => setGroupMaxSessions(group.id, Math.max(1, (groupMaxSessions[group.id] || defaultMaxSessions) - 1))}
+                                    className="w-5 h-5 flex items-center justify-center hover:bg-zinc-200 dark:hover:bg-zinc-700 rounded text-xs font-black"
+                                  >
+                                    -
+                                  </button>
+                                  <span className="w-4 text-center text-[10px] font-black">{groupMaxSessions[group.id] || defaultMaxSessions}</span>
+                                  <button 
+                                    onClick={() => setGroupMaxSessions(group.id, (groupMaxSessions[group.id] || defaultMaxSessions) + 1)}
+                                    className="w-5 h-5 flex items-center justify-center hover:bg-zinc-200 dark:hover:bg-zinc-700 rounded text-xs font-black"
+                                  >
+                                    +
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
                           </div>
                         )}
                       </div>
@@ -1068,6 +1147,36 @@ export default function UserManagement() {
                     isChatEnabled ? "left-7" : "left-1"
                   )} />
                 </button>
+              </div>
+
+              {/* Global Session Limit Default */}
+              <div className="flex items-center gap-3 px-4 py-2 bg-zinc-100 dark:bg-zinc-800 rounded-2xl border border-zinc-200 dark:border-zinc-700">
+                <div className="flex flex-col text-right">
+                  <span className="text-[9px] font-black uppercase tracking-widest text-black dark:text-white opacity-40 leading-none mb-1">Limite Padrão</span>
+                  <span className="text-[10px] font-bold uppercase tracking-tighter text-blue-600">
+                    {defaultMaxSessions} Sessão(ões)
+                  </span>
+                </div>
+                <div className="flex items-center gap-1 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-lg p-0.5">
+                  <button 
+                    onClick={() => {
+                      useStore.setState({ defaultMaxSessions: Math.max(1, defaultMaxSessions - 1) });
+                      useStore.getState().saveUsersAndFlagsDebounced();
+                    }}
+                    className="w-5 h-5 flex items-center justify-center hover:bg-zinc-200 dark:hover:bg-zinc-700 rounded text-xs font-black"
+                  >
+                    -
+                  </button>
+                  <button 
+                    onClick={() => {
+                      useStore.setState({ defaultMaxSessions: defaultMaxSessions + 1 });
+                      useStore.getState().saveUsersAndFlagsDebounced();
+                    }}
+                    className="w-5 h-5 flex items-center justify-center hover:bg-zinc-200 dark:hover:bg-zinc-700 rounded text-xs font-black"
+                  >
+                    +
+                  </button>
+                </div>
               </div>
               
               <div className="relative w-64">
