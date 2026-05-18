@@ -71,8 +71,7 @@ const CanvasPreview = ({ id = "placa" }: { id?: string }) => {
   const isBgLoading = background.url && (!displayedBg || (displayedBg.url !== background.url && !nextBg));
 
   // Force portrait for "Quart Suplem Maxi" as requested by user
-  const isQuartSuplemMaxi = activeLayout.name === 'Quart Suplem Maxi';
-  const isLandscape = !isQuartSuplemMaxi && orientation === 'landscape';
+  const isLandscape = orientation === 'landscape';
   const currentWidth = isLandscape ? A4_HEIGHT : A4_WIDTH;
   const currentHeight = isLandscape ? A4_WIDTH : A4_HEIGHT;
 

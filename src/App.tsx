@@ -13,12 +13,14 @@ import LayoutSelectorModal from './components/LayoutSelectorModal';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import Login from './components/Login';
 import EncarteCreator from './components/EncarteCreator';
+import ProductListUploader from './components/ProductListUploader';
 import { 
   Printer, FileDown, 
   LayoutDashboard, Package, Settings as SettingsIcon,
   ShoppingBag, Search, Database, X, ListPlus, LayoutGrid,
   ArrowLeft, LogOut, Users, MessageCircle, AlertTriangle,
-  RefreshCw, Layout, Megaphone, Flag, MapPin, Moon, Sun, Image as ImageIcon
+  RefreshCw, Layout, Megaphone, Flag, MapPin, Moon, Sun, Image as ImageIcon,
+  ClipboardList
 } from 'lucide-react';
 import { jsPDF } from 'jspdf';
 import { Toaster } from 'sonner';
@@ -252,11 +254,9 @@ export default function App() {
   useEffect(() => {
     const styleId = 'landscape-print-style';
     const activeLayout = layouts[activeLayoutIndex];
-    const isQuartSuplemMaxi = activeLayout?.name === 'Quart Suplem Maxi';
     
-    // Use orientation from store, but force portrait for "Quart Suplem Maxi"
-    // Keep index 10 as landscape for backward compatibility if needed, but only if not Quart Suplem Maxi
-    const isLandscape = !isQuartSuplemMaxi && (orientation === 'landscape' || activeLayoutIndex === 10);
+    // Use orientation from store strictly - no hardcoded overrides
+    const isLandscape = orientation === 'landscape';
 
     if (isLandscape) {
       document.body.classList.add('landscape-mode');
@@ -310,9 +310,7 @@ export default function App() {
     const toastId = toast.loading('Gerando PDF...');
 
     try {
-      const activeLayout = layouts[activeLayoutIndex];
-      const isQuartSuplemMaxi = activeLayout?.name === 'Quart Suplem Maxi';
-      const isLandscape = !isQuartSuplemMaxi && (orientation === 'landscape' || activeLayoutIndex === 10);
+      const isLandscape = orientation === 'landscape';
 
       const pdf = new jsPDF({
         orientation: isLandscape ? 'landscape' : 'portrait',
@@ -367,9 +365,7 @@ export default function App() {
           toast.error('Erro ao capturar imagem.', { id: toastId });
           return;
         }
-        const activeLayout = layouts[activeLayoutIndex];
-        const isQuartSuplemMaxi = activeLayout?.name === 'Quart Suplem Maxi';
-        const isLandscape = !isQuartSuplemMaxi && (orientation === 'landscape' || activeLayoutIndex === 10);
+        const isLandscape = orientation === 'landscape';
         
         addToQueue(canvasData, isLandscape);
         toast.success('Adicionado à fila com sucesso!', { id: toastId });
@@ -429,6 +425,17 @@ export default function App() {
 
     if (currentView === 'encarte') {
       return <EncarteCreator />;
+    }
+
+    if (currentView === 'product-list' && userRole === 'admin') {
+      return (
+        <>
+          <div className="invisible fixed pointer-events-none" style={{ width: '794px', height: '1123px' }}>
+            <CanvasPreview />
+          </div>
+          <ProductListUploader />
+        </>
+      );
     }
 
     return (
@@ -558,6 +565,21 @@ export default function App() {
                   )}
                 </button>
               </div>
+
+              {userRole === 'admin' && (
+                <button 
+                  onClick={() => setView('product-list')}
+                  className={cn(
+                    "flex items-center gap-1 px-2 py-1.5 rounded-xl transition-all text-[10px] font-black uppercase tracking-tighter shadow-lg hover:scale-105 active:scale-95",
+                    (currentView as string) === 'product-list'
+                      ? "bg-blue-600 text-white"
+                      : "bg-white dark:bg-zinc-800 text-blue-600 border border-blue-600/20"
+                  )}
+                >
+                  <ClipboardList className="w-4 h-4" />
+                  Lista de Produto
+                </button>
+              )}
 
               {/* Encarte Online Button */}
               {(userRole === 'admin' || allowedStores.find(s => s.cnpj?.replace(/[^\d]/g, '') === currentUser?.cnpj?.replace(/[^\d]/g, ''))?.hasEncarteAccess) && (
