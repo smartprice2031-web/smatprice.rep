@@ -58,7 +58,10 @@ export const isValidImageUrl = (url: string): boolean => {
  * Retorna uma URL de imagem segura para CORS, usando um proxy se necessário.
  * Suporta uma opção de miniatura para carregamento mais rápido.
  */
-export const getProxyUrl = (url: string | undefined | null, options?: { thumbnail?: boolean }) => {
+export const getProxyUrl = (
+  url: string | undefined | null, 
+  options?: { thumbnail?: boolean; optimize?: boolean; width?: number; quality?: number; output?: string }
+) => {
   if (!url || typeof url !== 'string' || url.startsWith('data:') || url.startsWith('blob:')) {
     return url || '';
   }
@@ -82,6 +85,14 @@ export const getProxyUrl = (url: string | undefined | null, options?: { thumbnai
     params.append('w', '400');
     params.append('q', '70');
     params.append('output', 'webp');
+  } else if (options?.optimize) {
+    params.append('w', String(options.width || 800));
+    params.append('q', String(options.quality || 85));
+    params.append('output', options.output || 'webp');
+  } else {
+    if (options?.width) params.append('w', String(options.width));
+    if (options?.quality) params.append('q', String(options.quality));
+    if (options?.output) params.append('output', options.output);
   }
   
   return `https://images.weserv.nl/?${params.toString()}`;

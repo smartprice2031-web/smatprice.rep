@@ -305,7 +305,7 @@ const ProductManager = () => {
               <div className="w-16 h-16 bg-zinc-100 dark:bg-zinc-700 rounded-lg overflow-hidden flex-shrink-0">
                 {product.image ? (
                   <img 
-                    src={getProxyUrl(product.image)} 
+                    src={getProxyUrl(product.image, { thumbnail: true })} 
                     alt={product.name} 
                     className="w-full h-full object-cover" 
                     referrerPolicy="no-referrer" 
@@ -499,8 +499,8 @@ const ProductManager = () => {
                     <div className="flex justify-center">
                       <div className="w-10 h-10 bg-zinc-100 dark:bg-zinc-800 rounded border border-zinc-200 dark:border-zinc-700 overflow-hidden flex items-center justify-center">
                         {item.image ? (
-                          <img 
-                            src={getProxyUrl(item.image)} 
+                           <img 
+                            src={getProxyUrl(item.image, { thumbnail: true })} 
                             alt="Preview" 
                             className="w-full h-full object-cover"
                             referrerPolicy="no-referrer"
@@ -643,7 +643,7 @@ const ProductManager = () => {
                     {formData.image && (
                       <div className="relative inline-block">
                         <img 
-                          src={getProxyUrl(formData.image)} 
+                          src={getProxyUrl(formData.image, { thumbnail: true })} 
                           alt="Preview" 
                           className="h-32 w-32 object-cover rounded-lg border border-zinc-200 dark:border-zinc-700" 
                           referrerPolicy="no-referrer"

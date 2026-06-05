@@ -33,9 +33,9 @@ const CanvasPreview = ({ id = "placa" }: { id?: string }) => {
   const [displayedBg, setDisplayedBg] = useState<{url: string, img: HTMLImageElement} | null>(null);
   const [nextBg, setNextBg] = useState<{url: string, img: HTMLImageElement} | null>(null);
   
-  const [prodImg1] = useImage(getProxyUrl(productImage1.url) || '', 'anonymous');
-  const [prodImg2] = useImage(getProxyUrl(productImage2.url) || '', 'anonymous');
-  const [prodImg3] = useImage(getProxyUrl(productImage3.url) || '', 'anonymous');
+  const [prodImg1] = useImage(getProxyUrl(productImage1.url, { optimize: true, width: 800, quality: 85 }) || '', 'anonymous');
+  const [prodImg2] = useImage(getProxyUrl(productImage2.url, { optimize: true, width: 800, quality: 85 }) || '', 'anonymous');
+  const [prodImg3] = useImage(getProxyUrl(productImage3.url, { optimize: true, width: 800, quality: 85 }) || '', 'anonymous');
   const [autoScale, setAutoScale] = useState(1);
   if (!activeLayout) return null;
 
