@@ -104,7 +104,7 @@ export interface Announcement {
   createdAt: string;
 }
 
-export type View = 'editor' | 'queue' | 'encarte';
+export type View = 'editor' | 'queue' | 'encarte' | 'product-list';
 
 export interface SelectedProduct extends Product {
   id: string;
@@ -296,6 +296,7 @@ interface AppState {
     isOnline?: boolean;
     lastAccess?: string;
     lastUsername?: string;
+    maxSessions?: number;
   }[];
   addAllowedStore: (store: { 
     cnpj: string; 
@@ -307,6 +308,7 @@ interface AppState {
     isOnline?: boolean;
     lastAccess?: string;
     lastUsername?: string;
+    maxSessions?: number;
   }) => void;
   removeAllowedStore: (cnpj: string) => void;
   toggleSuspension: (cnpj: string) => void;
@@ -314,6 +316,13 @@ interface AppState {
   saveUsersAndFlags: () => Promise<void>;
   saveUsersAndFlagsDebounced: () => void;
   loadUsersAndFlags: () => Promise<void>;
+  setMaxSessions: (cnpj: string, sessions: number) => void;
+  setGroupMaxSessions: (groupId: string, sessions: number) => void;
+  setBandeiraMaxSessions: (bandeira: string, sessions: number) => void;
+  defaultMaxSessions: number;
+  groupMaxSessions: Record<string, number>;
+  bandeiraMaxSessions: Record<string, number>;
+  sessionId: string;
   isAuthenticated: boolean;
   lastLoginTimestamp: number | null;
   userRole: 'user' | 'admin' | null;
@@ -1285,25 +1294,55 @@ export const useStore = create<AppState>()(
 
             const activeLayout = loadedLayouts[activeLayoutIndex] || loadedLayouts[0];
 
-            // If user is not admin, we prioritize their local session state for the active layout
-            // but we still want to benefit from the loaded layouts array which contains the templates.
+            // If user is not admin, we prioritize the template positions and properties from the database,
+            // but we might want to preserve their selected product text/images if they were already editing.
+            // However, the request "be faithful to how the admin configured" suggests we should strictly
+            // follow the template's positions and orientation.
+            
             const isUser = currentState.userRole !== 'admin';
+
+            // Helper to merge template positions with potential user text content
+            const mergeWithTemplate = (currentElements: any, templateElements: any) => {
+              if (!templateElements) return currentElements;
+              if (!currentElements) return templateElements;
+              
+              const merged = { ...templateElements };
+              // Preserve ONLY the text content for text elements
+              Object.keys(templateElements).forEach((key) => {
+                if (currentElements[key] && templateElements[key]) {
+                  merged[key] = {
+                    ...templateElements[key],
+                    text: currentElements[key].text // Keep user text
+                  };
+                }
+              });
+              return merged;
+            };
+
+            const mergeImageWithTemplate = (currentImg: any, templateImg: any) => {
+              if (!templateImg) return currentImg;
+              if (!currentImg) return templateImg;
+              return {
+                ...templateImg,
+                url: currentImg.url // Keep user image URL
+              };
+            };
 
             set({
               activeLayoutIndex,
               layouts: loadedLayouts,
-              background: isUser ? (currentState.background || activeLayout?.background) : (layout.background || activeLayout?.background),
-              productImage1: isUser ? (currentState.productImage1 || activeLayout?.productImage1) : (layout.productImage1 || activeLayout?.productImage1),
-              productImage2: isUser ? (currentState.productImage2 || activeLayout?.productImage2) : (layout.productImage2 || activeLayout?.productImage2),
-              productImage3: isUser ? (currentState.productImage3 || activeLayout?.productImage3) : (layout.productImage3 || activeLayout?.productImage3),
-              textElements1: isUser ? (currentState.textElements1 || activeLayout?.textElements1) : (layout.textElements1 || activeLayout?.textElements1),
-              textElements2: isUser ? (currentState.textElements2 || activeLayout?.textElements2) : (layout.textElements2 || activeLayout?.textElements2),
-              textElements3: isUser ? (currentState.textElements3 || activeLayout?.textElements3) : (layout.textElements3 || activeLayout?.textElements3),
-              optionalText1: isUser ? (currentState.optionalText1 || activeLayout?.optionalText1) : (layout.optionalText1 || activeLayout?.optionalText1),
-              optionalText2: isUser ? (currentState.optionalText2 || activeLayout?.optionalText2) : (layout.optionalText2 || activeLayout?.optionalText2),
-              optionalText3: isUser ? (currentState.optionalText3 || activeLayout?.optionalText3) : (layout.optionalText3 || activeLayout?.optionalText3),
-              orientation: isUser ? (currentState.orientation || activeLayout?.orientation) : (layout.orientation || activeLayout?.orientation),
-              isSingleProduct: isUser ? (currentState.isSingleProduct ?? activeLayout?.isSingleProduct ?? false) : (activeLayout?.isSingleProduct ?? layout.isSingleProduct ?? false),
+              background: isUser ? (activeLayout?.background || layout.background) : (layout.background || activeLayout?.background),
+              productImage1: isUser ? mergeImageWithTemplate(currentState.productImage1, activeLayout?.productImage1) : (layout.productImage1 || activeLayout?.productImage1),
+              productImage2: isUser ? mergeImageWithTemplate(currentState.productImage2, activeLayout?.productImage2) : (layout.productImage2 || activeLayout?.productImage2),
+              productImage3: isUser ? mergeImageWithTemplate(currentState.productImage3, activeLayout?.productImage3) : (layout.productImage3 || activeLayout?.productImage3),
+              textElements1: isUser ? mergeWithTemplate(currentState.textElements1, activeLayout?.textElements1) : (layout.textElements1 || activeLayout?.textElements1),
+              textElements2: isUser ? mergeWithTemplate(currentState.textElements2, activeLayout?.textElements2) : (layout.textElements2 || activeLayout?.textElements2),
+              textElements3: isUser ? mergeWithTemplate(currentState.textElements3, activeLayout?.textElements3) : (layout.textElements3 || activeLayout?.textElements3),
+              optionalText1: isUser ? { ...activeLayout?.optionalText1, text: currentState.optionalText1?.text } : (layout.optionalText1 || activeLayout?.optionalText1),
+              optionalText2: isUser ? { ...activeLayout?.optionalText2, text: currentState.optionalText2?.text } : (layout.optionalText2 || activeLayout?.optionalText2),
+              optionalText3: isUser ? { ...activeLayout?.optionalText3, text: currentState.optionalText3?.text } : (layout.optionalText3 || activeLayout?.optionalText3),
+              orientation: activeLayout?.orientation || layout.orientation || 'portrait',
+              isSingleProduct: isUser ? (activeLayout?.isSingleProduct ?? false) : (activeLayout?.isSingleProduct ?? layout.isSingleProduct ?? false),
               showSingleProductControl: activeLayout?.showSingleProductControl !== undefined ? activeLayout.showSingleProductControl : (layout.showSingleProductControl !== undefined ? layout.showSingleProductControl : currentState.showSingleProductControl),
               showOptionalTextControl: activeLayout?.showOptionalTextControl !== undefined ? activeLayout.showOptionalTextControl : (layout.showOptionalTextControl !== undefined ? layout.showOptionalTextControl : currentState.showOptionalTextControl),
               lastUpdateTimestamp: layout.updated_at || null
@@ -1555,6 +1594,7 @@ export const useStore = create<AppState>()(
         if (state.isAuthenticated && state.userRole === 'user' && state.currentUser?.cnpj) {
           try {
             const normalizedCnpj = state.currentUser.cnpj.replace(/[^\d]/g, '');
+            const sessionId = state.sessionId;
             
             // 1. Update local state
             set((state) => ({
@@ -1574,12 +1614,34 @@ export const useStore = create<AppState>()(
               .single();
             
             const currentActivity = activityData?.value || {};
+            const cnpjActivity = currentActivity[normalizedCnpj] || { sessions: {} };
+            const sessions = { ...(cnpjActivity.sessions || {}) };
+
+            // Update or add current session
+            sessions[sessionId] = {
+              lastAccess: new Date().toISOString(),
+              username: state.currentUser?.username
+            };
+
+            // Prune old sessions (older than 15 minutes)
+            const now = Date.now();
+            const cleanedSessions: Record<string, any> = {};
+            Object.entries(sessions).forEach(([sid, data]: [string, any]) => {
+              const lastAccess = new Date(data.lastAccess).getTime();
+              if ((now - lastAccess) < 15 * 60 * 1000) {
+                cleanedSessions[sid] = data;
+              }
+            });
+
+            const hasActiveSessions = Object.keys(cleanedSessions).length > 0;
+
             const updatedActivity = {
               ...currentActivity,
               [normalizedCnpj]: {
-                isOnline: true,
+                isOnline: hasActiveSessions,
                 lastAccess: new Date().toISOString(),
-                lastUsername: state.currentUser?.username
+                lastUsername: state.currentUser?.username,
+                sessions: cleanedSessions
               }
             };
 
@@ -1636,6 +1698,9 @@ export const useStore = create<AppState>()(
                 allowedStores: cleanAllowedStores,
                 flags: state.flags,
                 userGroups: state.userGroups,
+                groupMaxSessions: state.groupMaxSessions,
+                bandeiraMaxSessions: state.bandeiraMaxSessions,
+                defaultMaxSessions: state.defaultMaxSessions,
                 encartes: state.encartes,
                 selectedEncarteModel: state.selectedEncarteModel,
                 encarteThemes: state.encarteThemes,
@@ -1679,9 +1744,19 @@ export const useStore = create<AppState>()(
               const normalizedCnpj = store.cnpj?.replace(/[^\d]/g, '') || '';
               const activity = activityData[normalizedCnpj];
               if (activity) {
+                // Re-calculate isOnline based on active sessions if available
+                let isOnline = activity.isOnline;
+                if (activity.sessions) {
+                  const now = Date.now();
+                  isOnline = Object.values(activity.sessions).some((data: any) => {
+                    const lastAccess = new Date(data.lastAccess).getTime();
+                    return (now - lastAccess) < 15 * 60 * 1000;
+                  });
+                }
+
                 return {
                   ...store,
-                  isOnline: activity.isOnline,
+                  isOnline,
                   lastAccess: activity.lastAccess,
                   lastUsername: activity.lastUsername
                 };
@@ -1694,6 +1769,9 @@ export const useStore = create<AppState>()(
             allowedStores: mergedStores,
             flags: settingsData.flags || currentState.flags,
             userGroups: settingsData.userGroups || [],
+            groupMaxSessions: settingsData.groupMaxSessions || {},
+            bandeiraMaxSessions: settingsData.bandeiraMaxSessions || {},
+            defaultMaxSessions: settingsData.defaultMaxSessions || 1,
             encartes: settingsData.encartes || currentState.encartes,
             selectedEncarteModel: settingsData.selectedEncarteModel || currentState.selectedEncarteModel,
             encarteThemes: settingsData.encarteThemes || [],
@@ -1790,9 +1868,83 @@ export const useStore = create<AppState>()(
       activeEncarteLayout: null,
       setActiveEncarteLayout: (layout) => set({ activeEncarteLayout: layout }),
 
+      sessionId: Math.random().toString(36).substring(7),
+      defaultMaxSessions: 1,
+      groupMaxSessions: {},
+      bandeiraMaxSessions: {},
+
+      setMaxSessions: (cnpj, sessions) => {
+        set(state => ({
+          allowedStores: state.allowedStores.map(s => {
+            if (s.cnpj === cnpj) {
+              const { maxSessions, ...rest } = s;
+              return sessions === 0 ? rest : { ...s, maxSessions: sessions };
+            }
+            return s;
+          })
+        }));
+        get().saveUsersAndFlagsDebounced();
+      },
+      setGroupMaxSessions: (groupId, sessions) => {
+        set(state => ({
+          groupMaxSessions: { ...state.groupMaxSessions, [groupId]: sessions }
+        }));
+        get().saveUsersAndFlagsDebounced();
+      },
+      setBandeiraMaxSessions: (bandeira, sessions) => {
+        set(state => ({
+          bandeiraMaxSessions: { ...state.bandeiraMaxSessions, [bandeira]: sessions }
+        }));
+        get().saveUsersAndFlagsDebounced();
+      },
+
       login: async (role, user) => {
+        const state = get();
         // Automatically load latest data on login BEFORE updating status
         await get().loadUsersAndFlags();
+        
+        // Re-get state after loading latest data
+        const freshState = get();
+
+        // Single Access check for 'user' role
+        if (role === 'user' && user.cnpj) {
+          const normalizedCnpj = user.cnpj.replace(/[^\d]/g, '');
+          const store = freshState.allowedStores.find(s => s.cnpj.replace(/[^\d]/g, '') === normalizedCnpj);
+          
+          if (store) {
+            // Determine limit
+            const storeLimit = store.maxSessions;
+            const groupLimit = store.groupId ? freshState.groupMaxSessions[store.groupId] : undefined;
+            const brandLimit = freshState.bandeiraMaxSessions[store.bandeira];
+            const limit = storeLimit ?? groupLimit ?? brandLimit ?? freshState.defaultMaxSessions;
+
+            // Check sessions in activity_status
+            const { data: activityData } = await supabase
+              .from('settings')
+              .select('value')
+              .eq('id', 'activity_status')
+              .single();
+            
+            const currentActivity = activityData?.value || {};
+            const cnpjActivity = currentActivity[normalizedCnpj] || {};
+            const sessions = cnpjActivity.sessions || {};
+            
+            // Prune sessions older than 10 minutes
+            const now = Date.now();
+            const activeSessions = Object.entries(sessions).filter(([sid, data]: [string, any]) => {
+              const lastAccess = new Date(data.lastAccess).getTime();
+              return (now - lastAccess) < 10 * 60 * 1000; // 10 minutes threshold
+            });
+
+            if (activeSessions.length >= limit) {
+              // Check if THIS specific session was already counted (e.g. refresh)
+              const existingSession = sessions[freshState.sessionId];
+              if (!existingSession) {
+                throw new Error('Acesso em uso. Limite de acessos simultâneos atingido.');
+              }
+            }
+          }
+        }
 
         set({ 
           isAuthenticated: true, 
@@ -1803,46 +1955,7 @@ export const useStore = create<AppState>()(
         
         // Update online status for the store
         if (role === 'user' && user.cnpj) {
-          const normalizedCnpj = user.cnpj.replace(/[^\d]/g, '');
-          
-          // First update local state
-          set((state) => {
-            const newAllowedStores = state.allowedStores.map(s => 
-              s.cnpj.replace(/[^\d]/g, '') === normalizedCnpj 
-                ? { ...s, isOnline: true, lastAccess: new Date().toISOString(), lastUsername: user.username }
-                : s
-            );
-            return { allowedStores: newAllowedStores };
-          });
-
-          // Then update the DEDICATED activity row, bypassing global saveUsersAndFlags
-          // to prevent race conditions or permission issues
-          try {
-            const { data: activityData } = await supabase
-              .from('settings')
-              .select('value')
-              .eq('id', 'activity_status')
-              .single();
-            
-            const currentActivity = activityData?.value || {};
-            const updatedActivity = {
-              ...currentActivity,
-              [normalizedCnpj]: {
-                isOnline: true,
-                lastAccess: new Date().toISOString(),
-                lastUsername: user.username
-              }
-            };
-
-            await supabase
-              .from('settings')
-              .upsert({ 
-                id: 'activity_status', 
-                value: updatedActivity 
-              });
-          } catch (err) {
-            console.error("Error setting activity on login:", err);
-          }
+          await get().updateOnlineStatus();
         }
 
         await get().loadLayout();
@@ -1862,11 +1975,25 @@ export const useStore = create<AppState>()(
               .single();
             
             const currentActivity = activityData?.value || {};
+            const cnpjActivity = currentActivity[normalizedCnpj] || { sessions: {} };
+            const sessions = { ...(cnpjActivity.sessions || {}) };
+            
+            // Remove current session
+            delete sessions[state.sessionId];
+            
+            // Re-calculate isOnline based on remaining sessions
+            const now = Date.now();
+            const hasOtherSessions = Object.values(sessions).some((data: any) => {
+              const lastAccess = new Date(data.lastAccess).getTime();
+              return (now - lastAccess) < 10 * 60 * 1000;
+            });
+
             const updatedActivity = {
               ...currentActivity,
               [normalizedCnpj]: {
-                ...currentActivity[normalizedCnpj],
-                isOnline: false
+                ...cnpjActivity,
+                isOnline: hasOtherSessions,
+                sessions: sessions
               }
             };
 
@@ -1921,9 +2048,14 @@ export const useStore = create<AppState>()(
         isSingleProduct: state.isSingleProduct,
         showSingleProductControl: state.showSingleProductControl,
         showOptionalTextControl: state.showOptionalTextControl,
+        orientation: state.orientation,
+        optionalText1: state.optionalText1,
+        optionalText2: state.optionalText2,
+        optionalText3: state.optionalText3,
         unreadSupportCount: state.unreadSupportCount,
         unreadPerUser: state.unreadPerUser,
         isChatEnabled: state.isChatEnabled,
+        sessionId: state.sessionId,
       }),
     }
   )

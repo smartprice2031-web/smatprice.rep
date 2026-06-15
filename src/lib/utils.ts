@@ -58,7 +58,10 @@ export const isValidImageUrl = (url: string): boolean => {
  * Retorna uma URL de imagem segura para CORS, usando um proxy se necessário.
  * Suporta uma opção de miniatura para carregamento mais rápido.
  */
-export const getProxyUrl = (url: string | undefined | null, options?: { thumbnail?: boolean }) => {
+export const getProxyUrl = (
+  url: string | undefined | null, 
+  options?: { thumbnail?: boolean; optimize?: boolean; width?: number; quality?: number; output?: string }
+) => {
   if (!url || typeof url !== 'string' || url.startsWith('data:') || url.startsWith('blob:')) {
     return url || '';
   }
@@ -75,14 +78,194 @@ export const getProxyUrl = (url: string | undefined | null, options?: { thumbnai
   }
   
   const params = new URLSearchParams();
-  params.append('url', originalUrl);
-  params.append('default', originalUrl);
+  
+  // Make sure originalUrl has a valid http/https protocol
+  let formattedUrl = originalUrl.trim();
+  if (!formattedUrl.startsWith('http://') && !formattedUrl.startsWith('https://')) {
+    if (formattedUrl.startsWith('//')) {
+      formattedUrl = 'https:' + formattedUrl;
+    } else if (formattedUrl.startsWith('/')) {
+      // Relative path, do not use proxy
+      return formattedUrl;
+    } else {
+      formattedUrl = 'https://' + formattedUrl;
+    }
+  }
+
+  // If no options are supplied (typical for backgrounds, logos, general templates),
+  // we use images.weserv.nl as the primary high-speed global CDN for fast page loads and initial CORS bypass
+  if (!options || Object.keys(options).length === 0) {
+    params.append('url', formattedUrl);
+    params.append('default', formattedUrl);
+    const queryString = params.toString().replace(/\+/g, '%20');
+    return `https://images.weserv.nl/?${queryString}`;
+  }
+
+  params.append('url', formattedUrl);
+  params.append('default', formattedUrl);
   
   if (options?.thumbnail) {
-    params.append('w', '400');
-    params.append('q', '70');
+    params.append('w', '200');
+    params.append('q', '75');
     params.append('output', 'webp');
+  } else if (options?.optimize) {
+    params.append('w', String(options.width || 800));
+    params.append('q', String(options.quality || 85));
+    params.append('output', options.output || 'webp');
+  } else {
+    if (options?.width) params.append('w', String(options.width));
+    if (options?.quality) params.append('q', String(options.quality));
+    if (options?.output) params.append('output', options.output);
   }
   
-  return `https://images.weserv.nl/?${params.toString()}`;
+  // URLSearchParams encodes spaces as "+" in the query string, which can break CDNs that only understand "%20".
+  // Replacing "+" with "%20" ensures perfect compatibility across all image hosting providers.
+  const queryString = params.toString().replace(/\+/g, '%20');
+  
+  return `https://images.weserv.nl/?${queryString}`;
 };
+
+export interface CachedImageEntry {
+  img: HTMLImageElement;
+  status: 'loading' | 'loaded' | 'failed';
+  promise: Promise<HTMLImageElement>;
+}
+
+// Global cache for pre-loaded HTMLImageElement instances to support 100% synchronous instant render
+export const imageCache: { [url: string]: CachedImageEntry } = {};
+
+/**
+ * Preloads an image into the global HTMLImageElement memory cache for synchronous instant reuse.
+ * It reuses outstanding promises to avoid double requests.
+ */
+export const preloadImageIntoCache = (url: string, crossOrigin: string = 'anonymous'): Promise<HTMLImageElement> => {
+  if (!url) return Promise.reject(new Error('Empty image URL'));
+  
+  if (imageCache[url]) {
+    return imageCache[url].promise;
+  }
+
+  const img = new Image();
+  if (crossOrigin) {
+    img.crossOrigin = crossOrigin;
+  }
+  img.referrerPolicy = 'no-referrer';
+
+  const promise = new Promise<HTMLImageElement>((resolve, reject) => {
+    img.onload = () => {
+      if (imageCache[url]) {
+        imageCache[url].status = 'loaded';
+      }
+      resolve(img);
+    };
+    img.onerror = () => {
+      if (imageCache[url]) {
+        imageCache[url].status = 'failed';
+      }
+      reject(new Error(`Failed to load image: ${url}`));
+    };
+  });
+
+  imageCache[url] = {
+    img,
+    status: 'loading',
+    promise
+  };
+
+  img.src = url;
+  return promise;
+};
+
+import { useState, useEffect } from 'react';
+
+/**
+ * High-performance hook that checks memory cache synchronously on initial mount.
+ * If preloaded, returns the image instantly with zero flicker or async state delay.
+ */
+export const useCachedImage = (url: string | null | undefined, crossOrigin: string = 'anonymous') => {
+  const [imgState, setImgState] = useState<{ img: HTMLImageElement | null; status: 'loading' | 'loaded' | 'failed' }>(() => {
+    if (!url) return { img: null, status: 'loading' };
+    const cached = imageCache[url];
+    if (cached && cached.status === 'loaded' && cached.img.complete && cached.img.naturalWidth > 0) {
+      return { img: cached.img, status: 'loaded' };
+    }
+    return { img: null, status: 'loading' };
+  });
+
+  useEffect(() => {
+    if (!url) {
+      setImgState({ img: null, status: 'loading' });
+      return;
+    }
+
+    const cached = imageCache[url];
+    if (cached && cached.status === 'loaded' && cached.img.complete && cached.img.naturalWidth > 0) {
+      setImgState({ img: cached.img, status: 'loaded' });
+      return;
+    }
+
+    let active = true;
+    
+    // Set loading only if we do not already have it loaded to avoid quick blank snaps
+    setImgState((prev) => {
+      if (prev.img && prev.status === 'loaded') {
+        return prev; // keep previous image while loading next to avoid white flicker
+      }
+      return { img: null, status: 'loading' };
+    });
+
+    preloadImageIntoCache(url, crossOrigin)
+      .then((img) => {
+        if (active) {
+          setImgState({ img, status: 'loaded' });
+        }
+      })
+      .catch(() => {
+        if (active) {
+          setImgState({ img: null, status: 'failed' });
+        }
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [url, crossOrigin]);
+
+  return [imgState.img, imgState.status] as const;
+};
+
+/**
+ * Intercepta falhas de carregamento em elementos <img> que usam o proxy weserv.nl,
+ * realizando fallback automático para a URL original do produto diretamente no navegador.
+ * Como tags <img> padrão possuem comportamento passivo de CORS, o fallback para a URL
+ * direta funciona na esmagadora maioria dos servidores, mesmo que barrem requisições de proxy/crawler.
+ */
+export const handleImageError = (
+  e: React.SyntheticEvent<HTMLImageElement, Event>,
+  originalUrl: string | null | undefined
+) => {
+  const imgObj = e.currentTarget;
+  if (!imgObj) return;
+
+  const trimmedOriginal = (originalUrl || '').trim();
+  if (!trimmedOriginal) {
+    imgObj.src = 'https://placehold.co/400x400?text=Sem+Imagem';
+    return;
+  }
+
+  const currentStep = imgObj.getAttribute('data-fallback-step') || '0';
+
+  if (currentStep === '0') {
+    // Stage 1: Try our high-compatibility, CORS-unlocked client-side backend proxy
+    imgObj.setAttribute('data-fallback-step', '1');
+    imgObj.src = `/api/image-proxy?url=${encodeURIComponent(trimmedOriginal)}`;
+  } else if (currentStep === '1') {
+    // Stage 2: Try the raw original URL directly (no CORS) in case local proxy has issues
+    imgObj.setAttribute('data-fallback-step', '2');
+    imgObj.src = trimmedOriginal;
+  } else {
+    // Stage 3: Placeholder fallback
+    imgObj.src = 'https://placehold.co/400x400?text=Sem+Imagem';
+  }
+};
+

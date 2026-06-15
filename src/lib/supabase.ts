@@ -7,6 +7,14 @@ const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
 const effectiveUrl = supabaseUrl || 'https://placeholder-project.supabase.co';
 const effectiveKey = supabaseAnonKey || 'placeholder-key';
 
-export const supabase = createClient(effectiveUrl, effectiveKey);
+export const supabase = createClient(effectiveUrl, effectiveKey, {
+  auth: {
+    persistSession: true,
+    autoRefreshToken: true,
+    detectSessionInUrl: true,
+    flowType: 'pkce',
+    lockType: null,
+  } as any
+});
 
 export const isSupabaseConfigured = Boolean(supabaseUrl && supabaseAnonKey);

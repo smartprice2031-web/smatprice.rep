@@ -2,8 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Stage, Layer, Image as KonvaImage, Text, Transformer, Rect, Group } from 'react-konva';
 import { motion, AnimatePresence } from 'motion/react';
 import { useStore, isThreeProduct } from '../store';
-import useImage from 'use-image';
-import { getProxyUrl } from '../lib/utils';
+import { getProxyUrl, useCachedImage } from '../lib/utils';
 
 const A4_WIDTH = 794; // 210mm at 96dpi
 const A4_HEIGHT = 1123; // 297mm at 96dpi
@@ -29,13 +28,39 @@ const CanvasPreview = ({ id = "placa" }: { id?: string }) => {
   const trRef = useRef<any>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   
-  const [bgImg, bgStatus] = useImage(getProxyUrl(background.url) || '', 'anonymous');
+  const primaryBgUrl = getProxyUrl(background.url) || '';
+  const localProxyBgUrl = background.url ? `/api/image-proxy?url=${encodeURIComponent(background.url)}` : '';
+
+  // 1. Try to load using the fast preloaded weserv URL
+  const [bgImg, bgStatus] = useCachedImage(primaryBgUrl, 'anonymous');
+
+  // 2. If weserv fails, immediately fall back to the preloaded custom local proxy URL
+  const [fallbackBgImg] = useCachedImage(bgStatus === 'failed' ? localProxyBgUrl : null, 'anonymous');
+
+  // Selected background image that is completely loaded in memory
+  const activeBgImg = bgImg || fallbackBgImg;
+
   const [displayedBg, setDisplayedBg] = useState<{url: string, img: HTMLImageElement} | null>(null);
   const [nextBg, setNextBg] = useState<{url: string, img: HTMLImageElement} | null>(null);
   
-  const [prodImg1] = useImage(getProxyUrl(productImage1.url) || '', 'anonymous');
-  const [prodImg2] = useImage(getProxyUrl(productImage2.url) || '', 'anonymous');
-  const [prodImg3] = useImage(getProxyUrl(productImage3.url) || '', 'anonymous');
+  const primaryProdUrl1 = getProxyUrl(productImage1.url, { optimize: true, width: 800, quality: 85 }) || '';
+  const localProxyProdUrl1 = productImage1.url ? `/api/image-proxy?url=${encodeURIComponent(productImage1.url)}` : '';
+  const [cachedProdImg1, prodStatus1] = useCachedImage(primaryProdUrl1, 'anonymous');
+  const [fallbackProdImg1] = useCachedImage(prodStatus1 === 'failed' ? localProxyProdUrl1 : null, 'anonymous');
+  const prodImg1 = cachedProdImg1 || fallbackProdImg1;
+
+  const primaryProdUrl2 = getProxyUrl(productImage2.url, { optimize: true, width: 800, quality: 85 }) || '';
+  const localProxyProdUrl2 = productImage2.url ? `/api/image-proxy?url=${encodeURIComponent(productImage2.url)}` : '';
+  const [cachedProdImg2, prodStatus2] = useCachedImage(primaryProdUrl2, 'anonymous');
+  const [fallbackProdImg2] = useCachedImage(prodStatus2 === 'failed' ? localProxyProdUrl2 : null, 'anonymous');
+  const prodImg2 = cachedProdImg2 || fallbackProdImg2;
+
+  const primaryProdUrl3 = getProxyUrl(productImage3.url, { optimize: true, width: 800, quality: 85 }) || '';
+  const localProxyProdUrl3 = productImage3.url ? `/api/image-proxy?url=${encodeURIComponent(productImage3.url)}` : '';
+  const [cachedProdImg3, prodStatus3] = useCachedImage(primaryProdUrl3, 'anonymous');
+  const [fallbackProdImg3] = useCachedImage(prodStatus3 === 'failed' ? localProxyProdUrl3 : null, 'anonymous');
+  const prodImg3 = cachedProdImg3 || fallbackProdImg3;
+
   const [autoScale, setAutoScale] = useState(1);
   if (!activeLayout) return null;
 
@@ -49,30 +74,29 @@ const CanvasPreview = ({ id = "placa" }: { id?: string }) => {
   }, [activeLayoutIndex]);
 
   useEffect(() => {
-    if (bgImg && background.url) {
+    if (activeBgImg && background.url) {
       if (!displayedBg) {
-        setDisplayedBg({ url: background.url, img: bgImg });
+        setDisplayedBg({ url: background.url, img: activeBgImg });
       } else if (displayedBg.url !== background.url) {
-        setNextBg({ url: background.url, img: bgImg });
+        setNextBg({ url: background.url, img: activeBgImg });
         // After a very short delay, swap them to ensure smoothness
         const timer = setTimeout(() => {
-          setDisplayedBg({ url: background.url, img: bgImg });
+          setDisplayedBg({ url: background.url, img: activeBgImg });
           setNextBg(null);
-        }, 30); // Even shorter delay for faster response
+        }, 10); // Ultra-fast buffer swap
         return () => clearTimeout(timer);
       }
     } else if (!background.url) {
       setDisplayedBg(null);
       setNextBg(null);
     }
-  }, [bgImg, background.url, activeLayoutIndex]);
+  }, [activeBgImg, background.url, activeLayoutIndex]);
 
   // If the URL changed but we are still showing the old one, we might want to show a loader
   const isBgLoading = background.url && (!displayedBg || (displayedBg.url !== background.url && !nextBg));
 
   // Force portrait for "Quart Suplem Maxi" as requested by user
-  const isQuartSuplemMaxi = activeLayout.name === 'Quart Suplem Maxi';
-  const isLandscape = !isQuartSuplemMaxi && orientation === 'landscape';
+  const isLandscape = orientation === 'landscape';
   const currentWidth = isLandscape ? A4_HEIGHT : A4_WIDTH;
   const currentHeight = isLandscape ? A4_WIDTH : A4_HEIGHT;
 

@@ -813,7 +813,12 @@ export default function EncarteCreator() {
                     >
                       <div className="w-10 h-10 bg-white dark:bg-zinc-900 rounded-lg flex items-center justify-center border border-zinc-100 dark:border-zinc-700 flex-shrink-0">
                         {product?.image ? (
-                          <img src={getProxyUrl(product.image)} className="w-full h-full object-contain p-1" referrerPolicy="no-referrer" crossOrigin="anonymous" />
+                          <img 
+                            src={getProxyUrl(product.image)} 
+                            className="w-full h-full object-contain p-1" 
+                            referrerPolicy="no-referrer" 
+                            crossOrigin="anonymous" 
+                          />
                         ) : (
                           <Package className="w-5 h-5 text-zinc-300" />
                         )}

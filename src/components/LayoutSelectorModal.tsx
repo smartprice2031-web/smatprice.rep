@@ -2,7 +2,7 @@ import React from 'react';
 import { useStore, Layout as LayoutType } from '../store';
 import { X, Layout as LayoutIcon, Search, Flag, MapPin, ChevronRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { cn, getProxyUrl } from '../lib/utils';
+import { cn, getProxyUrl, handleImageError } from '../lib/utils';
 
 interface LayoutSelectorModalProps {
   isOpen: boolean;
@@ -123,8 +123,15 @@ export default function LayoutSelectorModal({ isOpen, onClose, layouts, onSelect
                         whileTap={{ scale: 0.98 }}
                         onMouseEnter={() => {
                           if (layout.background.url) {
-                            const img = new Image();
-                            img.src = getProxyUrl(layout.background.url);
+                            // Pre-warm the browser cache for both the optimized proxy and the original URL directly
+                            const imgProxy = new Image();
+                            imgProxy.crossOrigin = "anonymous";
+                            imgProxy.referrerPolicy = "no-referrer";
+                            imgProxy.src = getProxyUrl(layout.background.url);
+
+                            const imgDirect = new Image();
+                            imgDirect.referrerPolicy = "no-referrer";
+                            imgDirect.src = layout.background.url;
                           }
                         }}
                         onClick={() => {
@@ -149,6 +156,7 @@ export default function LayoutSelectorModal({ isOpen, onClose, layouts, onSelect
                               crossOrigin="anonymous"
                               loading="lazy"
                               decoding="async"
+                              onError={(e) => handleImageError(e, layout.background.url)}
                             />
                           ) : (
                             <div className="w-full h-full flex flex-col items-center justify-center text-zinc-300 dark:text-zinc-700 p-8 text-center bg-gradient-to-br from-zinc-50 to-zinc-100 dark:from-zinc-800 dark:to-zinc-900">
