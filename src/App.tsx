@@ -44,7 +44,8 @@ export default function App() {
     updateOnlineStatus, isChatEnabled,
     announcements, seenAnnouncements, setSeenAnnouncements,
     isAnnouncementModalOpen, setAnnouncementModalOpen,
-    orientation
+    orientation,
+    products, fetchProducts
   } = useStore();
   const [activeTab, setActiveTab] = useState<'select' | 'adjustments'>('select');
   const [pendingAnnouncements, setPendingAnnouncements] = useState<any[]>([]);
@@ -112,6 +113,13 @@ export default function App() {
     }
   }, [isAuthenticated, userRole, updateOnlineStatus]);
 
+  // Eagerly fetch all products upon user authentication to populate the app's cache
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchProducts();
+    }
+  }, [isAuthenticated, fetchProducts]);
+
   // Pre-load background images for all allowed layouts to speed up selection
   useEffect(() => {
     if (filteredLayouts.length > 0) {
@@ -120,8 +128,29 @@ export default function App() {
       const preloadImage = (url: string | null) => {
         if (!url || preloadSet.has(url)) return;
         preloadSet.add(url);
-        const img = new Image();
-        img.src = getProxyUrl(url);
+        
+        // 1. Eagerly preload full-sized background layout image for the tag canvas
+        const imgFull = new Image();
+        imgFull.crossOrigin = "anonymous";
+        imgFull.referrerPolicy = "no-referrer";
+        imgFull.src = getProxyUrl(url);
+
+        // 2. Preload thumbnail of the background layout image for the selectors modals
+        const imgThumb = new Image();
+        imgThumb.crossOrigin = "anonymous";
+        imgThumb.referrerPolicy = "no-referrer";
+        imgThumb.src = getProxyUrl(url, { thumbnail: true });
+
+        // 3. Preload the raw original image directly as the ultimate fall-back cache layer
+        const imgDirect = new Image();
+        imgDirect.referrerPolicy = "no-referrer";
+        imgDirect.src = url;
+
+        // 4. Preload the raw original image directly WITH CORS anonymous configuration so use-image canvas fallbacks are instant and un-tainted
+        const imgDirectAnon = new Image();
+        imgDirectAnon.crossOrigin = "anonymous";
+        imgDirectAnon.referrerPolicy = "no-referrer";
+        imgDirectAnon.src = url;
       };
 
       // 1. Prioritize current layout background
@@ -130,8 +159,7 @@ export default function App() {
         preloadImage(current.background.url);
       }
 
-      // 2. Preload ALL other allowed layouts immediately for maximum speed
-      // Use a small delay for sub-priority ones to not block the main thread too much
+      // 2. Preload adjacent templates immediately for extreme selection speed
       const priorityIndices = [activeLayoutIndex];
       
       // Immediately adjacent allowed indices get priority
@@ -145,16 +173,71 @@ export default function App() {
         if (layouts[idx]?.background?.url) preloadImage(layouts[idx].background.url);
       });
 
-      // Then preload everything else in background
-      setTimeout(() => {
+      // Then preload all remaining templates in the background with a slight delay
+      const timer = setTimeout(() => {
         filteredLayouts.forEach(layout => {
           if (!priorityIndices.includes(layout.originalIndex) && layout.background?.url) {
             preloadImage(layout.background.url);
           }
         });
       }, 500);
+
+      return () => clearTimeout(timer);
     }
   }, [filteredLayouts, activeLayoutIndex, layouts]);
+
+  // Proactively preload and cache product images (both thumbnail and optimized sizes)
+  useEffect(() => {
+    if (products && products.length > 0) {
+      const preloadSet = new Set<string>();
+
+      const preloadProdImage = (url: string | null) => {
+        if (!url || preloadSet.has(url)) return;
+        preloadSet.add(url);
+
+        // A. Caches the 200px thumbnail used in search & manager lists
+        const thumbImg = new Image();
+        thumbImg.crossOrigin = "anonymous";
+        thumbImg.referrerPolicy = "no-referrer";
+        thumbImg.src = getProxyUrl(url, { thumbnail: true });
+
+        // B. Caches the optimized medium-size version used in full board preview canvases
+        const fullImg = new Image();
+        fullImg.crossOrigin = "anonymous";
+        fullImg.referrerPolicy = "no-referrer";
+        fullImg.src = getProxyUrl(url, { optimize: true, width: 800, quality: 85 });
+
+        // C. Caches the raw proxy format as extra insurance
+        const rawImg = new Image();
+        rawImg.crossOrigin = "anonymous";
+        rawImg.referrerPolicy = "no-referrer";
+        rawImg.src = getProxyUrl(url);
+
+        // D. Preloads the ORIGINAL image directly as the ultimate cache warming layer.
+        // No crossOrigin is specified here, avoiding CORS headers conflicts on plain caching.
+        const directImg = new Image();
+        directImg.referrerPolicy = "no-referrer";
+        directImg.src = url;
+      };
+
+      // 1. Immediately cache first 100 products (which represent the most active files)
+      const immediateProducts = products.slice(0, 100);
+      immediateProducts.forEach(p => {
+        if (p.image) preloadProdImage(p.image);
+      });
+
+      // 2. Multi-tier loading of remaining product images in background batches to prevent main-thread block
+      if (products.length > 100) {
+        const remainingProducts = products.slice(100);
+        const timer = setTimeout(() => {
+          remainingProducts.forEach(p => {
+            if (p.image) preloadProdImage(p.image);
+          });
+        }, 2000);
+        return () => clearTimeout(timer);
+      }
+    }
+  }, [products]);
 
 
   useEffect(() => {

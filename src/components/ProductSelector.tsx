@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useStore, Product, isThreeProduct } from '../store';
 import { Search, Package, Check, X, RefreshCw } from 'lucide-react';
-import { getProxyUrl } from '../lib/utils';
+import { getProxyUrl, handleImageError } from '../lib/utils';
 
 const ProductSelector: React.FC<{ onSelect?: (product: Product) => void }> = ({ onSelect }) => {
   const { 
@@ -70,6 +70,8 @@ const ProductSelector: React.FC<{ onSelect?: (product: Product) => void }> = ({ 
         // Pre-warm the browser cache for both the thumbnail and the medium A4 canvas preview
         const canvasUrl = getProxyUrl(product.image, { optimize: true, width: 800, quality: 85 });
         const canvasImg = new Image();
+        canvasImg.crossOrigin = "anonymous";
+        canvasImg.referrerPolicy = "no-referrer";
         canvasImg.src = canvasUrl;
       }
     });
@@ -105,6 +107,7 @@ const ProductSelector: React.FC<{ onSelect?: (product: Product) => void }> = ({ 
                     crossOrigin="anonymous"
                     loading="lazy"
                     decoding="async"
+                    onError={(e) => handleImageError(e, product.image)}
                   />
                 ) : (
                   <Package className="w-full h-full p-2 text-black dark:text-white opacity-40" />
@@ -477,6 +480,7 @@ const ProductSlot = ({
                     crossOrigin="anonymous"
                     loading="lazy"
                     decoding="async"
+                    onError={(e) => handleImageError(e, product.image)}
                   />
                 ) : (
                   <Package className="w-full h-full p-1.5 text-black dark:text-white opacity-40" />

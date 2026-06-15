@@ -29,13 +29,61 @@ const CanvasPreview = ({ id = "placa" }: { id?: string }) => {
   const trRef = useRef<any>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   
-  const [bgImg, bgStatus] = useImage(getProxyUrl(background.url) || '', 'anonymous');
+  const [bgUrl, setBgUrl] = useState(() => getProxyUrl(background.url) || '');
+  const [bgImg, bgStatus] = useImage(bgUrl, 'anonymous');
+
+  useEffect(() => {
+    setBgUrl(getProxyUrl(background.url) || '');
+  }, [background.url]);
+
+  useEffect(() => {
+    if (bgStatus === 'failed' && background.url && bgUrl !== background.url) {
+      setBgUrl(background.url);
+    }
+  }, [bgStatus, background.url, bgUrl]);
+
   const [displayedBg, setDisplayedBg] = useState<{url: string, img: HTMLImageElement} | null>(null);
   const [nextBg, setNextBg] = useState<{url: string, img: HTMLImageElement} | null>(null);
   
-  const [prodImg1] = useImage(getProxyUrl(productImage1.url, { optimize: true, width: 800, quality: 85 }) || '', 'anonymous');
-  const [prodImg2] = useImage(getProxyUrl(productImage2.url, { optimize: true, width: 800, quality: 85 }) || '', 'anonymous');
-  const [prodImg3] = useImage(getProxyUrl(productImage3.url, { optimize: true, width: 800, quality: 85 }) || '', 'anonymous');
+  const [prodUrl1, setProdUrl1] = useState(() => getProxyUrl(productImage1.url, { optimize: true, width: 800, quality: 85 }) || '');
+  const [prodImg1, prodStatus1] = useImage(prodUrl1, 'anonymous');
+
+  useEffect(() => {
+    setProdUrl1(getProxyUrl(productImage1.url, { optimize: true, width: 800, quality: 85 }) || '');
+  }, [productImage1.url]);
+
+  useEffect(() => {
+    if (prodStatus1 === 'failed' && productImage1.url && prodUrl1 !== productImage1.url) {
+      setProdUrl1(productImage1.url);
+    }
+  }, [prodStatus1, productImage1.url, prodUrl1]);
+
+  const [prodUrl2, setProdUrl2] = useState(() => getProxyUrl(productImage2.url, { optimize: true, width: 800, quality: 85 }) || '');
+  const [prodImg2, prodStatus2] = useImage(prodUrl2, 'anonymous');
+
+  useEffect(() => {
+    setProdUrl2(getProxyUrl(productImage2.url, { optimize: true, width: 800, quality: 85 }) || '');
+  }, [productImage2.url]);
+
+  useEffect(() => {
+    if (prodStatus2 === 'failed' && productImage2.url && prodUrl2 !== productImage2.url) {
+      setProdUrl2(productImage2.url);
+    }
+  }, [prodStatus2, productImage2.url, prodUrl2]);
+
+  const [prodUrl3, setProdUrl3] = useState(() => getProxyUrl(productImage3.url, { optimize: true, width: 800, quality: 85 }) || '');
+  const [prodImg3, prodStatus3] = useImage(prodUrl3, 'anonymous');
+
+  useEffect(() => {
+    setProdUrl3(getProxyUrl(productImage3.url, { optimize: true, width: 800, quality: 85 }) || '');
+  }, [productImage3.url]);
+
+  useEffect(() => {
+    if (prodStatus3 === 'failed' && productImage3.url && prodUrl3 !== productImage3.url) {
+      setProdUrl3(productImage3.url);
+    }
+  }, [prodStatus3, productImage3.url, prodUrl3]);
+
   const [autoScale, setAutoScale] = useState(1);
   if (!activeLayout) return null;
 
