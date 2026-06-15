@@ -2,7 +2,52 @@ import React from 'react';
 import { useStore, Layout as LayoutType } from '../store';
 import { X, Layout as LayoutIcon, Search, Flag, MapPin, ChevronRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { cn, getProxyUrl, handleImageError } from '../lib/utils';
+import { cn, getProxyUrl, handleImageError, useCachedImage } from '../lib/utils';
+
+const LayoutThumbnail: React.FC<{ url: string | null; name: string }> = ({ url, name }) => {
+  const primaryUrl = url ? getProxyUrl(url, { thumbnail: true }) : null;
+  const localProxyUrl = url ? `/api/image-proxy?url=${encodeURIComponent(url)}` : null;
+
+  const [img, status] = useCachedImage(primaryUrl, 'anonymous');
+  const [fallbackImg, fallbackStatus] = useCachedImage(status === 'failed' ? localProxyUrl : null, 'anonymous');
+
+  if (!url) {
+    return (
+      <div className="w-full h-full flex flex-col items-center justify-center text-zinc-300 dark:text-zinc-700 p-8 text-center bg-gradient-to-br from-zinc-50 to-zinc-100 dark:from-zinc-800 dark:to-zinc-900">
+        <LayoutIcon className="w-12 h-12 mb-3 opacity-20" />
+        <span className="text-[10px] font-black uppercase tracking-widest opacity-40">Prévia Indisponível</span>
+      </div>
+    );
+  }
+
+  const activeImgUrl = status === 'loaded' && img
+    ? img.src 
+    : (fallbackStatus === 'loaded' && fallbackImg ? fallbackImg.src : null);
+
+  if (activeImgUrl) {
+    return (
+      <img
+        src={activeImgUrl}
+        alt={name}
+        className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+        referrerPolicy="no-referrer"
+      />
+    );
+  }
+
+  return (
+    <div className="relative w-full h-full bg-zinc-100 dark:bg-zinc-900 flex items-center justify-center">
+      <img
+        src={primaryUrl || ''}
+        alt={name}
+        className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+        referrerPolicy="no-referrer"
+        loading="eager"
+        onError={(e) => handleImageError(e, url)}
+      />
+    </div>
+  );
+};
 
 interface LayoutSelectorModalProps {
   isOpen: boolean;
@@ -147,23 +192,7 @@ export default function LayoutSelectorModal({ isOpen, onClose, layouts, onSelect
                       >
                         {/* Preview Image */}
                         <div className="aspect-[16/9] w-full bg-zinc-100 dark:bg-zinc-900 relative overflow-hidden">
-                          {layout.background.url ? (
-                            <img 
-                              src={getProxyUrl(layout.background.url, { thumbnail: true })} 
-                              alt={layout.name}
-                              className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-                              referrerPolicy="no-referrer"
-                              crossOrigin="anonymous"
-                              loading="lazy"
-                              decoding="async"
-                              onError={(e) => handleImageError(e, layout.background.url)}
-                            />
-                          ) : (
-                            <div className="w-full h-full flex flex-col items-center justify-center text-zinc-300 dark:text-zinc-700 p-8 text-center bg-gradient-to-br from-zinc-50 to-zinc-100 dark:from-zinc-800 dark:to-zinc-900">
-                              <LayoutIcon className="w-12 h-12 mb-3 opacity-20" />
-                              <span className="text-[10px] font-black uppercase tracking-widest opacity-40">Prévia Indisponível</span>
-                            </div>
-                          )}
+                          <LayoutThumbnail url={layout.background.url} name={layout.name} />
                           
                           {/* Overlay */}
                           <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-end p-6">

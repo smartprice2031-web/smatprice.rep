@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useStore, Product } from '../store';
 import { Plus, Search, Edit2, Trash2, Package, RefreshCw, AlertTriangle, AlertCircle } from 'lucide-react';
-import { cn, isValidImageUrl, getProxyUrl } from '../lib/utils';
+import { cn, isValidImageUrl, getProxyUrl, handleImageError } from '../lib/utils';
 import { supabase } from '../lib/supabase';
 
 import { toast } from 'sonner';
@@ -309,9 +309,9 @@ const ProductManager = () => {
                     alt={product.name} 
                     className="w-full h-full object-cover" 
                     referrerPolicy="no-referrer" 
-                    crossOrigin="anonymous"
                     loading="lazy"
                     decoding="async"
+                    onError={(e) => handleImageError(e, product.image)}
                   />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center text-zinc-400">
@@ -504,10 +504,7 @@ const ProductManager = () => {
                             alt="Preview" 
                             className="w-full h-full object-cover"
                             referrerPolicy="no-referrer"
-                            crossOrigin="anonymous"
-                            onError={(e) => {
-                              (e.target as HTMLImageElement).src = 'https://placehold.co/40x40?text=Err';
-                            }}
+                            onError={(e) => handleImageError(e, item.image)}
                           />
                         ) : (
                           <Package className="w-4 h-4 text-zinc-300 dark:text-zinc-600" />
@@ -647,10 +644,7 @@ const ProductManager = () => {
                           alt="Preview" 
                           className="h-32 w-32 object-cover rounded-lg border border-zinc-200 dark:border-zinc-700" 
                           referrerPolicy="no-referrer"
-                          crossOrigin="anonymous"
-                          onError={(e) => {
-                            (e.target as HTMLImageElement).src = 'https://placehold.co/400x400?text=Erro+na+URL';
-                          }}
+                          onError={(e) => handleImageError(e, formData.image)}
                         />
                         <button 
                           type="button"

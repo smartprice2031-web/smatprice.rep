@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useStore, Product, isThreeProduct } from '../store';
 import { Search, Package, Check, X, RefreshCw } from 'lucide-react';
-import { getProxyUrl } from '../lib/utils';
+import { getProxyUrl, handleImageError } from '../lib/utils';
 
 const ProductSelector: React.FC<{ onSelect?: (product: Product) => void }> = ({ onSelect }) => {
   const { 
@@ -102,11 +102,12 @@ const ProductSelector: React.FC<{ onSelect?: (product: Product) => void }> = ({ 
                 {product.image ? (
                   <img 
                     src={getProxyUrl(product.image, { thumbnail: true })} 
+                    alt={product.name}
                     className="w-full h-full object-cover" 
                     referrerPolicy="no-referrer" 
-                    crossOrigin="anonymous"
                     loading="lazy"
                     decoding="async"
+                    onError={(e) => handleImageError(e, product.image)}
                   />
                 ) : (
                   <Package className="w-full h-full p-2 text-black dark:text-white opacity-40" />
@@ -474,11 +475,12 @@ const ProductSlot = ({
                 {product.image ? (
                   <img 
                     src={getProxyUrl(product.image, { thumbnail: true })} 
+                    alt={product.name}
                     className="w-full h-full object-cover" 
                     referrerPolicy="no-referrer" 
-                    crossOrigin="anonymous"
                     loading="lazy"
                     decoding="async"
+                    onError={(e) => handleImageError(e, product.image)}
                   />
                 ) : (
                   <Package className="w-full h-full p-1.5 text-black dark:text-white opacity-40" />
