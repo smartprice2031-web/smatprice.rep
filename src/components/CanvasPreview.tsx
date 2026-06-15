@@ -40,9 +40,9 @@ const CanvasPreview = ({ id = "placa" }: { id?: string }) => {
   // Selected background image that is completely loaded in memory
   const activeBgImg = bgImg || fallbackBgImg;
 
-  const [displayedBg, setDisplayedBg] = useState<{url: string, img: HTMLImageElement} | null>(null);
-  const [nextBg, setNextBg] = useState<{url: string, img: HTMLImageElement} | null>(null);
-  
+  // Synchronous and persistent backbuffer representation of the last loaded background image
+  const [lastLoadedBg, setLastLoadedBg] = useState<{ url: string; img: HTMLImageElement } | null>(null);
+
   const primaryProdUrl1 = getProxyUrl(productImage1.url, { optimize: true, width: 800, quality: 85 }) || '';
   const localProxyProdUrl1 = productImage1.url ? `/api/image-proxy?url=${encodeURIComponent(productImage1.url)}` : '';
   const [cachedProdImg1, prodStatus1] = useCachedImage(primaryProdUrl1, 'anonymous');
@@ -64,36 +64,22 @@ const CanvasPreview = ({ id = "placa" }: { id?: string }) => {
   const [autoScale, setAutoScale] = useState(1);
   if (!activeLayout) return null;
 
-  // Faster background switching with double buffering
-  useEffect(() => {
-    // Reset displayedBg if activeLayoutIndex changes to prevent showing old background on new layout
-    if (displayedBg && displayedBg.url !== background.url) {
-      setDisplayedBg(null);
-      setNextBg(null);
-    }
-  }, [activeLayoutIndex]);
-
+  // Faster background switching with zero-flicker live double buffering
   useEffect(() => {
     if (activeBgImg && background.url) {
-      if (!displayedBg) {
-        setDisplayedBg({ url: background.url, img: activeBgImg });
-      } else if (displayedBg.url !== background.url) {
-        setNextBg({ url: background.url, img: activeBgImg });
-        // After a very short delay, swap them to ensure smoothness
-        const timer = setTimeout(() => {
-          setDisplayedBg({ url: background.url, img: activeBgImg });
-          setNextBg(null);
-        }, 10); // Ultra-fast buffer swap
-        return () => clearTimeout(timer);
-      }
+      setLastLoadedBg({ url: background.url, img: activeBgImg });
     } else if (!background.url) {
-      setDisplayedBg(null);
-      setNextBg(null);
+      setLastLoadedBg(null);
     }
-  }, [activeBgImg, background.url, activeLayoutIndex]);
+  }, [activeBgImg, background.url]);
+
+  // Synchronously compute active backbuffer element
+  const bgToRender = (activeBgImg && lastLoadedBg?.url === background.url)
+    ? activeBgImg
+    : (lastLoadedBg?.img || activeBgImg);
 
   // If the URL changed but we are still showing the old one, we might want to show a loader
-  const isBgLoading = background.url && (!displayedBg || (displayedBg.url !== background.url && !nextBg));
+  const isBgLoading = background.url && !activeBgImg;
 
   // Force portrait for "Quart Suplem Maxi" as requested by user
   const isLandscape = orientation === 'landscape';
@@ -513,13 +499,13 @@ const CanvasPreview = ({ id = "placa" }: { id?: string }) => {
         >
           <Layer>
             {/* Background */}
-            {displayedBg?.img && (
+            {bgToRender && (
               <KonvaImage
-                image={displayedBg.img}
+                image={bgToRender}
                 width={currentWidth}
                 height={currentHeight}
                 crop={(() => {
-                  const img = displayedBg.img;
+                  const img = bgToRender;
                   const scale = Math.max(currentWidth / img.width, currentHeight / img.height);
                   const cropWidth = currentWidth / scale;
                   const cropHeight = currentHeight / scale;

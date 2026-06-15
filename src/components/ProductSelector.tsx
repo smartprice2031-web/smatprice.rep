@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useStore, Product, isThreeProduct } from '../store';
 import { Search, Package, Check, X, RefreshCw } from 'lucide-react';
-import { getProxyUrl, handleImageError } from '../lib/utils';
+import { getProxyUrl, handleImageError, preloadImageIntoCache } from '../lib/utils';
 
 const ProductSelector: React.FC<{ onSelect?: (product: Product) => void }> = ({ onSelect }) => {
   const { 
@@ -56,10 +56,10 @@ const ProductSelector: React.FC<{ onSelect?: (product: Product) => void }> = ({ 
   // Proactive background preloading of matching search result images
   useEffect(() => {
     const productsToPreload = [
-      ...filteredProducts1.slice(0, 5),
-      ...filteredProducts2.slice(0, 5),
-      ...filteredProducts3.slice(0, 5),
-      ...generalFilteredProducts.slice(0, 5)
+      ...filteredProducts1.slice(0, 10),
+      ...filteredProducts2.slice(0, 10),
+      ...filteredProducts3.slice(0, 10),
+      ...generalFilteredProducts.slice(0, 15)
     ];
 
     // Get unique products to avoid redundant parallel requests
@@ -67,12 +67,15 @@ const ProductSelector: React.FC<{ onSelect?: (product: Product) => void }> = ({ 
 
     uniqueProducts.forEach(product => {
       if (product.image) {
-        // Pre-warm the browser cache for both the thumbnail and the medium A4 canvas preview
+        const thumbUrl = getProxyUrl(product.image, { thumbnail: true });
         const canvasUrl = getProxyUrl(product.image, { optimize: true, width: 800, quality: 85 });
-        const canvasImg = new Image();
-        canvasImg.crossOrigin = "anonymous";
-        canvasImg.referrerPolicy = "no-referrer";
-        canvasImg.src = canvasUrl;
+        const localProxyUrl = `/api/image-proxy?url=${encodeURIComponent(product.image)}`;
+
+        // Load all versions into the high-performance memory cache
+        preloadImageIntoCache(thumbUrl, 'anonymous').catch(() => {});
+        preloadImageIntoCache(canvasUrl, 'anonymous').catch(() => {});
+        preloadImageIntoCache(localProxyUrl, 'anonymous').catch(() => {});
+        preloadImageIntoCache(product.image, 'anonymous').catch(() => {});
       }
     });
   }, [filteredProducts1, filteredProducts2, filteredProducts3, generalFilteredProducts]);
