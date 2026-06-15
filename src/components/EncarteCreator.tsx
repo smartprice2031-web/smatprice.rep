@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useStore, Product, EncarteSlot, SelectedProduct, EncarteModel, EncarteTab } from '../store';
-import { cn, isValidImageUrl, getProxyUrl, handleImageError } from '../lib/utils';
+import { cn, isValidImageUrl, getProxyUrl } from '../lib/utils';
 import { 
   Plus, 
   Trash2, 
@@ -813,13 +813,7 @@ export default function EncarteCreator() {
                     >
                       <div className="w-10 h-10 bg-white dark:bg-zinc-900 rounded-lg flex items-center justify-center border border-zinc-100 dark:border-zinc-700 flex-shrink-0">
                         {product?.image ? (
-                          <img 
-                            src={getProxyUrl(product.image)} 
-                            className="w-full h-full object-contain p-1" 
-                            referrerPolicy="no-referrer" 
-                            crossOrigin="anonymous" 
-                            onError={(e) => handleImageError(e, product.image)}
-                          />
+                          <img src={getProxyUrl(product.image)} className="w-full h-full object-contain p-1" referrerPolicy="no-referrer" crossOrigin="anonymous" />
                         ) : (
                           <Package className="w-5 h-5 text-zinc-300" />
                         )}
@@ -993,7 +987,6 @@ export default function EncarteCreator() {
                                   className="w-full h-full object-contain p-1" 
                                   referrerPolicy="no-referrer" 
                                   crossOrigin="anonymous"
-                                  onError={(e) => handleImageError(e, product.image)}
                                 />
                               ) : (
                                 <Package className="w-6 h-6 text-black dark:text-white opacity-40" />

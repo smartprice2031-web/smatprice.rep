@@ -58,10 +58,7 @@ export const isValidImageUrl = (url: string): boolean => {
  * Retorna uma URL de imagem segura para CORS, usando um proxy se necessário.
  * Suporta uma opção de miniatura para carregamento mais rápido.
  */
-export const getProxyUrl = (
-  url: string | undefined | null, 
-  options?: { thumbnail?: boolean; optimize?: boolean; width?: number; quality?: number; output?: string }
-) => {
+export const getProxyUrl = (url: string | undefined | null, options?: { thumbnail?: boolean }) => {
   if (!url || typeof url !== 'string' || url.startsWith('data:') || url.startsWith('blob:')) {
     return url || '';
   }
@@ -78,76 +75,14 @@ export const getProxyUrl = (
   }
   
   const params = new URLSearchParams();
-  
-  // Make sure originalUrl has a valid http/https protocol
-  let formattedUrl = originalUrl.trim();
-  if (!formattedUrl.startsWith('http://') && !formattedUrl.startsWith('https://')) {
-    if (formattedUrl.startsWith('//')) {
-      formattedUrl = 'https:' + formattedUrl;
-    } else if (formattedUrl.startsWith('/')) {
-      // Relative path, do not use proxy
-      return formattedUrl;
-    } else {
-      formattedUrl = 'https://' + formattedUrl;
-    }
-  }
-
-  // If no options are supplied (typical for backgrounds, logos, general templates),
-  // use our high-fidelity, high-speed local image-proxy to bypass CORS, referer blocks, and Cloudflare hotlinking blocks.
-  if (!options || Object.keys(options).length === 0) {
-    return `/api/image-proxy?url=${encodeURIComponent(formattedUrl)}`;
-  }
-
-  params.append('url', formattedUrl);
-  params.append('default', formattedUrl);
+  params.append('url', originalUrl);
+  params.append('default', originalUrl);
   
   if (options?.thumbnail) {
-    params.append('w', '200');
-    params.append('q', '75');
+    params.append('w', '400');
+    params.append('q', '70');
     params.append('output', 'webp');
-  } else if (options?.optimize) {
-    params.append('w', String(options.width || 800));
-    params.append('q', String(options.quality || 85));
-    params.append('output', options.output || 'webp');
-  } else {
-    if (options?.width) params.append('w', String(options.width));
-    if (options?.quality) params.append('q', String(options.quality));
-    if (options?.output) params.append('output', options.output);
   }
   
-  // URLSearchParams encodes spaces as "+" in the query string, which can break CDNs that only understand "%20".
-  // Replacing "+" with "%20" ensures perfect compatibility across all image hosting providers.
-  const queryString = params.toString().replace(/\+/g, '%20');
-  
-  return `https://images.weserv.nl/?${queryString}`;
+  return `https://images.weserv.nl/?${params.toString()}`;
 };
-
-/**
- * Intercepta falhas de carregamento em elementos <img> que usam o proxy weserv.nl,
- * realizando fallback automático para a URL original do produto diretamente no navegador.
- * Como tags <img> padrão possuem comportamento passivo de CORS, o fallback para a URL
- * direta funciona na esmagadora maioria dos servidores, mesmo que barrem requisições de proxy/crawler.
- */
-export const handleImageError = (
-  e: React.SyntheticEvent<HTMLImageElement, Event>,
-  originalUrl: string | null | undefined
-) => {
-  const imgObj = e.currentTarget;
-  if (!imgObj) return;
-
-  // Se já tentamos carregar a original ou não existe original válida, mostramos um placeholder limpo
-  if (imgObj.getAttribute('data-tried-original') === 'true') {
-    imgObj.src = 'https://placehold.co/200x200?text=Sem+Imagem';
-    return;
-  }
-
-  imgObj.setAttribute('data-tried-original', 'true');
-
-  if (imgObj.src.includes('weserv.nl') && originalUrl && originalUrl.trim()) {
-    // Remove proxy e tenta carregar a URL original sem restrição de CORS passiva do navegador
-    imgObj.src = originalUrl.trim();
-  } else {
-    imgObj.src = 'https://placehold.co/200x200?text=Sem+Imagem';
-  }
-};
-

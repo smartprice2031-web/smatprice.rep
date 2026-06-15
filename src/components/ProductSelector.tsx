@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useStore, Product, isThreeProduct } from '../store';
 import { Search, Package, Check, X, RefreshCw } from 'lucide-react';
-import { getProxyUrl, handleImageError } from '../lib/utils';
+import { getProxyUrl } from '../lib/utils';
 
 const ProductSelector: React.FC<{ onSelect?: (product: Product) => void }> = ({ onSelect }) => {
   const { 
@@ -53,30 +53,6 @@ const ProductSelector: React.FC<{ onSelect?: (product: Product) => void }> = ({ 
   const filteredProducts3 = useMemo(() => filterProducts(searchTerm3), [searchTerm3, products]);
   const generalFilteredProducts = useMemo(() => filterProducts(generalSearchTerm), [generalSearchTerm, products]);
 
-  // Proactive background preloading of matching search result images
-  useEffect(() => {
-    const productsToPreload = [
-      ...filteredProducts1.slice(0, 5),
-      ...filteredProducts2.slice(0, 5),
-      ...filteredProducts3.slice(0, 5),
-      ...generalFilteredProducts.slice(0, 5)
-    ];
-
-    // Get unique products to avoid redundant parallel requests
-    const uniqueProducts = Array.from(new Map(productsToPreload.map(p => [p.id, p])).values());
-
-    uniqueProducts.forEach(product => {
-      if (product.image) {
-        // Pre-warm the browser cache for both the thumbnail and the medium A4 canvas preview
-        const canvasUrl = getProxyUrl(product.image, { optimize: true, width: 800, quality: 85 });
-        const canvasImg = new Image();
-        canvasImg.crossOrigin = "anonymous";
-        canvasImg.referrerPolicy = "no-referrer";
-        canvasImg.src = canvasUrl;
-      }
-    });
-  }, [filteredProducts1, filteredProducts2, filteredProducts3, generalFilteredProducts]);
-
   if (onSelect) {
     return (
       <div className="space-y-4">
@@ -101,13 +77,12 @@ const ProductSelector: React.FC<{ onSelect?: (product: Product) => void }> = ({ 
               <div className="w-12 h-12 rounded-xl bg-zinc-100 dark:bg-zinc-800 overflow-hidden flex-shrink-0">
                 {product.image ? (
                   <img 
-                    src={getProxyUrl(product.image, { thumbnail: true })} 
+                    src={getProxyUrl(product.image)} 
                     className="w-full h-full object-cover" 
                     referrerPolicy="no-referrer" 
                     crossOrigin="anonymous"
                     loading="lazy"
                     decoding="async"
-                    onError={(e) => handleImageError(e, product.image)}
                   />
                 ) : (
                   <Package className="w-full h-full p-2 text-black dark:text-white opacity-40" />
@@ -474,13 +449,12 @@ const ProductSlot = ({
               <div className="w-8 h-8 rounded-lg bg-zinc-100 dark:bg-zinc-800 overflow-hidden flex-shrink-0">
                 {product.image ? (
                   <img 
-                    src={getProxyUrl(product.image, { thumbnail: true })} 
+                    src={getProxyUrl(product.image)} 
                     className="w-full h-full object-cover" 
                     referrerPolicy="no-referrer" 
                     crossOrigin="anonymous"
                     loading="lazy"
                     decoding="async"
-                    onError={(e) => handleImageError(e, product.image)}
                   />
                 ) : (
                   <Package className="w-full h-full p-1.5 text-black dark:text-white opacity-40" />

@@ -22,7 +22,7 @@ export default function Login() {
     if (!isAdmin) {
       const normalizedInputCnpj = formData.cnpj.replace(/[^\d]/g, '');
       if (normalizedInputCnpj.length >= 14) { // Only check if it looks like a full CNPJ
-        const store = allowedStores.find(s => s?.cnpj?.replace(/[^\d]/g, '') === normalizedInputCnpj);
+        const store = allowedStores.find(s => s.cnpj.replace(/[^\d]/g, '') === normalizedInputCnpj);
         if (store && store.bandeira) {
           setFormData(prev => ({ ...prev, bandeira: store.bandeira }));
         } else {
@@ -91,7 +91,7 @@ export default function Login() {
         }
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erro ao acessar o sistema. Tente novamente.');
+      setError('Erro ao acessar o sistema. Tente novamente.');
       setIsLoading(false);
     }
   };
