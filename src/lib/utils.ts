@@ -92,6 +92,12 @@ export const getProxyUrl = (
     }
   }
 
+  // If no options are supplied (typical for backgrounds, logos, general templates),
+  // use our high-fidelity, high-speed local image-proxy to bypass CORS, referer blocks, and Cloudflare hotlinking blocks.
+  if (!options || Object.keys(options).length === 0) {
+    return `/api/image-proxy?url=${encodeURIComponent(formattedUrl)}`;
+  }
+
   params.append('url', formattedUrl);
   params.append('default', formattedUrl);
   

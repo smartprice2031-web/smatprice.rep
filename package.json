@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "tsx server.ts",
+    "start": "node server.ts",
     "build": "vite build",
     "preview": "vite preview",
     "clean": "rm -rf dist",
@@ -21,6 +22,8 @@
     "dotenv": "^17.2.3",
     "express": "^4.21.2",
     "firebase": "^12.10.0",
+    "html2canvas": "^1.4.1",
+    "idb-keyval": "^6.2.2",
     "jspdf": "^4.2.0",
     "konva": "^10.2.0",
     "lucide-react": "^0.546.0",
