@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { supabase, isSupabaseConfigured } from './lib/supabase';
+import { getProxyUrl } from './lib/utils';
 
 export interface TextSettings {
   text: string;
@@ -1100,6 +1101,21 @@ export const useStore = create<AppState>()(
           
           set({ products: allProducts });
 
+          // Preload product images for light-speed dynamic preview renders
+          try {
+            allProducts.forEach((product) => {
+              if (product.image) {
+                const imgUrl = getProxyUrl(product.image, { optimize: true, width: 800, quality: 85 });
+                if (imgUrl) {
+                  const img = new Image();
+                  img.src = imgUrl;
+                }
+              }
+            });
+          } catch (e) {
+            console.warn("Background image preloading failed:", e);
+          }
+
           // Set up realtime subscription if not already active
           if (!get().realtimeInitialized) {
             const channel = supabase.channel('products-realtime');
@@ -1318,7 +1334,7 @@ export const useStore = create<AppState>()(
                 if (currentElements[key] && templateElements[key]) {
                   merged[key] = {
                     ...templateElements[key],
-                    text: currentElements[key].text // Keep user text
+                    text: currentElements[key].text !== undefined ? currentElements[key].text : templateElements[key].text
                   };
                 }
               });
@@ -1330,28 +1346,57 @@ export const useStore = create<AppState>()(
               if (!currentImg) return templateImg;
               return {
                 ...templateImg,
-                url: currentImg.url, // Keep user image URL
-                visible: currentImg.url ? (currentImg.visible !== undefined ? currentImg.visible : true) : templateImg.visible
+                url: currentImg.url !== undefined ? currentImg.url : templateImg.url, // Keep user image URL
+                visible: (currentImg.url || templateImg.url) 
+                  ? (currentImg.visible !== undefined ? currentImg.visible : true) 
+                  : templateImg.visible
               };
             };
 
+            // Merge user changes across all 150 layouts to preserve their customized models
+            let finalLayouts = loadedLayouts;
+            if (isUser && Array.isArray(currentState.layouts) && currentState.layouts.length > 0) {
+              finalLayouts = loadedLayouts.map((templateL: any, idx: number) => {
+                const currentL = currentState.layouts[idx] || currentState.layouts.find((l: any) => l.name === templateL.name);
+                if (!currentL) return templateL;
+
+                return {
+                  ...templateL,
+                  productImage1: mergeImageWithTemplate(currentL.productImage1, templateL.productImage1),
+                  productImage2: mergeImageWithTemplate(currentL.productImage2, templateL.productImage2),
+                  productImage3: mergeImageWithTemplate(currentL.productImage3, templateL.productImage3),
+                  textElements1: mergeWithTemplate(currentL.textElements1, templateL.textElements1),
+                  textElements2: mergeWithTemplate(currentL.textElements2, templateL.textElements2),
+                  textElements3: mergeWithTemplate(currentL.textElements3, templateL.textElements3),
+                  optionalText1: templateL.optionalText1 ? { ...templateL.optionalText1, text: currentL.optionalText1?.text !== undefined ? currentL.optionalText1.text : templateL.optionalText1.text } : templateL.optionalText1,
+                  optionalText2: templateL.optionalText2 ? { ...templateL.optionalText2, text: currentL.optionalText2?.text !== undefined ? currentL.optionalText2.text : templateL.optionalText2.text } : templateL.optionalText2,
+                  optionalText3: templateL.optionalText3 ? { ...templateL.optionalText3, text: currentL.optionalText3?.text !== undefined ? currentL.optionalText3.text : templateL.optionalText3.text } : templateL.optionalText3,
+                  isSingleProduct: currentL.isSingleProduct !== undefined ? currentL.isSingleProduct : templateL.isSingleProduct,
+                  orientation: currentL.orientation || templateL.orientation || 'portrait',
+                  background: currentL.background ? { ...templateL.background, ...currentL.background } : templateL.background,
+                };
+              });
+            }
+
+            const currentActiveLayout = finalLayouts[activeLayoutIndex] || finalLayouts[0];
+
             set({
               activeLayoutIndex,
-              layouts: loadedLayouts,
-              background: isUser ? (activeLayout?.background || layout.background) : (layout.background || activeLayout?.background),
-              productImage1: isUser ? mergeImageWithTemplate(currentState.productImage1, activeLayout?.productImage1) : (layout.productImage1 || activeLayout?.productImage1),
-              productImage2: isUser ? mergeImageWithTemplate(currentState.productImage2, activeLayout?.productImage2) : (layout.productImage2 || activeLayout?.productImage2),
-              productImage3: isUser ? mergeImageWithTemplate(currentState.productImage3, activeLayout?.productImage3) : (layout.productImage3 || activeLayout?.productImage3),
-              textElements1: isUser ? mergeWithTemplate(currentState.textElements1, activeLayout?.textElements1) : (layout.textElements1 || activeLayout?.textElements1),
-              textElements2: isUser ? mergeWithTemplate(currentState.textElements2, activeLayout?.textElements2) : (layout.textElements2 || activeLayout?.textElements2),
-              textElements3: isUser ? mergeWithTemplate(currentState.textElements3, activeLayout?.textElements3) : (layout.textElements3 || activeLayout?.textElements3),
-              optionalText1: isUser ? { ...activeLayout?.optionalText1, text: currentState.optionalText1?.text } : (layout.optionalText1 || activeLayout?.optionalText1),
-              optionalText2: isUser ? { ...activeLayout?.optionalText2, text: currentState.optionalText2?.text } : (layout.optionalText2 || activeLayout?.optionalText2),
-              optionalText3: isUser ? { ...activeLayout?.optionalText3, text: currentState.optionalText3?.text } : (layout.optionalText3 || activeLayout?.optionalText3),
-              orientation: activeLayout?.orientation || layout.orientation || 'portrait',
-              isSingleProduct: isUser ? (activeLayout?.isSingleProduct ?? false) : (activeLayout?.isSingleProduct ?? layout.isSingleProduct ?? false),
-              showSingleProductControl: activeLayout?.showSingleProductControl !== undefined ? activeLayout.showSingleProductControl : (layout.showSingleProductControl !== undefined ? layout.showSingleProductControl : currentState.showSingleProductControl),
-              showOptionalTextControl: activeLayout?.showOptionalTextControl !== undefined ? activeLayout.showOptionalTextControl : (layout.showOptionalTextControl !== undefined ? layout.showOptionalTextControl : currentState.showOptionalTextControl),
+              layouts: finalLayouts,
+              background: isUser ? (currentActiveLayout?.background || layout.background) : (layout.background || currentActiveLayout?.background),
+              productImage1: isUser ? mergeImageWithTemplate(currentState.productImage1, currentActiveLayout?.productImage1) : (layout.productImage1 || currentActiveLayout?.productImage1),
+              productImage2: isUser ? mergeImageWithTemplate(currentState.productImage2, currentActiveLayout?.productImage2) : (layout.productImage2 || currentActiveLayout?.productImage2),
+              productImage3: isUser ? mergeImageWithTemplate(currentState.productImage3, currentActiveLayout?.productImage3) : (layout.productImage3 || currentActiveLayout?.productImage3),
+              textElements1: isUser ? mergeWithTemplate(currentState.textElements1, currentActiveLayout?.textElements1) : (layout.textElements1 || currentActiveLayout?.textElements1),
+              textElements2: isUser ? mergeWithTemplate(currentState.textElements2, currentActiveLayout?.textElements2) : (layout.textElements2 || currentActiveLayout?.textElements2),
+              textElements3: isUser ? mergeWithTemplate(currentState.textElements3, currentActiveLayout?.textElements3) : (layout.textElements3 || currentActiveLayout?.textElements3),
+              optionalText1: isUser ? { ...currentActiveLayout?.optionalText1, text: currentState.optionalText1?.text !== undefined ? currentState.optionalText1.text : currentActiveLayout?.optionalText1?.text } : (layout.optionalText1 || currentActiveLayout?.optionalText1),
+              optionalText2: isUser ? { ...currentActiveLayout?.optionalText2, text: currentState.optionalText2?.text !== undefined ? currentState.optionalText2.text : currentActiveLayout?.optionalText2?.text } : (layout.optionalText2 || currentActiveLayout?.optionalText2),
+              optionalText3: isUser ? { ...currentActiveLayout?.optionalText3, text: currentState.optionalText3?.text !== undefined ? currentState.optionalText3.text : currentActiveLayout?.optionalText3?.text } : (layout.optionalText3 || currentActiveLayout?.optionalText3),
+              orientation: currentActiveLayout?.orientation || layout.orientation || 'portrait',
+              isSingleProduct: isUser ? (currentActiveLayout?.isSingleProduct ?? false) : (currentActiveLayout?.isSingleProduct ?? layout.isSingleProduct ?? false),
+              showSingleProductControl: currentActiveLayout?.showSingleProductControl !== undefined ? currentActiveLayout.showSingleProductControl : (layout.showSingleProductControl !== undefined ? layout.showSingleProductControl : currentState.showSingleProductControl),
+              showOptionalTextControl: currentActiveLayout?.showOptionalTextControl !== undefined ? currentActiveLayout.showOptionalTextControl : (layout.showOptionalTextControl !== undefined ? layout.showOptionalTextControl : currentState.showOptionalTextControl),
               lastUpdateTimestamp: layout.updated_at || null
             } as any);
           }
