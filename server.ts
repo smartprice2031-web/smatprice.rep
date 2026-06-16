@@ -292,21 +292,8 @@ async function startServer() {
   app.get("/api/image-proxy", async (req, res) => {
     const rawUrl = req.query.url;
     if (!rawUrl || typeof rawUrl !== "string") {
-      return res.status(400).send("Missing url parameter");
+      return res.status(400).json({ error: "Missing url parameter" });
     }
-
-    const transparentPng = Buffer.from(
-      "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=",
-      "base64"
-    );
-
-    const serveFallback = () => {
-      res.setHeader("Content-Type", "image/png");
-      res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
-      res.setHeader("Access-Control-Allow-Origin", "*");
-      res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
-      return res.send(transparentPng);
-    };
 
     try {
       let imageUrl = rawUrl.trim();
@@ -331,72 +318,94 @@ async function startServer() {
         parsedUrl = new URL(imageUrl);
         imageUrl = parsedUrl.toString();
       } catch (err) {
-        return serveFallback();
+        return res.status(400).json({ error: "Invalid URL format provided" });
+      }
+
+      // Validate URL exists and block internal/insecure URLs (SSRF Protection)
+      const hostname = parsedUrl.hostname.toLowerCase();
+      const isInternal = 
+        hostname === "localhost" ||
+        hostname === "127.0.0.1" ||
+        hostname === "0.0.0.0" ||
+        hostname === "::1" ||
+        hostname.startsWith("192.168.") ||
+        hostname.startsWith("10.") ||
+        hostname.startsWith("169.254.") ||
+        /^172\.(1[6-9]|2[0-9]|3[0-1])\./.test(hostname) ||
+        hostname.endsWith(".local") ||
+        hostname.endsWith(".internal");
+
+      if (isInternal) {
+        console.warn(`[PROXY] Blocked internal/insecure URL: ${imageUrl}`);
+        return res.status(403).json({ error: "Access to internal or insecure URLs is not permitted." });
       }
 
       // 1. Try to fetch with standard Global fetch (available across Node 18+)
-      if (typeof fetch === "function") {
-        try {
-          const response = await fetch(imageUrl, {
-            headers: {
-              "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-              "Accept": "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8",
-              "Referer": parsedUrl.origin
-            }
-          });
-
-          if (response.ok) {
-            const contentType = response.headers.get("content-type");
-            if (contentType) res.setHeader("Content-Type", contentType);
-            
-            res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
-            res.setHeader("Access-Control-Allow-Origin", "*");
-            res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
-
-            const arrayBuffer = await response.arrayBuffer();
-            return res.send(Buffer.from(arrayBuffer));
-          } else {
-            console.warn(`[PROXY] Target URL ${imageUrl} returned status ${response.status}. Serving transparent fallback.`);
-            return serveFallback();
+      try {
+        const response = await fetch(imageUrl, {
+          headers: {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+            "Accept": "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8",
+            "Referer": parsedUrl.origin
           }
-        } catch (fetchErr: any) {
-          console.error(`[PROXY FETCH ERROR] URL: ${imageUrl}`, fetchErr.message);
-          // Fall through to standard modules if fetch fails
-        }
-      }
+        });
 
-      // 2. Fallback using Node's standard http/https core modules if global fetch fails or returns bad status
-      const https = await import("https");
-      const http = await import("http");
-      const client = imageUrl.startsWith("https") ? https : http;
-      
-      client.get(imageUrl, {
-        headers: {
-          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
-          "Accept": "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8",
-          "Referer": parsedUrl.origin
-        }
-      }, (proxyRes) => {
-        if (proxyRes.statusCode && proxyRes.statusCode >= 200 && proxyRes.statusCode < 300) {
-          const contentType = proxyRes.headers["content-type"];
+        if (response.ok) {
+          const contentType = response.headers.get("content-type");
           if (contentType) res.setHeader("Content-Type", contentType);
           
           res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
           res.setHeader("Access-Control-Allow-Origin", "*");
           res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
-          
-          proxyRes.pipe(res);
+
+          const arrayBuffer = await response.arrayBuffer();
+          return res.send(Buffer.from(arrayBuffer));
+        } else if (response.status === 404) {
+          console.warn(`[PROXY] Target URL ${imageUrl} returned 404 (Not Found)`);
+          return res.status(404).json({ error: "Image does not exist" });
         } else {
-          console.warn(`[PROXY STANDARD] Target URL ${imageUrl} returned status ${proxyRes.statusCode}. Serving transparent fallback.`);
-          return serveFallback();
+          console.warn(`[PROXY] Target URL ${imageUrl} returned status ${response.status}`);
+          return res.status(response.status).json({ error: `Failed to fetch image: status ${response.status}` });
         }
-      }).on("error", (err) => {
-        console.error(`[PROXY STANDARD CLIENT ERROR] URL: ${imageUrl}`, err.message);
-        return serveFallback();
-      });
+      } catch (fetchErr: any) {
+        console.error(`[PROXY FETCH ERROR] URL: ${imageUrl}`, fetchErr.message);
+        
+        // 2. Fallback using Node's standard http/https core modules if global fetch fails
+        const https = await import("https");
+        const http = await import("http");
+        const client = imageUrl.startsWith("https") ? https : http;
+        
+        let clientRequest = client.get(imageUrl, {
+          headers: {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+            "Accept": "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8",
+            "Referer": parsedUrl.origin
+          }
+        }, (proxyRes) => {
+          if (proxyRes.statusCode && proxyRes.statusCode >= 200 && proxyRes.statusCode < 300) {
+            const contentType = proxyRes.headers["content-type"];
+            if (contentType) res.setHeader("Content-Type", contentType);
+            
+            res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
+            res.setHeader("Access-Control-Allow-Origin", "*");
+            res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
+            
+            proxyRes.pipe(res);
+          } else {
+            console.warn(`[PROXY STANDARD] Target URL ${imageUrl} returned status ${proxyRes.statusCode}`);
+            const statusCode = proxyRes.statusCode || 404;
+            return res.status(statusCode).json({ error: `Image loading error with status: ${statusCode}` });
+          }
+        });
+        
+        clientRequest.on("error", (err) => {
+          console.error(`[PROXY STANDARD CLIENT ERROR] URL: ${imageUrl}`, err.message);
+          return res.status(500).json({ error: "Internal connection error to external image host" });
+        });
+      }
     } catch (error: any) {
       console.error(`[PROXY GENERAL EXCEPTION] URL: ${rawUrl}`, error.message);
-      return serveFallback();
+      return res.status(500).json({ error: "Failed to load external image" });
     }
   });
 

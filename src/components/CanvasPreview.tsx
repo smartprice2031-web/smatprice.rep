@@ -28,14 +28,14 @@ const CanvasPreview = ({ id = "placa" }: { id?: string }) => {
   const trRef = useRef<any>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   
-  const primaryBgUrl = getProxyUrl(background.url) || '';
-  const directBgUrl = background.url || '';
+  const urlDaImagemDeFundo = background.url || '';
+  const backgroundImageUrl = urlDaImagemDeFundo ? `/api/image-proxy?url=${encodeURIComponent(urlDaImagemDeFundo)}` : '';
 
   // 1. Try to load using the robust local unblocked proxy URL
-  const [bgImg, bgStatus] = useCachedImage(primaryBgUrl, 'anonymous');
+  const [bgImg, bgStatus] = useCachedImage(backgroundImageUrl, 'anonymous');
 
   // 2. If the proxy fails, immediately fall back to the direct background URL
-  const [fallbackBgImg] = useCachedImage(bgStatus === 'failed' ? directBgUrl : null, 'anonymous');
+  const [fallbackBgImg] = useCachedImage(bgStatus === 'failed' ? urlDaImagemDeFundo : null, 'anonymous');
 
   // Selected background image that is completely loaded in memory
   const activeBgImg = bgImg || fallbackBgImg;
@@ -499,7 +499,7 @@ const CanvasPreview = ({ id = "placa" }: { id?: string }) => {
         >
           <Layer>
             {/* Background */}
-            {bgToRender && (
+            {bgToRender ? (
               <KonvaImage
                 image={bgToRender}
                 width={currentWidth}
@@ -518,7 +518,16 @@ const CanvasPreview = ({ id = "placa" }: { id?: string }) => {
                 })()}
                 onMouseDown={() => setSelectedId(null)}
               />
-            )}
+            ) : urlDaImagemDeFundo ? (
+              /* Fallback visual gracefully if the image fails without breaking layout */
+              <Rect 
+                width={currentWidth}
+                height={currentHeight}
+                fill="#f4f4f5"
+                stroke="#e4e4e7"
+                strokeWidth={2}
+              />
+            ) : null}
 
             {isBgLoading && (
               <Rect 
