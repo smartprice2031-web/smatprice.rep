@@ -1371,9 +1371,9 @@ export const useStore = create<AppState>()(
                   optionalText1: templateL.optionalText1 ? { ...templateL.optionalText1, text: currentL.optionalText1?.text !== undefined ? currentL.optionalText1.text : templateL.optionalText1.text } : templateL.optionalText1,
                   optionalText2: templateL.optionalText2 ? { ...templateL.optionalText2, text: currentL.optionalText2?.text !== undefined ? currentL.optionalText2.text : templateL.optionalText2.text } : templateL.optionalText2,
                   optionalText3: templateL.optionalText3 ? { ...templateL.optionalText3, text: currentL.optionalText3?.text !== undefined ? currentL.optionalText3.text : templateL.optionalText3.text } : templateL.optionalText3,
-                  isSingleProduct: currentL.isSingleProduct !== undefined ? currentL.isSingleProduct : templateL.isSingleProduct,
-                  orientation: currentL.orientation || templateL.orientation || 'portrait',
-                  background: currentL.background ? { ...templateL.background, ...currentL.background } : templateL.background,
+                  isSingleProduct: templateL.isSingleProduct !== undefined ? templateL.isSingleProduct : false,
+                  orientation: templateL.orientation || 'portrait',
+                  background: templateL.background,
                 };
               });
             }
