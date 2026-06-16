@@ -129,14 +129,11 @@ export default function App() {
         if (!url || preloadSet.has(url)) return;
         preloadSet.add(url);
         
-        const weservUrl = getProxyUrl(url);
-        const optUrl = getProxyUrl(url, { thumbnail: true });
         const localProxyUrl = `/api/image-proxy?url=${encodeURIComponent(url)}`;
 
-        // Ultra-fast background cache warming
-        preloadImageIntoCache(weservUrl, 'anonymous').catch(() => {});
-        preloadImageIntoCache(optUrl, 'anonymous').catch(() => {});
+        // Background caching of both proxy and direct URL
         preloadImageIntoCache(localProxyUrl, 'anonymous').catch(() => {});
+        preloadImageIntoCache(url, 'anonymous').catch(() => {});
       };
 
       // 1. Prioritize current layout background
@@ -159,14 +156,14 @@ export default function App() {
         if (layouts[idx]?.background?.url) preloadImage(layouts[idx].background.url);
       });
 
-      // Then preload all remaining templates in the background with a slight delay
+      // Then preload all remaining templates in the background with a minimal delay to avoid main thread block
       const timer = setTimeout(() => {
         filteredLayouts.forEach(layout => {
           if (!priorityIndices.includes(layout.originalIndex) && layout.background?.url) {
             preloadImage(layout.background.url);
           }
         });
-      }, 500);
+      }, 50);
 
       return () => clearTimeout(timer);
     }

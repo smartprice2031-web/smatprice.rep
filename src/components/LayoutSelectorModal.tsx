@@ -5,17 +5,16 @@ import { motion, AnimatePresence } from 'motion/react';
 import { cn, getProxyUrl, handleImageError, useCachedImage } from '../lib/utils';
 
 const LayoutThumbnail: React.FC<{ url: string | null; name: string }> = ({ url, name }) => {
-  const primaryUrl = url ? getProxyUrl(url, { thumbnail: true }) : null;
-  const localProxyUrl = url ? `/api/image-proxy?url=${encodeURIComponent(url)}` : null;
+  const backgroundImageUrl = url ? `/api/image-proxy?url=${encodeURIComponent(url)}` : null;
 
-  const [img, status] = useCachedImage(primaryUrl, 'anonymous');
-  const [fallbackImg, fallbackStatus] = useCachedImage(status === 'failed' ? localProxyUrl : null, 'anonymous');
+  const [img, status] = useCachedImage(backgroundImageUrl, 'anonymous');
+  const [fallbackImg, fallbackStatus] = useCachedImage(status === 'failed' ? url : null, 'anonymous');
 
   if (!url) {
     return (
-      <div className="w-full h-full flex flex-col items-center justify-center text-zinc-300 dark:text-zinc-700 p-8 text-center bg-gradient-to-br from-zinc-50 to-zinc-100 dark:from-zinc-800 dark:to-zinc-900">
-        <LayoutIcon className="w-12 h-12 mb-3 opacity-20" />
-        <span className="text-[10px] font-black uppercase tracking-widest opacity-40">Prévia Indisponível</span>
+      <div id="no-preview-container" className="w-full h-full flex flex-col items-center justify-center text-zinc-300 dark:text-zinc-700 p-8 text-center bg-gradient-to-br from-zinc-50 to-zinc-100 dark:from-zinc-800 dark:to-zinc-900">
+        <LayoutIcon id="no-preview-icon" className="w-12 h-12 mb-3 opacity-20" />
+        <span id="no-preview-text" className="text-[10px] font-black uppercase tracking-widest opacity-40">Prévia Indisponível</span>
       </div>
     );
   }
@@ -27,6 +26,7 @@ const LayoutThumbnail: React.FC<{ url: string | null; name: string }> = ({ url, 
   if (activeImgUrl) {
     return (
       <img
+        id={`thumbnail-${name.replace(/\s+/g, '-').toLowerCase()}`}
         src={activeImgUrl}
         alt={name}
         className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
@@ -36,9 +36,10 @@ const LayoutThumbnail: React.FC<{ url: string | null; name: string }> = ({ url, 
   }
 
   return (
-    <div className="relative w-full h-full bg-zinc-100 dark:bg-zinc-900 flex items-center justify-center">
+    <div id={`thumbnail-fallback-container-${name.replace(/\s+/g, '-').toLowerCase()}`} className="relative w-full h-full bg-zinc-100 dark:bg-zinc-900 flex items-center justify-center">
       <img
-        src={primaryUrl || ''}
+        id={`thumbnail-fallback-img-${name.replace(/\s+/g, '-').toLowerCase()}`}
+        src={backgroundImageUrl || ''}
         alt={name}
         className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
         referrerPolicy="no-referrer"
@@ -168,11 +169,11 @@ export default function LayoutSelectorModal({ isOpen, onClose, layouts, onSelect
                         whileTap={{ scale: 0.98 }}
                         onMouseEnter={() => {
                           if (layout.background.url) {
-                            // Pre-warm the browser cache for both the optimized proxy and the original URL directly
+                            const localProxyUrl = `/api/image-proxy?url=${encodeURIComponent(layout.background.url)}`;
                             const imgProxy = new Image();
                             imgProxy.crossOrigin = "anonymous";
                             imgProxy.referrerPolicy = "no-referrer";
-                            imgProxy.src = getProxyUrl(layout.background.url);
+                            imgProxy.src = localProxyUrl;
 
                             const imgDirect = new Image();
                             imgDirect.referrerPolicy = "no-referrer";
