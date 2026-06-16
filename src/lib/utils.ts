@@ -66,14 +66,21 @@ export const getProxyUrl = (
     return url || '';
   }
   
-  // Se já for uma URL do proxy weserv, extraímos a URL original para remontar com novos parâmetros
+  // Extract original URL if already formatted as key/relative proxy or weserv
   let originalUrl = url;
-  if (url.includes('weserv.nl')) {
+  if (url.includes('/api/image-proxy')) {
+    try {
+      const urlObj = new URL(url, typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000');
+      originalUrl = urlObj.searchParams.get('url') || url;
+    } catch (e) {
+      // Ignore
+    }
+  } else if (url.includes('weserv.nl')) {
     try {
       const urlObj = new URL(url);
       originalUrl = urlObj.searchParams.get('url') || url;
     } catch (e) {
-      // Ignora erro
+      // Ignore
     }
   }
   
@@ -92,37 +99,9 @@ export const getProxyUrl = (
     }
   }
 
-  // If no options are supplied (typical for backgrounds, logos, general templates),
-  // we use images.weserv.nl as the primary high-speed global CDN for fast page loads and initial CORS bypass
-  if (!options || Object.keys(options).length === 0) {
-    params.append('url', formattedUrl);
-    params.append('default', formattedUrl);
-    const queryString = params.toString().replace(/\+/g, '%20');
-    return `https://images.weserv.nl/?${queryString}`;
-  }
-
-  params.append('url', formattedUrl);
-  params.append('default', formattedUrl);
-  
-  if (options?.thumbnail) {
-    params.append('w', '200');
-    params.append('q', '75');
-    params.append('output', 'webp');
-  } else if (options?.optimize) {
-    params.append('w', String(options.width || 800));
-    params.append('q', String(options.quality || 85));
-    params.append('output', options.output || 'webp');
-  } else {
-    if (options?.width) params.append('w', String(options.width));
-    if (options?.quality) params.append('q', String(options.quality));
-    if (options?.output) params.append('output', options.output);
-  }
-  
-  // URLSearchParams encodes spaces as "+" in the query string, which can break CDNs that only understand "%20".
-  // Replacing "+" with "%20" ensures perfect compatibility across all image hosting providers.
-  const queryString = params.toString().replace(/\+/g, '%20');
-  
-  return `https://images.weserv.nl/?${queryString}`;
+  // We use our high-compatibility, fully unblocked local proxy route directly.
+  // This bypasses strict third-party CDN domain and TLD blocking policy restrictions (e.g. weserv.nl blocking postimg.cc as domain policy).
+  return `/api/image-proxy?url=${encodeURIComponent(formattedUrl)}`;
 };
 
 export interface CachedImageEntry {
@@ -146,7 +125,15 @@ export const preloadImageIntoCache = (url: string, crossOrigin: string = 'anonym
   }
 
   const img = new Image();
-  if (crossOrigin) {
+  if (crossOrigin && typeof window !== 'undefined') {
+    const isRelative = url.startsWith('/') || url.startsWith('.') || !url.includes('://');
+    const isSameOrigin = !isRelative && url.includes(window.location.host);
+    if (isRelative || isSameOrigin) {
+      // Same-origin/relative requests do not require crossOrigin and must not send it to prevent iframe boundary errors
+    } else {
+      img.crossOrigin = crossOrigin;
+    }
+  } else if (crossOrigin) {
     img.crossOrigin = crossOrigin;
   }
   img.referrerPolicy = 'no-referrer';
