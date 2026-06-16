@@ -241,12 +241,13 @@ export const handleImageError = (
   }
 
   const currentStep = imgObj.getAttribute('data-fallback-step') || '0';
+  const isAlreadyProxy = imgObj.src && (imgObj.src.includes('/api/image-proxy') || imgObj.src.includes('image-proxy?'));
 
-  if (currentStep === '0') {
+  if (currentStep === '0' && !isAlreadyProxy) {
     // Stage 1: Try our high-compatibility, CORS-unlocked client-side backend proxy
     imgObj.setAttribute('data-fallback-step', '1');
     imgObj.src = `/api/image-proxy?url=${encodeURIComponent(trimmedOriginal)}`;
-  } else if (currentStep === '1') {
+  } else if (currentStep === '1' || (currentStep === '0' && isAlreadyProxy)) {
     // Stage 2: Try the raw original URL directly (no CORS) in case local proxy has issues
     imgObj.setAttribute('data-fallback-step', '2');
     imgObj.src = trimmedOriginal;

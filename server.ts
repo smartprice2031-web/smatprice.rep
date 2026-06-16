@@ -309,7 +309,12 @@ async function startServer() {
     };
 
     try {
-      let imageUrl = decodeURIComponent(rawUrl).trim();
+      let imageUrl = rawUrl.trim();
+      try {
+        imageUrl = decodeURIComponent(rawUrl).trim();
+      } catch (e) {
+        // Fall back to original rawUrl value if decodeURIComponent throws a Malformed URI error
+      }
       
       // Handle protocol-relative URL representation
       if (imageUrl.startsWith("//")) {

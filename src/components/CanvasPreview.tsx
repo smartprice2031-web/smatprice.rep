@@ -29,13 +29,13 @@ const CanvasPreview = ({ id = "placa" }: { id?: string }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   
   const primaryBgUrl = getProxyUrl(background.url) || '';
-  const localProxyBgUrl = background.url ? `/api/image-proxy?url=${encodeURIComponent(background.url)}` : '';
+  const directBgUrl = background.url || '';
 
-  // 1. Try to load using the fast preloaded weserv URL
+  // 1. Try to load using the robust local unblocked proxy URL
   const [bgImg, bgStatus] = useCachedImage(primaryBgUrl, 'anonymous');
 
-  // 2. If weserv fails, immediately fall back to the preloaded custom local proxy URL
-  const [fallbackBgImg] = useCachedImage(bgStatus === 'failed' ? localProxyBgUrl : null, 'anonymous');
+  // 2. If the proxy fails, immediately fall back to the direct background URL
+  const [fallbackBgImg] = useCachedImage(bgStatus === 'failed' ? directBgUrl : null, 'anonymous');
 
   // Selected background image that is completely loaded in memory
   const activeBgImg = bgImg || fallbackBgImg;
@@ -44,21 +44,21 @@ const CanvasPreview = ({ id = "placa" }: { id?: string }) => {
   const [lastLoadedBg, setLastLoadedBg] = useState<{ url: string; img: HTMLImageElement } | null>(null);
 
   const primaryProdUrl1 = getProxyUrl(productImage1.url, { optimize: true, width: 800, quality: 85 }) || '';
-  const localProxyProdUrl1 = productImage1.url ? `/api/image-proxy?url=${encodeURIComponent(productImage1.url)}` : '';
+  const directProdUrl1 = productImage1.url || '';
   const [cachedProdImg1, prodStatus1] = useCachedImage(primaryProdUrl1, 'anonymous');
-  const [fallbackProdImg1] = useCachedImage(prodStatus1 === 'failed' ? localProxyProdUrl1 : null, 'anonymous');
+  const [fallbackProdImg1] = useCachedImage(prodStatus1 === 'failed' ? directProdUrl1 : null, 'anonymous');
   const prodImg1 = cachedProdImg1 || fallbackProdImg1;
 
   const primaryProdUrl2 = getProxyUrl(productImage2.url, { optimize: true, width: 800, quality: 85 }) || '';
-  const localProxyProdUrl2 = productImage2.url ? `/api/image-proxy?url=${encodeURIComponent(productImage2.url)}` : '';
+  const directProdUrl2 = productImage2.url || '';
   const [cachedProdImg2, prodStatus2] = useCachedImage(primaryProdUrl2, 'anonymous');
-  const [fallbackProdImg2] = useCachedImage(prodStatus2 === 'failed' ? localProxyProdUrl2 : null, 'anonymous');
+  const [fallbackProdImg2] = useCachedImage(prodStatus2 === 'failed' ? directProdUrl2 : null, 'anonymous');
   const prodImg2 = cachedProdImg2 || fallbackProdImg2;
 
   const primaryProdUrl3 = getProxyUrl(productImage3.url, { optimize: true, width: 800, quality: 85 }) || '';
-  const localProxyProdUrl3 = productImage3.url ? `/api/image-proxy?url=${encodeURIComponent(productImage3.url)}` : '';
+  const directProdUrl3 = productImage3.url || '';
   const [cachedProdImg3, prodStatus3] = useCachedImage(primaryProdUrl3, 'anonymous');
-  const [fallbackProdImg3] = useCachedImage(prodStatus3 === 'failed' ? localProxyProdUrl3 : null, 'anonymous');
+  const [fallbackProdImg3] = useCachedImage(prodStatus3 === 'failed' ? directProdUrl3 : null, 'anonymous');
   const prodImg3 = cachedProdImg3 || fallbackProdImg3;
 
   const [autoScale, setAutoScale] = useState(1);
