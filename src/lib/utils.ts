@@ -55,6 +55,43 @@ export const isValidImageUrl = (url: string): boolean => {
 };
 
 /**
+ * Garante que a URL esteja devidamente codificada, decodificando primeiro para evitar dupla codificação,
+ * e depois utilizando o construtor URL nativo para codificar espaços/acentos.
+ */
+export const encodeUrlIfNeeded = (url: string): string => {
+  if (!url) return '';
+  const trimmedUrl = url.trim();
+  if (trimmedUrl.startsWith('data:') || trimmedUrl.startsWith('blob:')) {
+    return trimmedUrl;
+  }
+  try {
+    let decoded = trimmedUrl;
+    try {
+      decoded = decodeURIComponent(trimmedUrl);
+    } catch (e) {
+      // Ignora erro se for URI malformada
+    }
+    
+    if (decoded.startsWith('http://') || decoded.startsWith('https://') || decoded.startsWith('//')) {
+      let absolute = decoded;
+      if (decoded.startsWith('//')) {
+        absolute = 'https:' + decoded;
+      }
+      const parsed = new URL(absolute);
+      return parsed.toString();
+    } else if (decoded.startsWith('/')) {
+      const parsed = new URL(decoded, typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000');
+      return parsed.pathname + parsed.search;
+    } else {
+      const parsed = new URL('https://' + decoded);
+      return parsed.toString();
+    }
+  } catch (e) {
+    return trimmedUrl.replace(/ /g, '%20');
+  }
+};
+
+/**
  * Retorna uma URL de imagem segura para CORS, usando um proxy se necessário.
  * Suporta uma opção de miniatura para carregamento mais rápido.
  */
@@ -84,8 +121,6 @@ export const getProxyUrl = (
     }
   }
   
-  const params = new URLSearchParams();
-  
   // Make sure originalUrl has a valid http/https protocol
   let formattedUrl = originalUrl.trim();
   if (!formattedUrl.startsWith('http://') && !formattedUrl.startsWith('https://')) {
@@ -98,6 +133,9 @@ export const getProxyUrl = (
       formattedUrl = 'https://' + formattedUrl;
     }
   }
+
+  // Ensure fully encoded URL
+  formattedUrl = encodeUrlIfNeeded(formattedUrl);
 
   // We use our high-compatibility, fully unblocked local proxy route directly.
   // This bypasses strict third-party CDN domain and TLD blocking policy restrictions (e.g. weserv.nl blocking postimg.cc as domain policy).
@@ -120,14 +158,16 @@ export const imageCache: { [url: string]: CachedImageEntry } = {};
 export const preloadImageIntoCache = (url: string, crossOrigin: string = 'anonymous'): Promise<HTMLImageElement> => {
   if (!url) return Promise.reject(new Error('Empty image URL'));
   
-  if (imageCache[url]) {
-    return imageCache[url].promise;
+  const normalizedUrl = encodeUrlIfNeeded(url);
+  
+  if (imageCache[normalizedUrl]) {
+    return imageCache[normalizedUrl].promise;
   }
 
   const img = new Image();
   if (crossOrigin && typeof window !== 'undefined') {
-    const isRelative = url.startsWith('/') || url.startsWith('.') || !url.includes('://');
-    const isSameOrigin = !isRelative && url.includes(window.location.host);
+    const isRelative = normalizedUrl.startsWith('/') || normalizedUrl.startsWith('.') || !normalizedUrl.includes('://');
+    const isSameOrigin = !isRelative && normalizedUrl.includes(window.location.host);
     if (isRelative || isSameOrigin) {
       // Same-origin/relative requests do not require crossOrigin and must not send it to prevent iframe boundary errors
     } else {
@@ -140,26 +180,26 @@ export const preloadImageIntoCache = (url: string, crossOrigin: string = 'anonym
 
   const promise = new Promise<HTMLImageElement>((resolve, reject) => {
     img.onload = () => {
-      if (imageCache[url]) {
-        imageCache[url].status = 'loaded';
+      if (imageCache[normalizedUrl]) {
+        imageCache[normalizedUrl].status = 'loaded';
       }
       resolve(img);
     };
     img.onerror = () => {
-      if (imageCache[url]) {
-        imageCache[url].status = 'failed';
+      if (imageCache[normalizedUrl]) {
+        imageCache[normalizedUrl].status = 'failed';
       }
-      reject(new Error(`Failed to load image: ${url}`));
+      reject(new Error(`Failed to load image: ${normalizedUrl}`));
     };
   });
 
-  imageCache[url] = {
+  imageCache[normalizedUrl] = {
     img,
     status: 'loading',
     promise
   };
 
-  img.src = url;
+  img.src = normalizedUrl;
   return promise;
 };
 
@@ -170,9 +210,11 @@ import { useState, useEffect } from 'react';
  * If preloaded, returns the image instantly with zero flicker or async state delay.
  */
 export const useCachedImage = (url: string | null | undefined, crossOrigin: string = 'anonymous') => {
+  const normalizedUrl = url ? encodeUrlIfNeeded(url) : null;
+
   const [imgState, setImgState] = useState<{ img: HTMLImageElement | null; status: 'loading' | 'loaded' | 'failed' }>(() => {
-    if (!url) return { img: null, status: 'loading' };
-    const cached = imageCache[url];
+    if (!normalizedUrl) return { img: null, status: 'loading' };
+    const cached = imageCache[normalizedUrl];
     if (cached && cached.status === 'loaded' && cached.img.complete && cached.img.naturalWidth > 0) {
       return { img: cached.img, status: 'loaded' };
     }
@@ -180,12 +222,12 @@ export const useCachedImage = (url: string | null | undefined, crossOrigin: stri
   });
 
   useEffect(() => {
-    if (!url) {
+    if (!normalizedUrl) {
       setImgState({ img: null, status: 'loading' });
       return;
     }
 
-    const cached = imageCache[url];
+    const cached = imageCache[normalizedUrl];
     if (cached && cached.status === 'loaded' && cached.img.complete && cached.img.naturalWidth > 0) {
       setImgState({ img: cached.img, status: 'loaded' });
       return;
@@ -201,7 +243,7 @@ export const useCachedImage = (url: string | null | undefined, crossOrigin: stri
       return { img: null, status: 'loading' };
     });
 
-    preloadImageIntoCache(url, crossOrigin)
+    preloadImageIntoCache(normalizedUrl, crossOrigin)
       .then((img) => {
         if (active) {
           setImgState({ img, status: 'loaded' });
@@ -216,7 +258,7 @@ export const useCachedImage = (url: string | null | undefined, crossOrigin: stri
     return () => {
       active = false;
     };
-  }, [url, crossOrigin]);
+  }, [normalizedUrl, crossOrigin]);
 
   return [imgState.img, imgState.status] as const;
 };
