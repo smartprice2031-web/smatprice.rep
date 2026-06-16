@@ -295,6 +295,19 @@ async function startServer() {
       return res.status(400).send("Missing url parameter");
     }
 
+    const transparentPng = Buffer.from(
+      "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=",
+      "base64"
+    );
+
+    const serveFallback = () => {
+      res.setHeader("Content-Type", "image/png");
+      res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
+      res.setHeader("Access-Control-Allow-Origin", "*");
+      res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
+      return res.send(transparentPng);
+    };
+
     try {
       let imageUrl = decodeURIComponent(rawUrl).trim();
       
@@ -305,26 +318,45 @@ async function startServer() {
         imageUrl = "https://" + imageUrl;
       }
 
+      // Ensure that URL spaces are properly URL-encoded as %20
+      imageUrl = imageUrl.replace(/ /g, "%20");
+
+      let parsedUrl: URL;
+      try {
+        parsedUrl = new URL(imageUrl);
+        imageUrl = parsedUrl.toString();
+      } catch (err) {
+        return serveFallback();
+      }
+
       // 1. Try to fetch with standard Global fetch (available across Node 18+)
       if (typeof fetch === "function") {
-        const response = await fetch(imageUrl, {
-          headers: {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-            "Accept": "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8",
-            "Referer": new URL(imageUrl).origin
+        try {
+          const response = await fetch(imageUrl, {
+            headers: {
+              "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+              "Accept": "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8",
+              "Referer": parsedUrl.origin
+            }
+          });
+
+          if (response.ok) {
+            const contentType = response.headers.get("content-type");
+            if (contentType) res.setHeader("Content-Type", contentType);
+            
+            res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
+            res.setHeader("Access-Control-Allow-Origin", "*");
+            res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
+
+            const arrayBuffer = await response.arrayBuffer();
+            return res.send(Buffer.from(arrayBuffer));
+          } else {
+            console.warn(`[PROXY] Target URL ${imageUrl} returned status ${response.status}. Serving transparent fallback.`);
+            return serveFallback();
           }
-        });
-
-        if (response.ok) {
-          const contentType = response.headers.get("content-type");
-          if (contentType) res.setHeader("Content-Type", contentType);
-          
-          res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
-          res.setHeader("Access-Control-Allow-Origin", "*");
-          res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
-
-          const arrayBuffer = await response.arrayBuffer();
-          return res.send(Buffer.from(arrayBuffer));
+        } catch (fetchErr: any) {
+          console.error(`[PROXY FETCH ERROR] URL: ${imageUrl}`, fetchErr.message);
+          // Fall through to standard modules if fetch fails
         }
       }
 
@@ -333,7 +365,6 @@ async function startServer() {
       const http = await import("http");
       const client = imageUrl.startsWith("https") ? https : http;
       
-      const parsedUrl = new URL(imageUrl);
       client.get(imageUrl, {
         headers: {
           "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
@@ -351,14 +382,16 @@ async function startServer() {
           
           proxyRes.pipe(res);
         } else {
-          res.redirect(imageUrl);
+          console.warn(`[PROXY STANDARD] Target URL ${imageUrl} returned status ${proxyRes.statusCode}. Serving transparent fallback.`);
+          return serveFallback();
         }
-      }).on("error", () => {
-        res.redirect(imageUrl);
+      }).on("error", (err) => {
+        console.error(`[PROXY STANDARD CLIENT ERROR] URL: ${imageUrl}`, err.message);
+        return serveFallback();
       });
     } catch (error: any) {
-      console.error(`[PROXY ERROR] URL: ${rawUrl}`, error.message);
-      res.redirect(String(rawUrl));
+      console.error(`[PROXY GENERAL EXCEPTION] URL: ${rawUrl}`, error.message);
+      return serveFallback();
     }
   });
 

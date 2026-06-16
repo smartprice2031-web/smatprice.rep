@@ -137,8 +137,6 @@ export default function App() {
         preloadImageIntoCache(weservUrl, 'anonymous').catch(() => {});
         preloadImageIntoCache(optUrl, 'anonymous').catch(() => {});
         preloadImageIntoCache(localProxyUrl, 'anonymous').catch(() => {});
-        preloadImageIntoCache(url, 'anonymous').catch(() => {});
-        preloadImageIntoCache(url, '').catch(() => {});
       };
 
       // 1. Prioritize current layout background
@@ -192,8 +190,6 @@ export default function App() {
         preloadImageIntoCache(optUrl, 'anonymous').catch(() => {});
         preloadImageIntoCache(rawProxyUrl, 'anonymous').catch(() => {});
         preloadImageIntoCache(localProxyUrl, 'anonymous').catch(() => {});
-        preloadImageIntoCache(url, 'anonymous').catch(() => {});
-        preloadImageIntoCache(url, '').catch(() => {});
       };
 
       // 1. Immediately cache first 100 products (which represent the most active files)

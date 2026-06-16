@@ -75,7 +75,6 @@ const ProductSelector: React.FC<{ onSelect?: (product: Product) => void }> = ({ 
         preloadImageIntoCache(thumbUrl, 'anonymous').catch(() => {});
         preloadImageIntoCache(canvasUrl, 'anonymous').catch(() => {});
         preloadImageIntoCache(localProxyUrl, 'anonymous').catch(() => {});
-        preloadImageIntoCache(product.image, 'anonymous').catch(() => {});
       }
     });
   }, [filteredProducts1, filteredProducts2, filteredProducts3, generalFilteredProducts]);
