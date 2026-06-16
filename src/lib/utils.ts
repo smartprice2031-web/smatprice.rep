@@ -61,7 +61,7 @@ export const isValidImageUrl = (url: string): boolean => {
 export const encodeUrlIfNeeded = (url: string): string => {
   if (!url) return '';
   const trimmedUrl = url.trim();
-  if (trimmedUrl.startsWith('data:') || trimmedUrl.startsWith('blob:')) {
+  if (trimmedUrl.startsWith('data:') || trimmedUrl.startsWith('blob:') || trimmedUrl.includes('/api/image-proxy')) {
     return trimmedUrl;
   }
   try {
