@@ -1135,7 +1135,11 @@ export const useStore = create<AppState>()(
               description: { ...state[elementKey].description, text: product.description },
               price: { ...state[elementKey].price, text: product.price },
             },
-            [imageKey]: { ...state[imageKey], url: product.image }
+            [imageKey]: { 
+              ...state[imageKey], 
+              url: product.image,
+              visible: product.image ? true : false
+            }
           } as any;
 
           const newLayouts = [...state.layouts];
@@ -1326,7 +1330,8 @@ export const useStore = create<AppState>()(
               if (!currentImg) return templateImg;
               return {
                 ...templateImg,
-                url: currentImg.url // Keep user image URL
+                url: currentImg.url, // Keep user image URL
+                visible: currentImg.url ? (currentImg.visible !== undefined ? currentImg.visible : true) : templateImg.visible
               };
             };
 
