@@ -294,6 +294,32 @@ export default function App() {
     };
   }, []);
 
+  // High-fidelity active layout and flag sync for non-admins
+  useEffect(() => {
+    if (isAuthenticated && userRole !== 'admin') {
+      const handleVisibilityAndSync = () => {
+        if (document.visibilityState === 'visible') {
+          loadLayout();
+          loadUsersAndFlags();
+        }
+      };
+
+      // Poll periodically to ensure 100% live synchronization accuracy and backup websocket sleep
+      const syncInterval = setInterval(() => {
+        loadLayout();
+      }, 10000); // Check every 10 seconds
+
+      document.addEventListener('visibilitychange', handleVisibilityAndSync);
+      window.addEventListener('focus', handleVisibilityAndSync);
+
+      return () => {
+        clearInterval(syncInterval);
+        document.removeEventListener('visibilitychange', handleVisibilityAndSync);
+        window.removeEventListener('focus', handleVisibilityAndSync);
+      };
+    }
+  }, [isAuthenticated, userRole, loadLayout, loadUsersAndFlags]);
+
   useEffect(() => {
     const root = window.document.documentElement;
     if (theme === 'dark') {

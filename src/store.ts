@@ -1224,6 +1224,12 @@ export const useStore = create<AppState>()(
         const state = get();
         if (state.userRole !== 'admin') return;
         
+        // Cancel any pending debounced auto-saves to prevent overwriting with older state
+        if (saveTimeout) {
+          clearTimeout(saveTimeout);
+          saveTimeout = null;
+        }
+
         try {
           await Promise.all([
             state.saveLayout(),
@@ -1414,11 +1420,18 @@ export const useStore = create<AppState>()(
                   
                   if (id === 'current_layout' && newValue) {
                     const currentState = get();
-                    if (!currentState.lastUpdateTimestamp || (newValue.updated_at && newValue.updated_at > currentState.lastUpdateTimestamp)) {
+                    // Non-admin users must ALWAYS sync instantly and unconditionally without any conditional checks
+                    // Admin users only sync if the DB contains a newer timestamp
+                    if (currentState.userRole !== 'admin' || !currentState.lastUpdateTimestamp || (newValue.updated_at && newValue.updated_at > currentState.lastUpdateTimestamp)) {
                       await get().loadLayout();
                     }
                   } else if (id === 'users_and_flags' && newValue) {
                     await get().loadUsersAndFlags();
+                    // Non-admins must reload layouts when permissions or user configurations change
+                    const currentState = get();
+                    if (currentState.userRole !== 'admin') {
+                      await get().loadLayout();
+                    }
                   }
                 }
               )
