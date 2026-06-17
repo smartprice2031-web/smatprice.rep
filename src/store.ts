@@ -1394,7 +1394,7 @@ export const useStore = create<AppState>()(
             set({
               activeLayoutIndex,
               layouts: finalLayouts,
-              background: isUser ? (currentActiveLayout?.background || layout.background) : (layout.background || currentActiveLayout?.background),
+              background: currentActiveLayout?.background || layout.background,
               productImage1: isUser ? mergeImageWithTemplate(currentState.productImage1, currentActiveLayout?.productImage1) : (layout.productImage1 || currentActiveLayout?.productImage1),
               productImage2: isUser ? mergeImageWithTemplate(currentState.productImage2, currentActiveLayout?.productImage2) : (layout.productImage2 || currentActiveLayout?.productImage2),
               productImage3: isUser 
