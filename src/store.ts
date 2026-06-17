@@ -1370,7 +1370,12 @@ export const useStore = create<AppState>()(
                   ...templateL,
                   productImage1: mergeImageWithTemplate(currentL.productImage1, templateL.productImage1),
                   productImage2: mergeImageWithTemplate(currentL.productImage2, templateL.productImage2),
-                  productImage3: mergeImageWithTemplate(currentL.productImage3, templateL.productImage3),
+                  productImage3: templateL.productImage3 
+                    ? {
+                        ...mergeImageWithTemplate(currentL.productImage3, templateL.productImage3),
+                        visible: templateL.productImage3.visible !== undefined ? templateL.productImage3.visible : true
+                      }
+                    : templateL.productImage3,
                   textElements1: mergeWithTemplate(currentL.textElements1, templateL.textElements1),
                   textElements2: mergeWithTemplate(currentL.textElements2, templateL.textElements2),
                   textElements3: mergeWithTemplate(currentL.textElements3, templateL.textElements3),
@@ -1392,7 +1397,14 @@ export const useStore = create<AppState>()(
               background: isUser ? (currentActiveLayout?.background || layout.background) : (layout.background || currentActiveLayout?.background),
               productImage1: isUser ? mergeImageWithTemplate(currentState.productImage1, currentActiveLayout?.productImage1) : (layout.productImage1 || currentActiveLayout?.productImage1),
               productImage2: isUser ? mergeImageWithTemplate(currentState.productImage2, currentActiveLayout?.productImage2) : (layout.productImage2 || currentActiveLayout?.productImage2),
-              productImage3: isUser ? mergeImageWithTemplate(currentState.productImage3, currentActiveLayout?.productImage3) : (layout.productImage3 || currentActiveLayout?.productImage3),
+              productImage3: isUser 
+                ? (currentActiveLayout?.productImage3 
+                    ? { 
+                        ...mergeImageWithTemplate(currentState.productImage3, currentActiveLayout.productImage3), 
+                        visible: currentActiveLayout.productImage3.visible !== undefined ? currentActiveLayout.productImage3.visible : true
+                      } 
+                    : mergeImageWithTemplate(currentState.productImage3, currentActiveLayout?.productImage3))
+                : (layout.productImage3 || currentActiveLayout?.productImage3),
               textElements1: isUser ? mergeWithTemplate(currentState.textElements1, currentActiveLayout?.textElements1) : (layout.textElements1 || currentActiveLayout?.textElements1),
               textElements2: isUser ? mergeWithTemplate(currentState.textElements2, currentActiveLayout?.textElements2) : (layout.textElements2 || currentActiveLayout?.textElements2),
               textElements3: isUser ? mergeWithTemplate(currentState.textElements3, currentActiveLayout?.textElements3) : (layout.textElements3 || currentActiveLayout?.textElements3),
