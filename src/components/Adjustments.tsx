@@ -216,7 +216,7 @@ const Adjustments = () => {
 
   const handleReset = () => {
     useStore.setState((state) => ({
-      layouts: Array.from({ length: 150 }, (_, i) => {
+      layouts: Array.from({ length: 200 }, (_, i) => {
         const defaultNames: Record<number, string> = {
           0: 'QUARTA FRALDA PL',
           1: 'SABADÃO PL',

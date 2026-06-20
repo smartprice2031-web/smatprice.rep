@@ -423,11 +423,11 @@ export const THREE_PRODUCT_LAYOUTS = [
 
 export const isThreeProduct = (name: string, index?: number) => {
   const upperName = name.toUpperCase();
-  const isModelInRange = index !== undefined && index >= 51 && index <= 149;
+  const isModelInRange = index !== undefined && index >= 51 && index <= 199;
   
-  // Check if name is "MODELO X" where X is 52-150
+  // Check if name is "MODELO X" where X is 52-200
   const modelNumberMatch = upperName.match(/^MODELO (\d+)$/);
-  const isModelNameInRange = modelNumberMatch ? (parseInt(modelNumberMatch[1]) >= 52 && parseInt(modelNumberMatch[1]) <= 150) : false;
+  const isModelNameInRange = modelNumberMatch ? (parseInt(modelNumberMatch[1]) >= 52 && parseInt(modelNumberMatch[1]) <= 200) : false;
 
   return THREE_PRODUCT_LAYOUTS.includes(upperName) || 
          upperName.includes(' 3') || 
@@ -730,6 +730,56 @@ export const useStore = create<AppState>()(
         createDefaultLayout('Modelo 148', 147),
         createDefaultLayout('Modelo 149', 148),
         createDefaultLayout('Modelo 150', 149),
+        createDefaultLayout('Modelo 151', 150),
+        createDefaultLayout('Modelo 152', 151),
+        createDefaultLayout('Modelo 153', 152),
+        createDefaultLayout('Modelo 154', 153),
+        createDefaultLayout('Modelo 155', 154),
+        createDefaultLayout('Modelo 156', 155),
+        createDefaultLayout('Modelo 157', 156),
+        createDefaultLayout('Modelo 158', 157),
+        createDefaultLayout('Modelo 159', 158),
+        createDefaultLayout('Modelo 160', 159),
+        createDefaultLayout('Modelo 161', 160),
+        createDefaultLayout('Modelo 162', 161),
+        createDefaultLayout('Modelo 163', 162),
+        createDefaultLayout('Modelo 164', 163),
+        createDefaultLayout('Modelo 165', 164),
+        createDefaultLayout('Modelo 166', 165),
+        createDefaultLayout('Modelo 167', 166),
+        createDefaultLayout('Modelo 168', 167),
+        createDefaultLayout('Modelo 169', 168),
+        createDefaultLayout('Modelo 170', 169),
+        createDefaultLayout('Modelo 171', 170),
+        createDefaultLayout('Modelo 172', 171),
+        createDefaultLayout('Modelo 173', 172),
+        createDefaultLayout('Modelo 174', 173),
+        createDefaultLayout('Modelo 175', 174),
+        createDefaultLayout('Modelo 176', 175),
+        createDefaultLayout('Modelo 177', 176),
+        createDefaultLayout('Modelo 178', 177),
+        createDefaultLayout('Modelo 179', 178),
+        createDefaultLayout('Modelo 180', 179),
+        createDefaultLayout('Modelo 181', 180),
+        createDefaultLayout('Modelo 182', 181),
+        createDefaultLayout('Modelo 183', 182),
+        createDefaultLayout('Modelo 184', 183),
+        createDefaultLayout('Modelo 185', 184),
+        createDefaultLayout('Modelo 186', 185),
+        createDefaultLayout('Modelo 187', 186),
+        createDefaultLayout('Modelo 188', 187),
+        createDefaultLayout('Modelo 189', 188),
+        createDefaultLayout('Modelo 190', 189),
+        createDefaultLayout('Modelo 191', 190),
+        createDefaultLayout('Modelo 192', 191),
+        createDefaultLayout('Modelo 193', 192),
+        createDefaultLayout('Modelo 194', 193),
+        createDefaultLayout('Modelo 195', 194),
+        createDefaultLayout('Modelo 196', 195),
+        createDefaultLayout('Modelo 197', 196),
+        createDefaultLayout('Modelo 198', 197),
+        createDefaultLayout('Modelo 199', 198),
+        createDefaultLayout('Modelo 200', 199),
       ],
 
       background: {
@@ -1267,11 +1317,11 @@ export const useStore = create<AppState>()(
             // Trust the layouts from the database, but ensure they have all properties
             let rawLayouts = layout.layouts || currentState.layouts;
             
-            // Ensure we have at least 150 layouts
-            if (rawLayouts.length < 150) {
+            // Ensure we have at least 200 layouts
+            if (rawLayouts.length < 200) {
               // Replicate Modelo 75 (index 74) to others as requested
               const model75 = rawLayouts[74] || createDefaultLayout('Modelo 75', 74);
-              const missingCount = 150 - rawLayouts.length;
+              const missingCount = 200 - rawLayouts.length;
               const missing = Array.from({ length: missingCount }, (_, i) => {
                 const idx = rawLayouts.length + i;
                 return {
@@ -1289,7 +1339,7 @@ export const useStore = create<AppState>()(
               });
               rawLayouts = [...rawLayouts, ...missing];
               
-              // REINFORCE: If admin, save the fully expanded 150 layouts back to DB
+              // REINFORCE: If admin, save the fully expanded 200 layouts back to DB
               if (currentState.userRole === 'admin') {
                 setTimeout(() => get().saveLayout(), 1000);
               }
@@ -1322,72 +1372,8 @@ export const useStore = create<AppState>()(
 
             const activeLayout = loadedLayouts[activeLayoutIndex] || loadedLayouts[0];
 
-            // If user is not admin, we prioritize the template positions and properties from the database,
-            // but we might want to preserve their selected product text/images if they were already editing.
-            // However, the request "be faithful to how the admin configured" suggests we should strictly
-            // follow the template's positions and orientation.
-            
-            const isUser = currentState.userRole !== 'admin';
-
-            // Helper to merge template positions with potential user text content
-            const mergeWithTemplate = (currentElements: any, templateElements: any) => {
-              if (!templateElements) return currentElements;
-              if (!currentElements) return templateElements;
-              
-              const merged = { ...templateElements };
-              // Preserve ONLY the text content for text elements
-              Object.keys(templateElements).forEach((key) => {
-                if (currentElements[key] && templateElements[key]) {
-                  merged[key] = {
-                    ...templateElements[key],
-                    text: currentElements[key].text !== undefined ? currentElements[key].text : templateElements[key].text
-                  };
-                }
-              });
-              return merged;
-            };
-
-            const mergeImageWithTemplate = (currentImg: any, templateImg: any) => {
-              if (!templateImg) return currentImg;
-              if (!currentImg) return templateImg;
-              return {
-                ...templateImg,
-                url: currentImg.url !== undefined ? currentImg.url : templateImg.url, // Keep user image URL
-                visible: (currentImg.url || templateImg.url) 
-                  ? (currentImg.visible !== undefined ? currentImg.visible : true) 
-                  : templateImg.visible
-              };
-            };
-
-            // Merge user changes across all 150 layouts to preserve their customized models
+            // Load layouts exactly as configured in the database, without any local merge pollution
             let finalLayouts = loadedLayouts;
-            if (isUser && Array.isArray(currentState.layouts) && currentState.layouts.length > 0) {
-              finalLayouts = loadedLayouts.map((templateL: any, idx: number) => {
-                const currentL = currentState.layouts[idx] || currentState.layouts.find((l: any) => l.name === templateL.name);
-                if (!currentL) return templateL;
-
-                return {
-                  ...templateL,
-                  productImage1: mergeImageWithTemplate(currentL.productImage1, templateL.productImage1),
-                  productImage2: mergeImageWithTemplate(currentL.productImage2, templateL.productImage2),
-                  productImage3: templateL.productImage3 
-                    ? {
-                        ...mergeImageWithTemplate(currentL.productImage3, templateL.productImage3),
-                        visible: templateL.productImage3.visible !== undefined ? templateL.productImage3.visible : true
-                      }
-                    : templateL.productImage3,
-                  textElements1: mergeWithTemplate(currentL.textElements1, templateL.textElements1),
-                  textElements2: mergeWithTemplate(currentL.textElements2, templateL.textElements2),
-                  textElements3: mergeWithTemplate(currentL.textElements3, templateL.textElements3),
-                  optionalText1: templateL.optionalText1 ? { ...templateL.optionalText1, text: currentL.optionalText1?.text !== undefined ? currentL.optionalText1.text : templateL.optionalText1.text } : templateL.optionalText1,
-                  optionalText2: templateL.optionalText2 ? { ...templateL.optionalText2, text: currentL.optionalText2?.text !== undefined ? currentL.optionalText2.text : templateL.optionalText2.text } : templateL.optionalText2,
-                  optionalText3: templateL.optionalText3 ? { ...templateL.optionalText3, text: currentL.optionalText3?.text !== undefined ? currentL.optionalText3.text : templateL.optionalText3.text } : templateL.optionalText3,
-                  isSingleProduct: templateL.isSingleProduct !== undefined ? templateL.isSingleProduct : false,
-                  orientation: templateL.orientation || 'portrait',
-                  background: templateL.background,
-                };
-              });
-            }
 
             const currentActiveLayout = finalLayouts[activeLayoutIndex] || finalLayouts[0];
 
@@ -1395,25 +1381,18 @@ export const useStore = create<AppState>()(
               activeLayoutIndex,
               layouts: finalLayouts,
               background: currentActiveLayout?.background || layout.background,
-              productImage1: isUser ? mergeImageWithTemplate(currentState.productImage1, currentActiveLayout?.productImage1) : (layout.productImage1 || currentActiveLayout?.productImage1),
-              productImage2: isUser ? mergeImageWithTemplate(currentState.productImage2, currentActiveLayout?.productImage2) : (layout.productImage2 || currentActiveLayout?.productImage2),
-              productImage3: isUser 
-                ? (currentActiveLayout?.productImage3 
-                    ? { 
-                        ...mergeImageWithTemplate(currentState.productImage3, currentActiveLayout.productImage3), 
-                        visible: currentActiveLayout.productImage3.visible !== undefined ? currentActiveLayout.productImage3.visible : true
-                      } 
-                    : mergeImageWithTemplate(currentState.productImage3, currentActiveLayout?.productImage3))
-                : (layout.productImage3 || currentActiveLayout?.productImage3),
-              textElements1: isUser ? mergeWithTemplate(currentState.textElements1, currentActiveLayout?.textElements1) : (layout.textElements1 || currentActiveLayout?.textElements1),
-              textElements2: isUser ? mergeWithTemplate(currentState.textElements2, currentActiveLayout?.textElements2) : (layout.textElements2 || currentActiveLayout?.textElements2),
-              textElements3: isUser ? mergeWithTemplate(currentState.textElements3, currentActiveLayout?.textElements3) : (layout.textElements3 || currentActiveLayout?.textElements3),
-              optionalText1: isUser ? { ...currentActiveLayout?.optionalText1, text: currentState.optionalText1?.text !== undefined ? currentState.optionalText1.text : currentActiveLayout?.optionalText1?.text } : (layout.optionalText1 || currentActiveLayout?.optionalText1),
-              optionalText2: isUser ? { ...currentActiveLayout?.optionalText2, text: currentState.optionalText2?.text !== undefined ? currentState.optionalText2.text : currentActiveLayout?.optionalText2?.text } : (layout.optionalText2 || currentActiveLayout?.optionalText2),
-              optionalText3: isUser ? { ...currentActiveLayout?.optionalText3, text: currentState.optionalText3?.text !== undefined ? currentState.optionalText3.text : currentActiveLayout?.optionalText3?.text } : (layout.optionalText3 || currentActiveLayout?.optionalText3),
+              productImage1: currentActiveLayout?.productImage1 || layout.productImage1,
+              productImage2: currentActiveLayout?.productImage2 || layout.productImage2,
+              productImage3: currentActiveLayout?.productImage3 || layout.productImage3,
+              textElements1: currentActiveLayout?.textElements1 || layout.textElements1,
+              textElements2: currentActiveLayout?.textElements2 || layout.textElements2,
+              textElements3: currentActiveLayout?.textElements3 || layout.textElements3,
+              optionalText1: currentActiveLayout?.optionalText1 || layout.optionalText1,
+              optionalText2: currentActiveLayout?.optionalText2 || layout.optionalText2,
+              optionalText3: currentActiveLayout?.optionalText3 || layout.optionalText3,
               orientation: currentActiveLayout?.orientation || layout.orientation || 'portrait',
-              isSingleProduct: isUser ? (currentActiveLayout?.isSingleProduct ?? false) : (currentActiveLayout?.isSingleProduct ?? layout.isSingleProduct ?? false),
-              showSingleProductControl: currentActiveLayout?.showSingleProductControl !== undefined ? currentActiveLayout.showSingleProductControl : (layout.showSingleProductControl !== undefined ? layout.showSingleProductControl : currentState.showSingleProductControl),
+              isSingleProduct: currentActiveLayout?.isSingleProduct ?? layout.isSingleProduct ?? false,
+              showSingleProductControl: currentActiveLayout?.showSingleProductControl !== undefined ? currentActiveLayout.showSingleProductControl : (layout.showSingleProductControl !== undefined ? layout.showOptionalTextControl : currentState.showSingleProductControl),
               showOptionalTextControl: currentActiveLayout?.showOptionalTextControl !== undefined ? currentActiveLayout.showOptionalTextControl : (layout.showOptionalTextControl !== undefined ? layout.showOptionalTextControl : currentState.showOptionalTextControl),
               lastUpdateTimestamp: layout.updated_at || null
             } as any);
