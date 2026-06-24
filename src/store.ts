@@ -243,10 +243,10 @@ interface AppState {
   selectProduct: (slot: 1 | 2 | 3, product: Product) => void;
   
   // Persistence
-  saveLayout: () => Promise<void>;
+  saveLayout: (silent?: boolean) => Promise<void>;
   saveLayoutDebounced: () => void;
   loadLayout: () => Promise<void>;
-  saveAll: () => Promise<void>;
+  saveAll: (silent?: boolean) => Promise<void>;
 
   zoom: number;
   setZoom: (zoom: number) => void;
@@ -1228,12 +1228,19 @@ export const useStore = create<AppState>()(
         }, 1000);
       },
 
-      saveLayout: async () => {
+      saveLayout: async (silent?: boolean) => {
         if (!isSupabaseConfigured) return;
         const state = get();
         
         // REINFORCE: Only Admins can save global layout adjustments to the database
         if (state.userRole !== 'admin') return;
+
+        // CRITICAL DATA INTEGRITY SAFEGUARD: Refuse saving if layouts list is empty, incomplete, or corrupted!
+        // This ensures existing layouts cannot be overwritten with empty states, or lost over time.
+        if (!state.layouts || state.layouts.length < 200) {
+          console.warn("REFUSING TO SAVE: Guard protected database from overwritten layout data. Length:", state.layouts?.length);
+          return;
+        }
 
         const timestamp = new Date().toISOString();
         const layout = {
@@ -1253,7 +1260,8 @@ export const useStore = create<AppState>()(
           showSingleProductControl: state.showSingleProductControl,
           showOptionalTextControl: state.showOptionalTextControl,
           orientation: state.orientation,
-          updated_at: timestamp
+          updated_at: timestamp,
+          silent: silent !== undefined ? silent : true
         };
         
         // Update local timestamp before saving to avoid reacting to our own change
@@ -1270,7 +1278,7 @@ export const useStore = create<AppState>()(
         }
       },
 
-      saveAll: async () => {
+      saveAll: async (silent?: boolean) => {
         const state = get();
         if (state.userRole !== 'admin') return;
         
@@ -1282,7 +1290,7 @@ export const useStore = create<AppState>()(
 
         try {
           await Promise.all([
-            state.saveLayout(),
+            state.saveLayout(silent),
             state.saveUsersAndFlags()
           ]);
         } catch (error) {
@@ -1411,10 +1419,14 @@ export const useStore = create<AppState>()(
                   
                   if (id === 'current_layout' && newValue) {
                     const currentState = get();
-                    // Non-admin users must ALWAYS sync instantly and unconditionally without any conditional checks
-                    // Admin users only sync if the DB contains a newer timestamp
-                    if (currentState.userRole !== 'admin' || !currentState.lastUpdateTimestamp || (newValue.updated_at && newValue.updated_at > currentState.lastUpdateTimestamp)) {
-                      await get().loadLayout();
+                    // ADMIN MEMORY SAFETY PROTECTION: Admins must NEVER automatically pull/sync layouts from realtime
+                    // database updates while in-session.
+                    // Only non-admin users sync in real-time.
+                    if (currentState.userRole !== 'admin') {
+                      // Only update real-time if not silent. Silent updates are only loaded on refresh/session entry
+                      if (!newValue.silent) {
+                        await get().loadLayout();
+                      }
                     }
                   } else if (id === 'users_and_flags' && newValue) {
                     await get().loadUsersAndFlags();

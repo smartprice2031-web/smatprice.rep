@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useStore } from './store';
 import CanvasPreview from './components/CanvasPreview';
 import ProductManager from './components/ProductManager';
@@ -50,6 +50,47 @@ export default function App() {
   const [activeTab, setActiveTab] = useState<'select' | 'adjustments'>('select');
   const [pendingAnnouncements, setPendingAnnouncements] = useState<any[]>([]);
   const [isLayoutModalOpen, setLayoutModalOpen] = useState(false);
+
+  const clickTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (clickTimeoutRef.current) {
+        clearTimeout(clickTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  const handleEnviarMod = () => {
+    if (clickTimeoutRef.current) {
+      // Double click
+      clearTimeout(clickTimeoutRef.current);
+      clickTimeoutRef.current = null;
+      
+      const toastId = toast.loading('Enviando modificações em tempo real...');
+      saveAll(false)
+        .then(() => {
+          toast.success('Modificações enviadas aos usuários em tempo real!', { id: toastId });
+        })
+        .catch(() => {
+          toast.error('Erro ao enviar modificações.', { id: toastId });
+        });
+    } else {
+      // Single click
+      clickTimeoutRef.current = setTimeout(() => {
+        clickTimeoutRef.current = null;
+        
+        const toastId = toast.loading('Salvando modificações (em segundo plano)...');
+        saveAll(true)
+          .then(() => {
+            toast.success('Modificações salvas! (Usuários verão ao recarregar/entrar)', { id: toastId });
+          })
+          .catch(() => {
+            toast.error('Erro ao salvar modificações.', { id: toastId });
+          });
+      }, 300);
+    }
+  };
 
   // Filter layouts based on user permissions
   const filteredLayouts = React.useMemo(() => {
@@ -765,17 +806,9 @@ export default function App() {
                 
                 {userRole === 'admin' && (
                   <button 
-                    onClick={async () => {
-                      const toastId = toast.loading('Enviando modificações...');
-                      try {
-                        await saveAll();
-                        toast.success('Modificações enviadas com sucesso!', { id: toastId });
-                      } catch (error) {
-                        toast.error('Erro ao enviar modificações.', { id: toastId });
-                      }
-                    }}
-                    className="flex items-center gap-1 px-2 py-0.5 bg-emerald-600 text-white rounded-md hover:bg-emerald-700 transition-all text-[9px] font-black uppercase tracking-tighter shadow-sm"
-                    title="Enviar modificações para a base de dados"
+                    onClick={handleEnviarMod}
+                    className="flex items-center gap-1 px-2 py-0.5 bg-emerald-600 text-white rounded-md hover:bg-emerald-700 transition-all text-[9px] font-black uppercase tracking-tighter shadow-sm cursor-pointer select-none"
+                    title="Salvar: 1 clique (para atualizar ao entrar/recarregar) | 2 cliques (para atualizar em tempo real já)"
                   >
                     <Database className="w-3 h-3" />
                     ENVIAR MOD
